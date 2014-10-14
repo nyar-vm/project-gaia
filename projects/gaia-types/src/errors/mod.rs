@@ -1,3 +1,4 @@
+use crate::SourceLocation;
 use std::{
     error::Error,
     fmt::{Debug, Display, Formatter},
@@ -16,9 +17,14 @@ pub struct GaiaError {
 }
 
 /// The kind of [GaiaError].
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub enum GaiaErrorKind {
     /// An unknown error.
-    SyntaxError,
+    SyntaxError { message: String, location: SourceLocation },
 }
 
+impl GaiaError {
+    pub fn syntax_error(message: impl ToString, location: SourceLocation) -> Self {
+        GaiaErrorKind::SyntaxError { message: message.to_string(), location }.into()
+    }
+}
