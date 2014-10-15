@@ -3,6 +3,8 @@ resolver = "2"
 members = ["projects/*"]
 default-members = [
     "projects/gaia-types",
+    "projects/pe-assembler",
+    "projects/il-rust",
 ]
 exclude = [
     "projects/.DS_Store",

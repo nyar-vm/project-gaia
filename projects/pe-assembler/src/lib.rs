@@ -4,13 +4,9 @@
 #![doc(html_logo_url = "https://raw.githubusercontent.com/oovm/shape-rs/dev/projects/images/Trapezohedron.svg")]
 #![doc(html_favicon_url = "https://raw.githubusercontent.com/oovm/shape-rs/dev/projects/images/Trapezohedron.svg")]
 
-mod errors;
-pub mod helpers;
+mod assembler;
+mod helpers;
 mod reader;
+mod types;
+mod viewer;
 mod writer;
-
-pub use crate::{
-    errors::{GaiaError, GaiaErrorKind, Result},
-    reader::{BinaryReader, SourceLocation, SourcePosition},
-    writer::{BinaryWriter, TextWriter},
-};

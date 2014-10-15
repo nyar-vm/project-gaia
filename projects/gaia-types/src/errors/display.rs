@@ -1,24 +1,50 @@
 use super::*;
 
+/// 为GaiaError实现标准库Error trait
+///
+/// 这使得GaiaError可以作为标准错误类型使用
 impl Error for GaiaError {}
 
+/// 为GaiaError实现Debug trait
+///
+/// 使用Debug格式输出时，会委托给内部的GaiaErrorKind
 impl Debug for GaiaError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         Debug::fmt(&self.kind, f)
     }
 }
 
+/// 为GaiaError实现Display trait
+///
+/// 使用Display格式输出时，会委托给内部的GaiaErrorKind
 impl Display for GaiaError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         Display::fmt(&self.kind, f)
     }
 }
 
+/// 为GaiaErrorKind实现Display trait
+///
+/// 提供用户友好的错误信息输出格式
 impl Display for GaiaErrorKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
+            GaiaErrorKind::InvalidInstruction { instruction, architecture } => {
+                write!(f, "无效指令 '{}' 在架构 '{}'", instruction, architecture)?;
+            }
+            GaiaErrorKind::UnsupportedArchitecture { architecture } => {
+                write!(f, "不支持的架构: {}", architecture)?;
+            }
             GaiaErrorKind::SyntaxError { message, location } => {
-                write!(f, "SyntaxError at {:?}: {}", location.url, message)?;
+                write!(f, "语法错误在 {:?}: {}", location.url, message)?;
+            }
+            GaiaErrorKind::IoError { io_error, url } => {
+                if let Some(url) = url {
+                    write!(f, "IO错误在 {}: {}", url, io_error)?;
+                }
+                else {
+                    write!(f, "IO错误: {}", io_error)?;
+                }
             }
         }
         Ok(())
