@@ -1,0 +1,17 @@
+﻿.class private auto ansi beforefieldinit
+  Valkyrie.Translator.ClassAndStructure.EmptyClass
+    extends [System.Runtime]System.Object
+{
+
+  .method public hidebysig specialname rtspecialname instance void
+    .ctor() cil managed
+  {
+    .maxstack 8
+
+    IL_0000: ldarg.0      // this
+    IL_0001: call         instance void [System.Runtime]System.Object::.ctor()
+    IL_0006: nop
+    IL_0007: ret
+
+  } // end of method EmptyClass::.ctor
+} // end of class Valkyrie.Translator.ClassAndStructure.EmptyClass

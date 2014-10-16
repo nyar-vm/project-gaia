@@ -1,0 +1,21 @@
+{
+    "assembly_name": "HelloUnity",
+    "extern_assemblies": [
+        "UnityEngine"
+    ],
+    "module_name": "HelloUnity",
+    "class_name": "MyAssembler",
+    "class_modifiers": [
+        "public",
+        "auto",
+        "ansi",
+        "beforefieldinit"
+    ],
+    "extends": "[UnityEngine]UnityEngine.MonoBehaviour",
+    "method_count": 2,
+    "method_names": [
+        "Start",
+        ".ctor"
+    ],
+    "statement_count": 4
+}

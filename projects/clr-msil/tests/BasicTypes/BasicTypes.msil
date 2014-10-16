@@ -1,0 +1,221 @@
+.class private auto ansi beforefieldinit
+  Valkyrie.Translator.BasicTypes.BasicTypes
+    extends [System.Runtime]System.Object
+{
+
+  .method private hidebysig static void
+    Main() cil managed
+  {
+    .maxstack 6
+    .locals init (
+      [0] unsigned int8 b,
+      [1] int8 sb,
+      [2] int16 s,
+      [3] unsigned int16 us,
+      [4] int32 i,
+      [5] unsigned int32 ui,
+      [6] int64 l,
+      [7] unsigned int64 ul,
+      [8] float32 f,
+      [9] float64 d,
+      [10] valuetype [System.Runtime]System.Decimal m,
+      [11] char c,
+      [12] string str,
+      [13] bool flag,
+      [14] valuetype [System.Runtime]System.Nullable`1<int32> nullableInt,
+      [15] valuetype [System.Runtime]System.Nullable`1<valuetype [System.Runtime]System.DateTime> nullableDate,
+      [16] int32[] intArray,
+      [17] string[] stringArray,
+      [18] int32[0...,0...] matrix,
+      [19] int32[][] jagged,
+      [20] int32 converted,
+      [21] string numberStr,
+      [22] float64 parsed
+    )
+
+    // [6 5 - 6 6]
+    IL_0000: nop
+
+    // [8 9 - 8 22]
+    IL_0001: ldc.i4       255 // 0x000000ff
+    IL_0006: stloc.0      // b
+
+    // [9 9 - 9 25]
+    IL_0007: ldc.i4.s     -128 // 0x80
+    IL_0009: stloc.1      // sb
+
+    // [10 9 - 10 26]
+    IL_000a: ldc.i4       -32768 // 0xffff8000
+    IL_000f: stloc.2      // s
+
+    // [11 9 - 11 27]
+    IL_0010: ldc.i4       65535 // 0x0000ffff
+    IL_0015: stloc.3      // us
+
+    // [12 9 - 12 29]
+    IL_0016: ldc.i4       -2147483648 // 0x80000000
+    IL_001b: stloc.s      i
+
+    // [13 9 - 13 30]
+    IL_001d: ldc.i4.m1
+    IL_001e: stloc.s      ui
+
+    // [14 9 - 14 39]
+    IL_0020: ldc.i8       -9223372036854775808 // 0x8000000000000000
+    IL_0029: stloc.s      l
+
+    // [15 9 - 15 41]
+    IL_002b: ldc.i4.m1
+    IL_002c: conv.i8
+    IL_002d: stloc.s      ul
+
+    // [18 9 - 18 25]
+    IL_002f: ldc.r4       3.14
+    IL_0034: stloc.s      f
+
+    // [19 9 - 19 28]
+    IL_0036: ldc.r8       2.71828
+    IL_003f: stloc.s      d
+
+    // [20 9 - 20 30]
+    IL_0041: ldloca.s     m
+    IL_0043: ldc.i4       123456 // 0x0001e240
+    IL_0048: ldc.i4.0
+    IL_0049: ldc.i4.0
+    IL_004a: ldc.i4.0
+    IL_004b: ldc.i4.3
+    IL_004c: call         instance void [System.Runtime]System.Decimal::.ctor(int32, int32, int32, bool, unsigned int8)
+
+    // [23 9 - 23 22]
+    IL_0051: ldc.i4.s     65 // 0x41
+    IL_0053: stloc.s      c
+
+    // [24 9 - 24 38]
+    IL_0055: ldstr        "Hello, World!"
+    IL_005a: stloc.s      str
+
+    // [27 9 - 27 26]
+    IL_005c: ldc.i4.1
+    IL_005d: stloc.s      flag
+
+    // [30 9 - 30 33]
+    IL_005f: ldloca.s     nullableInt
+    IL_0061: initobj      valuetype [System.Runtime]System.Nullable`1<int32>
+
+    // [31 9 - 31 47]
+    IL_0067: ldloca.s     nullableDate
+    IL_0069: call         valuetype [System.Runtime]System.DateTime [System.Runtime]System.DateTime::get_Now()
+    IL_006e: call         instance void valuetype [System.Runtime]System.Nullable`1<valuetype [System.Runtime]System.DateTime>::.ctor(!0/*valuetype [System.Runtime]System.DateTime*/)
+
+    // [34 9 - 34 44]
+    IL_0073: ldc.i4.5
+    IL_0074: newarr       [System.Runtime]System.Int32
+    IL_0079: dup
+    IL_007a: ldtoken      field valuetype '<PrivateImplementationDetails>'/'__StaticArrayInitTypeSize=20' '<PrivateImplementationDetails>'::'4F6ADDC9659D6FB90FE94B6688A79F2A1FA8D36EC43F8F3E1D9B6528C448A384'
+    IL_007f: call         void [System.Runtime]System.Runtime.CompilerServices.RuntimeHelpers::InitializeArray(class [System.Runtime]System.Array, valuetype [System.Runtime]System.RuntimeFieldHandle)
+    IL_0084: stloc.s      intArray
+
+    // [35 9 - 35 46]
+    IL_0086: ldc.i4.3
+    IL_0087: newarr       [System.Runtime]System.String
+    IL_008c: stloc.s      stringArray
+
+    // [36 9 - 36 34]
+    IL_008e: ldloc.s      stringArray
+    IL_0090: ldc.i4.0
+    IL_0091: ldstr        "First"
+    IL_0096: stelem.ref
+
+    // [37 9 - 37 35]
+    IL_0097: ldloc.s      stringArray
+    IL_0099: ldc.i4.1
+    IL_009a: ldstr        "Second"
+    IL_009f: stelem.ref
+
+    // [38 9 - 38 34]
+    IL_00a0: ldloc.s      stringArray
+    IL_00a2: ldc.i4.2
+    IL_00a3: ldstr        "Third"
+    IL_00a8: stelem.ref
+
+    // [41 9 - 41 68]
+    IL_00a9: ldc.i4.2
+    IL_00aa: ldc.i4.3
+    IL_00ab: newobj       instance void int32[0...,0...]::.ctor(int32, int32)
+    IL_00b0: dup
+    IL_00b1: ldtoken      field valuetype '<PrivateImplementationDetails>'/'__StaticArrayInitTypeSize=24' '<PrivateImplementationDetails>'::'90D856B7ECAC90C26898AF8A46404297AA0EF65768F62FDF8C3F08294BCBEE49'
+    IL_00b6: call         void [System.Runtime]System.Runtime.CompilerServices.RuntimeHelpers::InitializeArray(class [System.Runtime]System.Array, valuetype [System.Runtime]System.RuntimeFieldHandle)
+    IL_00bb: stloc.s      matrix
+
+    // [42 9 - 42 39]
+    IL_00bd: ldc.i4.3
+    IL_00be: newarr       int32[]
+    IL_00c3: stloc.s      jagged
+
+    // [43 9 - 43 40]
+    IL_00c5: ldloc.s      jagged
+    IL_00c7: ldc.i4.0
+    IL_00c8: ldc.i4.2
+    IL_00c9: newarr       [System.Runtime]System.Int32
+    IL_00ce: dup
+    IL_00cf: ldc.i4.0
+    IL_00d0: ldc.i4.1
+    IL_00d1: stelem.i4
+    IL_00d2: dup
+    IL_00d3: ldc.i4.1
+    IL_00d4: ldc.i4.2
+    IL_00d5: stelem.i4
+    IL_00d6: stelem.ref
+
+    // [44 9 - 44 43]
+    IL_00d7: ldloc.s      jagged
+    IL_00d9: ldc.i4.1
+    IL_00da: ldc.i4.3
+    IL_00db: newarr       [System.Runtime]System.Int32
+    IL_00e0: dup
+    IL_00e1: ldtoken      field valuetype '<PrivateImplementationDetails>'/'__StaticArrayInitTypeSize=12' '<PrivateImplementationDetails>'::CE99AE045C8B2A2A8A58FD1A2120956E74E90322EEF45F7DFE1CA73EEFE655D4
+    IL_00e6: call         void [System.Runtime]System.Runtime.CompilerServices.RuntimeHelpers::InitializeArray(class [System.Runtime]System.Array, valuetype [System.Runtime]System.RuntimeFieldHandle)
+    IL_00eb: stelem.ref
+
+    // [45 9 - 45 46]
+    IL_00ec: ldloc.s      jagged
+    IL_00ee: ldc.i4.2
+    IL_00ef: ldc.i4.4
+    IL_00f0: newarr       [System.Runtime]System.Int32
+    IL_00f5: dup
+    IL_00f6: ldtoken      field valuetype '<PrivateImplementationDetails>'/'__StaticArrayInitTypeSize=16' '<PrivateImplementationDetails>'::'0EDB951A90ED696D0B29CCA3F3323A2D22265B9EB74D5E14B56CA2FEF70AD73F'
+    IL_00fb: call         void [System.Runtime]System.Runtime.CompilerServices.RuntimeHelpers::InitializeArray(class [System.Runtime]System.Array, valuetype [System.Runtime]System.RuntimeFieldHandle)
+    IL_0100: stelem.ref
+
+    // [52 9 - 52 32]
+    IL_0101: ldloc.s      d
+    IL_0103: conv.i4
+    IL_0104: stloc.s      converted
+
+    // [53 9 - 53 41]
+    IL_0106: ldloca.s     i
+    IL_0108: call         instance string [System.Runtime]System.Int32::ToString()
+    IL_010d: stloc.s      numberStr
+
+    // [54 9 - 54 48]
+    IL_010f: ldstr        "123.45"
+    IL_0114: call         float64 [System.Runtime]System.Double::Parse(string)
+    IL_0119: stloc.s      parsed
+
+    // [55 5 - 55 6]
+    IL_011b: ret
+
+  } // end of method BasicTypes::Main
+
+  .method public hidebysig specialname rtspecialname instance void
+    .ctor() cil managed
+  {
+    .maxstack 8
+
+    IL_0000: ldarg.0      // this
+    IL_0001: call         instance void [System.Runtime]System.Object::.ctor()
+    IL_0006: nop
+    IL_0007: ret
+
+  } // end of method BasicTypes::.ctor
+} // end of class Valkyrie.Translator.BasicTypes.BasicTypes

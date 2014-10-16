@@ -1,0 +1,24 @@
+{
+    "assembly_name": null,
+    "extern_assemblies": [],
+    "module_name": null,
+    "class_name": "Valkyrie.Translator.ClassAndStructure.ClassFields",
+    "class_modifiers": [
+        "private",
+        "auto",
+        "ansi",
+        "beforefieldinit"
+    ],
+    "extends": "[System.Runtime]System.Object",
+    "method_count": 7,
+    "method_names": [
+        "get__field11",
+        "get__field12",
+        "set__field12",
+        "get__field13",
+        "set__field13",
+        ".ctor",
+        "unknown"
+    ],
+    "statement_count": 1
+}

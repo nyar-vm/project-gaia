@@ -1,0 +1,16 @@
+{
+    "assembly_name": null,
+    "extern_assemblies": [],
+    "module_name": null,
+    "class_name": "Valkyrie.Translator.Generics.GenericA",
+    "class_modifiers": [
+        "public",
+        "auto",
+        "ansi",
+        "beforefieldinit"
+    ],
+    "extends": null,
+    "method_count": 0,
+    "method_names": [],
+    "statement_count": 1
+}

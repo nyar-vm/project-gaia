@@ -1,0 +1,19 @@
+{
+    "assembly_name": null,
+    "extern_assemblies": [],
+    "module_name": null,
+    "class_name": "Valkyrie.Translator.Exceptions.Exceptions",
+    "class_modifiers": [
+        "public",
+        "auto",
+        "ansi",
+        "beforefieldinit"
+    ],
+    "extends": "[System.Runtime]System.Object",
+    "method_count": 2,
+    "method_names": [
+        "ThrowException",
+        ".ctor"
+    ],
+    "statement_count": 1
+}

@@ -1,0 +1,21 @@
+{
+    "assembly_name": "GaiaAssembler",
+    "extern_assemblies": [
+        "UnityEngine"
+    ],
+    "module_name": "GaiaAssembler",
+    "class_name": "GaiaAssembler",
+    "class_modifiers": [
+        "public",
+        "auto",
+        "ansi",
+        "beforefieldinit"
+    ],
+    "extends": "[UnityEngine]UnityEngine.MonoBehaviour",
+    "method_count": 2,
+    "method_names": [
+        "Start",
+        ".ctor"
+    ],
+    "statement_count": 4
+}

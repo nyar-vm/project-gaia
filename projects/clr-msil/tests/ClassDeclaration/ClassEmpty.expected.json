@@ -1,0 +1,18 @@
+{
+    "assembly_name": null,
+    "extern_assemblies": [],
+    "module_name": null,
+    "class_name": "Valkyrie.Translator.ClassAndStructure.EmptyClass",
+    "class_modifiers": [
+        "private",
+        "auto",
+        "ansi",
+        "beforefieldinit"
+    ],
+    "extends": "[System.Runtime]System.Object",
+    "method_count": 1,
+    "method_names": [
+        ".ctor"
+    ],
+    "statement_count": 1
+}
