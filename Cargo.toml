@@ -4,7 +4,7 @@ members = ["projects/*"]
 default-members = [
     "projects/gaia-types",
     "projects/pe-assembler",
-    "projects/il-rust",
+    "projects/il-assembler",
 ]
 exclude = [
     "projects/.DS_Store",

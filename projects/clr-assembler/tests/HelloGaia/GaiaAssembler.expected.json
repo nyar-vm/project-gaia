@@ -1,0 +1,22 @@
+{
+    "assembly_name": "GaiaAssembler",
+    "extern_assemblies": [
+        "mscorlib",
+        "System"
+    ],
+    "module_name": "GaiaAssembler",
+    "class_name": "Valkyrie.Translator.HelloGaia.GaiaAssembler",
+    "class_modifiers": [
+        "public",
+        "auto",
+        "ansi",
+        "beforefieldinit"
+    ],
+    "extends": "[mscorlib]System.Object",
+    "method_count": 2,
+    "method_names": [
+        "Main",
+        ".ctor"
+    ],
+    "statement_count": 5
+}
