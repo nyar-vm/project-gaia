@@ -1,6 +1,11 @@
+pub use self::{token::Token, token_stream::TokenStream};
 use byteorder::ReadBytesExt;
 use std::io::Cursor;
 use url::Url;
+use serde::{Deserialize, Serialize};
+
+mod token;
+mod token_stream;
 
 /// 二进制读取器，用于从实现了 ReadBytesExt trait 的类型中读取数据
 ///
@@ -38,7 +43,7 @@ pub struct SourcePosition {
 ///
 /// 该结构体扩展了 SourcePosition，增加了文件 URL 信息，
 /// 可以表示代码在特定文件中的位置。
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SourceLocation {
     /// 行号，从 1 开始计数
     ///
@@ -53,4 +58,14 @@ pub struct SourceLocation {
     /// 如果存在，表示包含该代码的文件的 URL 或路径。
     /// 可以是文件系统路径或网络 URL。
     pub url: Option<Url>,
+}
+
+impl Default for SourceLocation {
+    fn default() -> Self {
+        Self {
+            line: 1,
+            column: 1,
+            url: None,
+        }
+    }
 }

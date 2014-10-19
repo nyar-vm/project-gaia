@@ -6,6 +6,6 @@ use super::*;
 /// 这是GaiaError结构体所要求的，可以减少内存占用
 impl From<GaiaErrorKind> for GaiaError {
     fn from(value: GaiaErrorKind) -> Self {
-        Self { kind: Box::new(value) }
+        Self { level: Level::ERROR, kind: Box::new(value) }
     }
 }

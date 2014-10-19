@@ -35,6 +35,9 @@ impl Display for GaiaErrorKind {
             GaiaErrorKind::UnsupportedArchitecture { architecture } => {
                 write!(f, "不支持的架构: {}", architecture)?;
             }
+            GaiaErrorKind::InvalidRange { length, expect } => {
+                write!(f, "无效范围: 实际长度 {}，期望长度 {}", length, expect)?;
+            }
             GaiaErrorKind::SyntaxError { message, location } => {
                 write!(f, "语法错误在 {:?}: {}", location.url, message)?;
             }
@@ -45,6 +48,9 @@ impl Display for GaiaErrorKind {
                 else {
                     write!(f, "IO错误: {}", io_error)?;
                 }
+            }
+            GaiaErrorKind::StageError { location } => {
+                write!(f, "阶段错误在 {:?}", location)?;
             }
         }
         Ok(())

@@ -1,15 +1,16 @@
+pub use self::diagnostics::GaiaDiagnostics;
 use crate::{helpers::Architecture, SourceLocation};
 use std::{
     error::Error,
     fmt::{Debug, Display, Formatter},
+    panic::Location,
 };
+use tracing::Level;
 use url::Url;
 
 mod convert;
-mod display;
 mod diagnostics;
-
-
+mod display;
 
 /// 本crate的结果类型，使用GaiaError作为错误类型
 ///
@@ -20,14 +21,13 @@ pub type Result<T> = std::result::Result<T, GaiaError>;
 ///
 /// 使用Box来减少枚举的大小，提高性能
 pub struct GaiaError {
+    level: Level,
     /// 具体的错误种类，使用Box包装以减少内存占用
     ///
     /// 这个字段包含了实际的错误信息，通过Box指针间接存储，
     /// 这样可以避免在栈上分配较大的枚举值，提高性能
     kind: Box<GaiaErrorKind>,
 }
-
-
 
 /// Gaia 错误种类枚举，定义了所有可能的错误类型
 #[derive(Debug)]
@@ -38,6 +38,20 @@ pub enum GaiaErrorKind {
     },
     UnsupportedArchitecture {
         architecture: Architecture,
+    },
+    /// 无效范围错误，当实际长度与期望长度不匹配时使用
+    ///
+    /// 这种错误通常发生在解析二进制数据或验证数据结构时，
+    /// 当实际数据长度与期望的长度不符时抛出此错误。
+    InvalidRange {
+        /// 实际长度
+        ///
+        /// 表示实际测量或解析得到的数据长度。
+        length: usize,
+        /// 期望长度
+        ///
+        /// 表示根据规范或预期应该具有的长度。
+        expect: usize,
     },
     /// IO 错误，包含底层的 IO 错误和可选的 URL 信息
     ///
@@ -67,6 +81,9 @@ pub enum GaiaErrorKind {
         /// 帮助开发者快速定位问题。
         location: SourceLocation,
     },
+    StageError {
+        location: Location<'static>,
+    },
 }
 
 impl GaiaError {
@@ -86,6 +103,8 @@ impl GaiaError {
     /// # 示例
     ///
     /// ```
+    /// use gaia_types::{GaiaError, SourceLocation};
+    /// let location = SourceLocation::default();
     /// let error = GaiaError::syntax_error("缺少分号", location);
     /// ```
     pub fn syntax_error(message: impl ToString, location: SourceLocation) -> Self {
@@ -108,8 +127,13 @@ impl GaiaError {
     /// # 示例
     ///
     /// ```
+    /// use gaia_types::GaiaError;
+    /// use url::Url;
     /// let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "文件不存在");
-    /// let url = Url::from_file_path("/path/to/file").unwrap();
+    /// let url = Url::from_file_path("/path/to/file")
+    ///     .ok()
+    ///     .and_then(|x| Some(x))
+    ///     .unwrap_or_else(|| Url::parse("file:///path/to/file").unwrap());
     /// let error = GaiaError::io_error(io_err, url);
     /// ```
     pub fn io_error(io_error: std::io::Error, url: Url) -> Self {
@@ -132,6 +156,7 @@ impl GaiaError {
     /// # 示例
     ///
     /// ```
+    /// use gaia_types::{GaiaError, helpers::Architecture};
     /// let error = GaiaError::invalid_instruction("未知指令", Architecture::X86);
     /// ```
     pub fn invalid_instruction(instruction: impl ToString, architecture: Architecture) -> Self {
@@ -153,9 +178,45 @@ impl GaiaError {
     /// # 示例
     ///
     /// ```
+    /// use gaia_types::{GaiaError, helpers::Architecture};
     /// let error = GaiaError::unsupported_architecture(Architecture::ARM);
     /// ```
     pub fn unsupported_architecture(architecture: Architecture) -> Self {
         GaiaErrorKind::UnsupportedArchitecture { architecture }.into()
+    }
+
+    /// 创建一个无效范围错误
+    ///
+    /// 当实际数据长度与期望长度不匹配时使用此函数创建错误
+    ///
+    /// # 参数
+    ///
+    /// * `length` - 实际长度
+    /// * `expect` - 期望长度
+    ///
+    /// # 返回值
+    ///
+    /// 返回一个包含无效范围错误信息的GaiaError实例
+    ///
+    /// # 示例
+    ///
+    /// ```
+    /// use gaia_types::GaiaError;
+    /// let error = GaiaError::invalid_range(1024, 2048);
+    /// ```
+    pub fn invalid_range(length: usize, expect: usize) -> Self {
+        GaiaErrorKind::InvalidRange { length, expect }.into()
+    }
+
+    pub fn kind(&self) -> &GaiaErrorKind {
+        &self.kind
+    }
+
+    pub fn level(&self) -> &Level {
+        &self.level
+    }
+
+    pub fn stage_error(location: Location<'static>) -> Self {
+        GaiaErrorKind::StageError { location: location.clone() }.into()
     }
 }

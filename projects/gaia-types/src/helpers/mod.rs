@@ -1,4 +1,5 @@
 use std::fmt::{Display, Formatter};
+pub use url::Url;
 
 /// 支持的处理器架构类型
 #[derive(Debug, Clone, PartialEq, Eq)]

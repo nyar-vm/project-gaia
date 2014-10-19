@@ -1,3 +1,4 @@
+#![feature(try_trait_v2)]
 #![deny(missing_debug_implementations, missing_copy_implementations)]
 #![warn(missing_docs, rustdoc::missing_crate_level_docs)]
 #![doc = include_str!("../readme.md")]
@@ -6,11 +7,11 @@
 
 mod errors;
 pub mod helpers;
-mod reader;
-mod writer;
+pub mod reader;
+pub mod writer;
 
 pub use crate::{
-    errors::{GaiaError, GaiaErrorKind, Result},
+    errors::{GaiaError, GaiaErrorKind, Result, GaiaDiagnostics},
     reader::{BinaryReader, SourceLocation, SourcePosition},
     writer::{BinaryWriter, TextWriter},
 };
