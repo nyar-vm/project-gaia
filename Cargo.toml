@@ -1,13 +1,15 @@
 [workspace]
 resolver = "2"
-members = ["projects/*"]
+members = ["projects/*", "examples/mini-rust"]
 default-members = [
     "projects/gaia-types",
-    "projects/pe-assembler",
-    "projects/il-assembler",
+    "projects/jvm-jasm",
+    "projects/clr-msil",
 ]
 exclude = [
     "projects/.DS_Store",
+    "projects/gaia-document",
+    "projects/gaia-frontend-wasm32",
 ]
 
 [workspace.dependencies]

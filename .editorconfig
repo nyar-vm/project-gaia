@@ -1,11 +1,12 @@
 [*]
 charset = utf-8
-
-
-[*.pest]
 indent_style = space
+
+[*.{json,json5}]
 indent_size = 4
 
-[*.toml]
-indent_style = space
+[*.{js,ts}]
+indent_size = 4
+
+[*.{go}]
 indent_size = 4

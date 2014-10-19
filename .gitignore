@@ -9,10 +9,19 @@ time-travel.*
 .idea/
 *.iml
 
+# Node
+node_modules/
+dist/
+cache/
+
 # Rust
 target/
 Cargo.lock
 
+# JVM
+asmtools.jar
+
 # Binary
 *.exe
 *.dll
+*.pdb
