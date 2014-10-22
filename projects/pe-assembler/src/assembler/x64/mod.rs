@@ -8,10 +8,10 @@ pub struct X64Instruction {
     pub operands: Vec<String>,
 }
 
-pub fn encode_x64(instruction: X64Instruction) -> Result<EncodedInstruction, GaiaError> {
+pub fn encode_x64(_instruction: X64Instruction) -> Result<EncodedInstruction, GaiaError> {
     todo!("实现 X64 指令编码")
 }
 
-pub fn decode_x64(data: Vec<u8>) -> Result<X64Instruction, GaiaError> {
+pub fn decode_x64(_data: Vec<u8>) -> Result<X64Instruction, GaiaError> {
     todo!("实现 X64 指令解码")
 }

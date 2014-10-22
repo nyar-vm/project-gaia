@@ -4,7 +4,6 @@
 wee test
 ```
 
-
 ```asm
 ; hello_world.asm
   BITS 64                 ; change to 64-bit mode

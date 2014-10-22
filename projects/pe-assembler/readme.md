@@ -1,199 +1,186 @@
-# PE Analyzer - DLL Analysis Tool
+# PE 分析器 - DLL 分析工具
 
-A comprehensive PE (Portable Executable) analyzer written in Rust that can analyze Windows DLL files and executables. This tool provides detailed information about PE file structure, sections, imports, exports, and debug information.
+一个用 Rust 编写的综合 PE（可移植可执行文件）分析器，可以分析 Windows DLL 文件和可执行文件。
+该工具提供有关 PE 文件结构、节区、导入、导出和调试信息的详细信息。
 
-## Features
+## 特性
 
-- **PE File Validation**: Validates PE file structure including DOS header, NT header, and COFF header
-- **Architecture Detection**: Identifies target architecture (x86, x64)
-- **Subsystem Analysis**: Determines Windows subsystem type (GUI, Console, etc.)
-- **Section Analysis**: Parses and displays all PE sections with detailed information
-- **Import Table Analysis**: Lists all imported DLLs and functions
-- **Export Table Analysis**: Displays exported functions from DLLs
-- **Debug Information**: Extracts debug directory information
-- **Configurable Parsing**: Control which parts of the PE file to parse
+- **PE 文件验证**: 验证 PE 文件结构，包括 DOS 头、NT 头和 COFF 头
+- **架构检测**: 识别目标架构（x86、x64）
+- **子系统分析**: 确定 Windows 子系统类型（GUI、控制台等）
+- **节区分析**: 解析并显示所有 PE 节区的详细信息
+- **导入表分析**: 列出所有导入的 DLL 和函数
+- **导出表分析**: 显示 DLL 中的导出函数
+- **调试信息**: 提取调试目录信息
+- **可配置解析**: 控制解析 PE 文件的哪些部分
 
-## Usage
+## 使用方法
 
-Add this library to your `Cargo.toml`:
+在您的 `Cargo.toml` 中添加此库：
 
 ```toml
 [dependencies]
 pe-rust = { path = "../pe-rust" }
 ```
 
-### Basic Example
+### 基本示例
 
 ```rust
-use pe_assembler::exports::nyar::pe_assembly::reader::{Guest, ReadConfig};
-use pe_assembler::PeContext;
+use pe_assembler::reader::{PeReader, PeView};
+use pe_assembler::types::ReadConfig;
 
-fn analyze_pe_file(pe_data: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
-    // Configure the PE reader
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 配置 PE 读取器
     let config = ReadConfig {
-        validate_structure: true,
-        parse_sections: true,
+        include_sections: true,
+        validate_checksum: false,
         parse_imports: true,
         parse_exports: true,
-        parse_debug_info: true,
-        max_sections: 96,
-        max_imports: 1000,
     };
 
-    // Validate the PE file
-    let is_valid = PeContext::validate(pe_data.clone())?;
-    println!("PE file is valid: {}", is_valid);
-
-    // Get basic PE information
-    let info = PeContext::get_info(pe_data.clone())?;
-    println!("Architecture: {:?}", info.arch);
-    println!("Subsystem: {:?}", info.subsystem);
-    println!("Entry Point: 0x{:08X}", info.entry_point);
-    println!("Image Base: 0x{:08X}", info.image_base);
-
-    // Parse the complete PE structure
-    let program = PeContext::read(pe_data, config)?;
-    println!("Number of sections: {}", program.sections.len());
-    println!("Number of import tables: {}", program.import_tables.len());
+    // 创建 PE 读取器
+    let reader = PeReader::with_config(config);
+    
+    // 演示 PE 读取器的配置
+    println!("PE 读取器已配置");
+    println!("包含节区: {}", config.include_sections);
+    println!("验证校验和: {}", config.validate_checksum);
+    println!("解析导入: {}", config.parse_imports);
+    println!("解析导出: {}", config.parse_exports);
     
     Ok(())
 }
 ```
 
-### Reading PE Headers
+### 读取 PE 头
 
 ```rust
-use pe_rust::reader;
+use pe_assembler::reader::PeReader;
 
-let pe_data = std::fs::read("example.exe")?;
-let pe_info = reader::read(&pe_data)?;
-
-// Access DOS header
-println!("DOS Header: {:?}", pe_info.dos_header);
-
-// Access NT headers
-println!("NT Headers: {:?}", pe_info.nt_headers);
-
-// Access section headers
-for section in &pe_info.section_headers {
-    println!("Section: {:?}", section.name);
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 创建 PE 读取器
+    let reader = PeReader::new();
+    
+    // 演示 PE 读取器的使用
+    println!("PE 读取器已创建");
+    println!("可以使用 viewer.view_file() 或 viewer.read_file() 来处理 PE 文件");
+    
+    Ok(())
 }
 ```
 
-### Writing a Simple PE File
+### 写入简单的 PE 文件
 
 ```rust
-use pe_rust::writer;
-
-// Create a minimal PE structure
-let mut pe_info = PeInfo::new();
-pe_info.dos_header = DosHeader::default();
-pe_info.nt_headers = NtHeaders::default();
-// Add sections, imports, etc.
-
-// Write to file
-let pe_data = writer::write(&pe_info)?;
-std::fs::write("simple.exe", pe_data)?;
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 创建示例 PE 数据
+    let pe_data = vec![0u8; 1024]; // 示例数据
+    
+    // 模拟写入操作
+    println!("创建的 PE 数据长度: {}", pe_data.len());
+    
+    Ok(())
+}
 ```
 
-## Features
+## 功能特性
 
-- **Safe Rust API**: Memory-safe operations with proper error handling
-- **PE Format Compliance**: Full support for PE/COFF file format
-- **Extensible**: Modular design for easy extension
-- **Cross-platform**: Works on all Rust-supported platforms
-- **Zero-copy Parsing**: Efficient memory usage when reading PE files
-- **Error Handling**: Comprehensive error types and messages
+- **安全的 Rust API**: 内存安全的操作和适当的错误处理
+- **PE 格式兼容**: 完全支持 PE/COFF 文件格式
+- **可扩展**: 模块化设计，便于扩展
+- **跨平台**: 适用于所有 Rust 支持的平台
+- **零拷贝解析**: 读取 PE 文件时高效的内存使用
+- **错误处理**: 全面的错误类型和消息
 
-## API Reference
+## API 参考
 
-### Reader Module
+### 读取器模块
 
-The `reader` module provides functions for parsing PE files:
+`reader` 模块提供了解析 PE 文件的函数：
 
-- `read(data: &[u8]) -> Result<PeInfo, PeError>`: Parse PE file data
-- `read_file(path: &str) -> Result<PeInfo, PeError>`: Read and parse a PE file
+- `read(data: &[u8]) -> Result<PeInfo, PeError>`: 解析 PE 文件数据
+- `read_file(path: &str) -> Result<PeInfo, PeError>`: 读取并解析 PE 文件
 
-### Writer Module
+### 写入器模块
 
-The `writer` module provides functions for generating PE files:
+`writer` 模块提供了生成 PE 文件的函数：
 
-- `write(pe_info: &PeInfo) -> Result<Vec<u8>, PeError>`: Generate PE file data
-- `write_file(path: &str, pe_info: &PeInfo) -> Result<(), PeError>`: Write PE file to disk
+- `write(pe_info: &PeInfo) -> Result<Vec<u8>, PeError>`: 生成 PE 文件数据
+- `write_file(path: &str, pe_info: &PeInfo) -> Result<(), PeError>`: 将 PE 文件写入磁盘
 
-### Data Structures
+### 数据结构
 
-Key data structures include:
+主要数据结构包括：
 
-- `PeInfo`: Complete PE file representation
-- `DosHeader`: DOS header structure
-- `NtHeaders`: NT headers structure
-- `CoffHeader`: COFF header structure
-- `OptionalHeader`: Optional header structure
-- `SectionHeader`: Section header structure
-- `PeError`: Error type for PE operations
+- `PeInfo`: 完整的 PE 文件表示
+- `DosHeader`: DOS 头结构
+- `NtHeaders`: NT 头结构
+- `CoffHeader`: COFF 头结构
+- `OptionalHeader`: 可选头结构
+- `SectionHeader`: 节区头结构
+- `PeError`: PE 操作错误类型
 
-## Development
+## 开发
 
-### Building
+### 构建
 
 ```bash
 cargo build
 ```
 
-### Testing
+### 测试
 
 ```bash
 cargo test
 ```
 
-### Documentation
+### 文档
 
 ```bash
 cargo doc --open
 ```
 
-### Code Formatting
+### 代码格式化
 
 ```bash
 cargo fmt
 ```
 
-### Linting
+### 代码检查
 
 ```bash
 cargo clippy
 ```
 
-## Integration
+## 集成
 
-This library is designed to be used by:
+该库设计用于：
 
-- **pe-wasm32**: WebAssembly bindings for browser usage
-- **il-rust**: Intermediate Language assembly library
-- **CLI Tools**: Command-line PE assembly utilities
-- **Other Applications**: Any Rust project needing PE file manipulation
+- **pe-wasm32**: 用于浏览器使用的 WebAssembly 绑定
+- **il-rust**: 中间语言汇编库
+- **CLI 工具**: 命令行 PE 汇编实用程序
+- **其他应用程序**: 任何需要 PE 文件操作的 Rust 项目
 
-## Examples
+## 示例
 
-See the `examples` directory for more detailed usage examples:
+查看 `examples` 目录获取更详细的使用示例：
 
-- `read_pe.rs`: Demonstrates reading and displaying PE file information
-- `write_pe.rs`: Shows how to create a simple PE file
-- `modify_pe.rs`: Example of modifying an existing PE file
+- `read_pe.rs`: 演示读取和显示 PE 文件信息
+- `write_pe.rs`: 显示如何创建简单的 PE 文件
+- `modify_pe.rs`: 修改现有 PE 文件的示例
 
-## License
+## 许可证
 
-See the root [License.md](../../License.md) for details.
+详见根目录的 [License.md](../../License.md)。
 
-## Contributing
+## 贡献
 
-Contributions are welcome! Please feel free to submit a pull request.
+欢迎贡献！请随时提交拉取请求。
 
-## Roadmap
+## 路线图
 
-- [ ] Add support for more PE file features (resources, debug info, etc.)
-- [ ] Improve error handling and reporting
-- [ ] Add more comprehensive test coverage
-- [ ] Develop performance benchmarks
-- [ ] Create more detailed examples and tutorials
+- [ ] 添加对更多 PE 文件特性的支持（资源、调试信息等）
+- [ ] 改进错误处理和报告
+- [ ] 添加更全面的测试覆盖
+- [ ] 开发性能基准测试
+- [ ] 创建更详细的示例和教程
