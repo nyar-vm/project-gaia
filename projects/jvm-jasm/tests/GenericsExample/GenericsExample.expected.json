@@ -1,0 +1,18 @@
+{
+    "class_name": "GenericsExample",
+    "class_modifiers": [
+        "public",
+        "super"
+    ],
+    "method_count": 3,
+    "field_count": 0,
+    "expected_methods": [
+        "<init>:()V",
+        "addItem:(Ljava/lang/Comparable;)V",
+        "getMax:()Ljava/lang/Comparable;"
+    ],
+    "expected_fields": [],
+    "syntactic_sugar_features": [],
+    "check_tokens": true,
+    "source_file": null
+}

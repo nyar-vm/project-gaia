@@ -1,0 +1,17 @@
+{
+    "class_name": "LambdaExpressions",
+    "class_modifiers": [
+        "public",
+        "super"
+    ],
+    "method_count": 2,
+    "field_count": 0,
+    "expected_methods": [
+        "<init>:()V",
+        "createLambda:()Ljava/util/function/Function;"
+    ],
+    "expected_fields": [],
+    "syntactic_sugar_features": [],
+    "check_tokens": true,
+    "source_file": null
+}

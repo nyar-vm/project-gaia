@@ -1,0 +1,17 @@
+{
+    "class_name": "StreamsAndOptional",
+    "class_modifiers": [
+        "public",
+        "super"
+    ],
+    "method_count": 2,
+    "field_count": 0,
+    "expected_methods": [
+        "<init>:()V",
+        "findFirst:(Ljava/util/List;)Ljava/util/Optional;"
+    ],
+    "expected_fields": [],
+    "syntactic_sugar_features": [],
+    "check_tokens": true,
+    "source_file": null
+}

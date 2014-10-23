@@ -1,0 +1,17 @@
+{
+    "class_name": "HelloJava",
+    "class_modifiers": [
+        "public",
+        "super"
+    ],
+    "method_count": 2,
+    "field_count": 0,
+    "expected_methods": [
+        "<init>:()V",
+        "main:([Ljava/lang/String;)V"
+    ],
+    "expected_fields": [],
+    "syntactic_sugar_features": [],
+    "check_tokens": true,
+    "source_file": "HelloJava.java"
+}
