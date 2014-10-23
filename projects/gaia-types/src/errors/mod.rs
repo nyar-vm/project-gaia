@@ -1,3 +1,33 @@
+//! Gaia 错误处理系统模块
+//!
+//! 这个模块提供了 Gaia 项目中的错误处理基础设施，包括错误类型定义、
+//! 诊断信息收集和错误转换等功能。
+//!
+//! # 主要组件
+//!
+//! - [`GaiaError`] - 主要的错误类型，包装了具体的错误种类
+//! - [`GaiaErrorKind`] - 错误种类枚举，定义了所有可能的错误类型
+//! - [`GaiaDiagnostics`] - 诊断信息收集器，支持错误恢复和警告收集
+//! - [`Result`] - 类型别名，简化错误处理
+//!
+//! # 使用示例
+//!
+//! ```rust
+//! use gaia_types::{GaiaError, Result, SourceLocation};
+//!
+//! // 创建语法错误
+//! let location = SourceLocation::default();
+//! let error = GaiaError::syntax_error("缺少分号", location);
+//!
+//! // 使用 Result 类型别名
+//! fn parse_source(source: &str) -> Result<()> {
+//!     if source.is_empty() {
+//!         return Err(GaiaError::syntax_error("空源代码", SourceLocation::default()));
+//!     }
+//!     Ok(())
+//! }
+//! ```
+
 pub use self::diagnostics::GaiaDiagnostics;
 use crate::{helpers::Architecture, SourceLocation};
 use std::{
@@ -81,8 +111,24 @@ pub enum GaiaErrorKind {
         /// 帮助开发者快速定位问题。
         location: SourceLocation,
     },
+    /// 停止运行
     StageError {
+        /// 停止运行的地方
         location: Location<'static>,
+    },
+    /// 功能未实现错误
+    ///
+    /// 当调用尚未实现的功能时使用
+    NotImplemented {
+        /// 未实现功能的描述
+        feature: String,
+    },
+    /// 自定义错误，包含自定义的错误消息
+    ///
+    /// 当需要表示特定业务逻辑错误或其他非标准错误时使用
+    CustomError {
+        /// 自定义错误消息
+        message: String,
     },
 }
 
@@ -156,7 +202,7 @@ impl GaiaError {
     /// # 示例
     ///
     /// ```
-    /// use gaia_types::{GaiaError, helpers::Architecture};
+    /// use gaia_types::{helpers::Architecture, GaiaError};
     /// let error = GaiaError::invalid_instruction("未知指令", Architecture::X86);
     /// ```
     pub fn invalid_instruction(instruction: impl ToString, architecture: Architecture) -> Self {
@@ -178,7 +224,7 @@ impl GaiaError {
     /// # 示例
     ///
     /// ```
-    /// use gaia_types::{GaiaError, helpers::Architecture};
+    /// use gaia_types::{helpers::Architecture, GaiaError};
     /// let error = GaiaError::unsupported_architecture(Architecture::ARM);
     /// ```
     pub fn unsupported_architecture(architecture: Architecture) -> Self {
@@ -208,6 +254,10 @@ impl GaiaError {
         GaiaErrorKind::InvalidRange { length, expect }.into()
     }
 
+    pub fn invalid_data(data: &str) -> Self {
+        Self { level: Level::ERROR, kind: Box::new(GaiaErrorKind::CustomError { message: format!("无效数据: {}", data) }) }
+    }
+
     pub fn kind(&self) -> &GaiaErrorKind {
         &self.kind
     }
@@ -216,7 +266,25 @@ impl GaiaError {
         &self.level
     }
 
-    pub fn stage_error(location: Location<'static>) -> Self {
-        GaiaErrorKind::StageError { location: location.clone() }.into()
+    /// 创建一个功能未实现错误
+    ///
+    /// 当调用尚未实现的功能时使用此函数创建错误
+    ///
+    /// # 参数
+    ///
+    /// * `feature` - 未实现功能的描述
+    ///
+    /// # 返回值
+    ///
+    /// 返回一个包含功能未实现错误信息的GaiaError实例
+    ///
+    /// # 示例
+    ///
+    /// ```
+    /// use gaia_types::GaiaError;
+    /// let error = GaiaError::not_implemented("PE context creation");
+    /// ```
+    pub fn not_implemented(feature: impl ToString) -> Self {
+        GaiaErrorKind::NotImplemented { feature: feature.to_string() }.into()
     }
 }

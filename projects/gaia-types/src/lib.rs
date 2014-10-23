@@ -5,13 +5,19 @@
 #![doc(html_logo_url = "https://raw.githubusercontent.com/oovm/shape-rs/dev/projects/images/Trapezohedron.svg")]
 #![doc(html_favicon_url = "https://raw.githubusercontent.com/oovm/shape-rs/dev/projects/images/Trapezohedron.svg")]
 
+pub mod assembler;
 mod errors;
 pub mod helpers;
+pub mod instruction;
+pub mod lexer;
+pub mod parser;
 pub mod reader;
 pub mod writer;
 
 pub use crate::{
-    errors::{GaiaError, GaiaErrorKind, Result, GaiaDiagnostics},
+    assembler::BinaryAssembler,
+    errors::{GaiaDiagnostics, GaiaError, GaiaErrorKind, Result},
+    instruction::{GaiaConstant, GaiaFunction, GaiaInstruction, GaiaProgram, GaiaType},
     reader::{BinaryReader, SourceLocation, SourcePosition},
-    writer::{BinaryWriter, TextWriter},
+    writer::TextWriter,
 };

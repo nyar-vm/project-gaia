@@ -52,6 +52,12 @@ impl Display for GaiaErrorKind {
             GaiaErrorKind::StageError { location } => {
                 write!(f, "阶段错误在 {:?}", location)?;
             }
+            GaiaErrorKind::NotImplemented { feature } => {
+                write!(f, "功能未实现: {}", feature)?;
+            }
+            GaiaErrorKind::CustomError { message } => {
+                write!(f, "自定义错误: {}", message)?;
+            }
         }
         Ok(())
     }

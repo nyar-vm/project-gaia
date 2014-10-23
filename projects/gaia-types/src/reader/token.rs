@@ -1,13 +1,14 @@
 use crate::SourcePosition;
+use serde::{Deserialize, Serialize};
 use std::ops::Range;
 
-#[derive(Clone, Debug)]
-pub struct Token<T> {
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Token<T: Copy> {
     pub token_type: T,
     pub position: SourcePosition,
 }
 
-impl<T> Token<T> {
+impl<T: Copy> Token<T> {
     pub fn get_range(&self) -> Range<usize> {
         let start = self.position.offset;
         let end = start + self.position.length;

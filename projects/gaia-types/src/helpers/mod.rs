@@ -1,8 +1,9 @@
+use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 pub use url::Url;
 
 /// 支持的处理器架构类型
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Architecture {
     /// x86 32位架构
     X86,
@@ -22,6 +23,20 @@ pub enum Architecture {
     MIPS64,
     /// 其他自定义架构，包含架构名称
     Other(String),
+}
+
+impl Architecture {
+    /// 从 COFF 机器类型创建架构
+    pub fn from_machine_type(machine: u16) -> Self {
+        match machine {
+            0x014c => Architecture::X86,    // IMAGE_FILE_MACHINE_I386
+            0x8664 => Architecture::X86_64, // IMAGE_FILE_MACHINE_AMD64
+            0x01c0 => Architecture::ARM,    // IMAGE_FILE_MACHINE_ARM
+            0xaa64 => Architecture::ARM64,  // IMAGE_FILE_MACHINE_ARM64
+            0x0166 => Architecture::MIPS,   // IMAGE_FILE_MACHINE_R4000
+            _ => Architecture::Other(format!("machine_{:04x}", machine)),
+        }
+    }
 }
 
 impl Display for Architecture {
