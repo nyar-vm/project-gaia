@@ -1,0 +1,47 @@
+{
+    "type": "module",
+    "name": "@gaia/assembler-wasm32",
+    "version": "0.1.0",
+    "description": "Gaia Multi-Platform Assembler - WASM32 Frontend",
+    "author": "Gaia Project",
+    "keywords": [
+        "gaia",
+        "assembler",
+        "webassembly",
+        "wasm",
+        "multi-platform",
+        "compiler",
+        "frontend",
+        "clr",
+        "jvm",
+        "pe",
+        "wasi"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/gaia-project/gaia-assembler"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "main": "./dist/gaia_assembler.js",
+    "types": "./dist/gaia_assembler.d.ts",
+    "files": [
+        "dist/**/*"
+    ],
+    "scripts": {
+        "build": "jco transpile ../gaia-frontend/target/wasm32-wasi/release/gaia_frontend.wasm -o dist",
+        "test": "vitest run",
+        "coverage": "vitest run --coverage",
+        "dev": "vitest",
+        "prepare": "npm run build"
+    },
+    "devDependencies": {
+        "@bytecodealliance/jco": "^1.4.0",
+        "@bytecodealliance/preview2-shim": "^0.17.4",
+        "@vitest/coverage-v8": "^2.1.8",
+        "@vitest/ui": "^2.1.8",
+        "vitest": "^2.1.8"
+    },
+    "license": "MIT"
+}

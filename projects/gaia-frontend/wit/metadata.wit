@@ -1,0 +1,12 @@
+interface metadata {
+    use types.{diagnostic, instruction-metadata, target-arch};
+
+    /// 获取程序元数据
+    get-program-metadata: func(bytecode: list<u8>, target: target-arch) -> program-metadata;
+
+    /// 获取符号信息
+    get-symbol-info: func(bytecode: list<u8>, target: target-arch) -> list<symbol-info>;
+
+    /// 获取平台信息
+    get-platform-info: func(target: target-arch) -> platform-info;
+}

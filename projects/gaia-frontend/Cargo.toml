@@ -1,0 +1,25 @@
+[package]
+name = "gaia-frontend"
+version = "0.0.0"
+authors = ["Gaia Team <team@gaia-project.org>"]
+description = "Human-ergonomic frontend for Gaia Universal Assembler"
+repository = "https://github.com/oovm/project-gaia"
+documentation = "https://docs.rs/gaia-frontend"
+readme = "readme.md"
+license = "MPL-2.0"
+edition = "2021"
+exclude = ["package.json", "tests/**"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wit-bindgen = "0.16"
+
+[dev-dependencies]
+
+[features]
+default = []
+
+[package.metadata.docs.rs]
+all-features = true

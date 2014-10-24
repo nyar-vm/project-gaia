@@ -1,0 +1,23 @@
+/// Gaia 汇编器 - 主接口
+/// 
+/// 一个 LLVM 风格的汇编器，支持多个目标平台：
+/// - .NET CLR
+/// - Java Virtual Machine (JVM)  
+/// - Windows Portable Executable (PE)
+/// - WebAssembly System Interface (WASI)
+
+package nyar:gaia-assembly;
+
+use nyar:gaia-assembly/types;
+use nyar:gaia-assembly/utils;
+use nyar:gaia-assembly/assembler;
+use nyar:gaia-assembly/metadata;
+use nyar:gaia-assembly/easy-test;
+
+world gaia-assembly {
+    export types;
+    export utils;
+    export assembler;
+    export metadata;
+    export easy-test;
+}
