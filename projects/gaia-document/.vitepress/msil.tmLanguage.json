@@ -1,0 +1,205 @@
+{
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "name": "msil",
+    "scopeName": "source.msil",
+    "fileTypes": [
+        "il",
+        "msil"
+    ],
+    "patterns": [
+        {
+            "include": "#comments"
+        },
+        {
+            "include": "#keywords"
+        },
+        {
+            "include": "#instructions"
+        },
+        {
+            "include": "#directives"
+        },
+        {
+            "include": "#strings"
+        },
+        {
+            "include": "#numbers"
+        },
+        {
+            "include": "#labels"
+        },
+        {
+            "include": "#types"
+        },
+        {
+            "include": "#identifiers"
+        },
+        {
+            "include": "#operators"
+        },
+        {
+            "include": "#punctuation"
+        }
+    ],
+    "repository": {
+        "comments": {
+            "patterns": [
+                {
+                    "name": "comment.line.double-slash.msil",
+                    "match": "//.*$"
+                },
+                {
+                    "name": "comment.block.msil",
+                    "begin": "/\\*",
+                    "end": "\\*/"
+                }
+            ]
+        },
+        "keywords": {
+            "patterns": [
+                {
+                    "name": "keyword.control.msil",
+                    "match": "\\b(assembly|module|namespace|class|interface|struct|enum|method|field|property|event)\\b"
+                },
+                {
+                    "name": "keyword.modifier.msil",
+                    "match": "\\b(public|private|protected|internal|static|virtual|abstract|sealed|override|extern|unsafe|readonly|volatile)\\b"
+                },
+                {
+                    "name": "keyword.other.msil",
+                    "match": "\\b(extends|implements|try|catch|finally|throw|filter|fault|leave|endfinally|endfilter|endfault)\\b"
+                }
+            ]
+        },
+        "instructions": {
+            "patterns": [
+                {
+                    "name": "keyword.instruction.load.msil",
+                    "match": "\\b(ldarg|ldarga|ldloc|ldloca|ldstr|ldnull|ldc\\.i4|ldc\\.i8|ldc\\.r4|ldc\\.r8|ldfld|ldflda|ldsfld|ldsflda|ldelem|ldelema|ldlen|ldind)\\b"
+                },
+                {
+                    "name": "keyword.instruction.store.msil",
+                    "match": "\\b(starg|stloc|stfld|stsfld|stelem|stind)\\b"
+                },
+                {
+                    "name": "keyword.instruction.arithmetic.msil",
+                    "match": "\\b(add|sub|mul|div|rem|neg|and|or|xor|not|shl|shr|conv)\\b"
+                },
+                {
+                    "name": "keyword.instruction.control.msil",
+                    "match": "\\b(br|brtrue|brfalse|beq|bne|blt|ble|bgt|bge|switch|call|callvirt|ret|jmp)\\b"
+                },
+                {
+                    "name": "keyword.instruction.object.msil",
+                    "match": "\\b(newobj|newarr|isinst|castclass|box|unbox|sizeof|ldtoken|dup|pop|nop)\\b"
+                },
+                {
+                    "name": "keyword.instruction.comparison.msil",
+                    "match": "\\b(ceq|cgt|clt|ckfinite)\\b"
+                }
+            ]
+        },
+        "directives": {
+            "patterns": [
+                {
+                    "name": "keyword.directive.msil",
+                    "match": "\\.(assembly|module|namespace|class|method|field|property|event|locals|maxstack|entrypoint|try|catch|finally|filter|fault|data|file|line|custom|param|override|export|import|vtentry|vtfixup|subsystem|corflags|imagebase|stackreserve)\\b"
+                }
+            ]
+        },
+        "strings": {
+            "patterns": [
+                {
+                    "name": "string.quoted.double.msil",
+                    "begin": "\"",
+                    "end": "\"",
+                    "patterns": [
+                        {
+                            "name": "constant.character.escape.msil",
+                            "match": "\\\\."
+                        }
+                    ]
+                },
+                {
+                    "name": "string.quoted.single.msil",
+                    "begin": "'",
+                    "end": "'",
+                    "patterns": [
+                        {
+                            "name": "constant.character.escape.msil",
+                            "match": "\\\\."
+                        }
+                    ]
+                }
+            ]
+        },
+        "numbers": {
+            "patterns": [
+                {
+                    "name": "constant.numeric.hex.msil",
+                    "match": "\\b0[xX][0-9a-fA-F]+\\b"
+                },
+                {
+                    "name": "constant.numeric.decimal.msil",
+                    "match": "\\b\\d+(\\.\\d+)?([eE][+-]?\\d+)?\\b"
+                }
+            ]
+        },
+        "labels": {
+            "patterns": [
+                {
+                    "name": "entity.name.label.msil",
+                    "match": "^\\s*[a-zA-Z_][a-zA-Z0-9_]*:"
+                }
+            ]
+        },
+        "types": {
+            "patterns": [
+                {
+                    "name": "storage.type.primitive.msil",
+                    "match": "\\b(void|bool|char|int8|uint8|int16|uint16|int32|uint32|int64|uint64|float32|float64|string|object|valuetype|class)\\b"
+                },
+                {
+                    "name": "entity.name.type.msil",
+                    "match": "\\b[A-Z][a-zA-Z0-9_]*\\b"
+                }
+            ]
+        },
+        "identifiers": {
+            "patterns": [
+                {
+                    "name": "variable.other.msil",
+                    "match": "\\b[a-z_][a-zA-Z0-9_]*\\b"
+                }
+            ]
+        },
+        "operators": {
+            "patterns": [
+                {
+                    "name": "keyword.operator.msil",
+                    "match": "(::|\\.)"
+                }
+            ]
+        },
+        "punctuation": {
+            "patterns": [
+                {
+                    "name": "punctuation.section.braces.msil",
+                    "match": "[{}]"
+                },
+                {
+                    "name": "punctuation.section.brackets.msil",
+                    "match": "[\\[\\]]"
+                },
+                {
+                    "name": "punctuation.section.parens.msil",
+                    "match": "[()]"
+                },
+                {
+                    "name": "punctuation.separator.msil",
+                    "match": "[,;]"
+                }
+            ]
+        }
+    }
+}

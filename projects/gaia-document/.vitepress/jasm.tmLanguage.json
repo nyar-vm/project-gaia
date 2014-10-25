@@ -1,0 +1,245 @@
+{
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "name": "jasm",
+    "scopeName": "source.jasm",
+    "fileTypes": [
+        "jasm",
+        "j"
+    ],
+    "patterns": [
+        {
+            "include": "#comments"
+        },
+        {
+            "include": "#keywords"
+        },
+        {
+            "include": "#instructions"
+        },
+        {
+            "include": "#directives"
+        },
+        {
+            "include": "#strings"
+        },
+        {
+            "include": "#numbers"
+        },
+        {
+            "include": "#labels"
+        },
+        {
+            "include": "#types"
+        },
+        {
+            "include": "#identifiers"
+        },
+        {
+            "include": "#operators"
+        },
+        {
+            "include": "#punctuation"
+        }
+    ],
+    "repository": {
+        "comments": {
+            "patterns": [
+                {
+                    "name": "comment.line.semicolon.jasm",
+                    "match": ";.*$"
+                },
+                {
+                    "name": "comment.line.double-slash.jasm",
+                    "match": "//.*$"
+                },
+                {
+                    "name": "comment.block.jasm",
+                    "begin": "/\\*",
+                    "end": "\\*/"
+                }
+            ]
+        },
+        "keywords": {
+            "patterns": [
+                {
+                    "name": "keyword.control.jasm",
+                    "match": "\\b(class|interface|super|implements|field|method|code|stack|locals|throws|catch|finally)\\b"
+                },
+                {
+                    "name": "keyword.modifier.jasm",
+                    "match": "\\b(public|private|protected|static|final|synchronized|volatile|transient|native|abstract|strictfp)\\b"
+                },
+                {
+                    "name": "keyword.other.jasm",
+                    "match": "\\b(extends|implements|try|catch|finally|throw|athrow)\\b"
+                }
+            ]
+        },
+        "instructions": {
+            "patterns": [
+                {
+                    "name": "keyword.instruction.constant.jasm",
+                    "match": "\\b(aconst_null|iconst_[m0-5]|lconst_[01]|fconst_[012]|dconst_[01]|bipush|sipush|ldc|ldc_w|ldc2_w)\\b"
+                },
+                {
+                    "name": "keyword.instruction.load.jasm",
+                    "match": "\\b(iload|lload|fload|dload|aload|iload_[0-3]|lload_[0-3]|fload_[0-3]|dload_[0-3]|aload_[0-3]|iaload|laload|faload|daload|aaload|baload|caload|saload)\\b"
+                },
+                {
+                    "name": "keyword.instruction.store.jasm",
+                    "match": "\\b(istore|lstore|fstore|dstore|astore|istore_[0-3]|lstore_[0-3]|fstore_[0-3]|dstore_[0-3]|astore_[0-3]|iastore|lastore|fastore|dastore|aastore|bastore|castore|sastore)\\b"
+                },
+                {
+                    "name": "keyword.instruction.stack.jasm",
+                    "match": "\\b(pop|pop2|dup|dup_x1|dup_x2|dup2|dup2_x1|dup2_x2|swap)\\b"
+                },
+                {
+                    "name": "keyword.instruction.arithmetic.jasm",
+                    "match": "\\b(iadd|ladd|fadd|dadd|isub|lsub|fsub|dsub|imul|lmul|fmul|dmul|idiv|ldiv|fdiv|ddiv|irem|lrem|frem|drem|ineg|lneg|fneg|dneg)\\b"
+                },
+                {
+                    "name": "keyword.instruction.bitwise.jasm",
+                    "match": "\\b(ishl|lshl|ishr|lshr|iushr|lushr|iand|land|ior|lor|ixor|lxor)\\b"
+                },
+                {
+                    "name": "keyword.instruction.conversion.jasm",
+                    "match": "\\b(i2l|i2f|i2d|l2i|l2f|l2d|f2i|f2l|f2d|d2i|d2l|d2f|i2b|i2c|i2s)\\b"
+                },
+                {
+                    "name": "keyword.instruction.comparison.jasm",
+                    "match": "\\b(lcmp|fcmpl|fcmpg|dcmpl|dcmpg)\\b"
+                },
+                {
+                    "name": "keyword.instruction.control.jasm",
+                    "match": "\\b(ifeq|ifne|iflt|ifge|ifgt|ifle|if_icmpeq|if_icmpne|if_icmplt|if_icmpge|if_icmpgt|if_icmple|if_acmpeq|if_acmpne|goto|goto_w|jsr|jsr_w|ret|tableswitch|lookupswitch)\\b"
+                },
+                {
+                    "name": "keyword.instruction.method.jasm",
+                    "match": "\\b(invokevirtual|invokespecial|invokestatic|invokeinterface|invokedynamic|return|ireturn|lreturn|freturn|dreturn|areturn)\\b"
+                },
+                {
+                    "name": "keyword.instruction.object.jasm",
+                    "match": "\\b(getstatic|putstatic|getfield|putfield|new|newarray|anewarray|arraylength|checkcast|instanceof)\\b"
+                },
+                {
+                    "name": "keyword.instruction.exception.jasm",
+                    "match": "\\b(athrow|monitorenter|monitorexit)\\b"
+                },
+                {
+                    "name": "keyword.instruction.other.jasm",
+                    "match": "\\b(nop|wide|multianewarray|ifnull|ifnonnull|breakpoint|impdep1|impdep2)\\b"
+                }
+            ]
+        },
+        "directives": {
+            "patterns": [
+                {
+                    "name": "keyword.directive.jasm",
+                    "match": "\\.(class|super|interface|implements|field|method|code|stack|locals|line|var|throws|catch|signature|source|debug|inner|enclosing|annotation|limit|end)\\b"
+                }
+            ]
+        },
+        "strings": {
+            "patterns": [
+                {
+                    "name": "string.quoted.double.jasm",
+                    "begin": "\"",
+                    "end": "\"",
+                    "patterns": [
+                        {
+                            "name": "constant.character.escape.jasm",
+                            "match": "\\\\."
+                        }
+                    ]
+                },
+                {
+                    "name": "string.quoted.single.jasm",
+                    "begin": "'",
+                    "end": "'",
+                    "patterns": [
+                        {
+                            "name": "constant.character.escape.jasm",
+                            "match": "\\\\."
+                        }
+                    ]
+                }
+            ]
+        },
+        "numbers": {
+            "patterns": [
+                {
+                    "name": "constant.numeric.hex.jasm",
+                    "match": "\\b0[xX][0-9a-fA-F]+[lLfFdD]?\\b"
+                },
+                {
+                    "name": "constant.numeric.decimal.jasm",
+                    "match": "\\b\\d+(\\.\\d+)?([eE][+-]?\\d+)?[lLfFdD]?\\b"
+                }
+            ]
+        },
+        "labels": {
+            "patterns": [
+                {
+                    "name": "entity.name.label.jasm",
+                    "match": "^\\s*[a-zA-Z_][a-zA-Z0-9_]*:"
+                }
+            ]
+        },
+        "types": {
+            "patterns": [
+                {
+                    "name": "storage.type.primitive.jasm",
+                    "match": "\\b(void|boolean|byte|char|short|int|long|float|double)\\b"
+                },
+                {
+                    "name": "entity.name.type.jasm",
+                    "match": "\\b[A-Z][a-zA-Z0-9_]*\\b"
+                },
+                {
+                    "name": "storage.type.descriptor.jasm",
+                    "match": "\\[*[BCDFIJSZ]|\\[*L[^;]+;"
+                }
+            ]
+        },
+        "identifiers": {
+            "patterns": [
+                {
+                    "name": "entity.name.function.jasm",
+                    "match": "(?<=\\bmethod\\s+)[a-zA-Z_][a-zA-Z0-9_]*"
+                },
+                {
+                    "name": "variable.other.jasm",
+                    "match": "\\b[a-z_][a-zA-Z0-9_]*\\b"
+                }
+            ]
+        },
+        "operators": {
+            "patterns": [
+                {
+                    "name": "keyword.operator.jasm",
+                    "match": "(/|\\.|:)"
+                }
+            ]
+        },
+        "punctuation": {
+            "patterns": [
+                {
+                    "name": "punctuation.section.braces.jasm",
+                    "match": "[{}]"
+                },
+                {
+                    "name": "punctuation.section.brackets.jasm",
+                    "match": "[\\[\\]]"
+                },
+                {
+                    "name": "punctuation.section.parens.jasm",
+                    "match": "[()]"
+                },
+                {
+                    "name": "punctuation.separator.jasm",
+                    "match": "[,;]"
+                }
+            ]
+        }
+    }
+}
