@@ -25,6 +25,7 @@ byteorder = "1.5.0"
 
 [features]
 default = []
+easy-test = ["clr-msil/easy-test", "clr-assembler/easy-test", "pe-assembler/easy-test"]
 
 [package.metadata.docs.rs]
 all-features = true

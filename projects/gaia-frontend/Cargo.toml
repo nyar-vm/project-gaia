@@ -16,6 +16,10 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 wit-bindgen = "0.16"
 
+[dependencies.gaia-assembler]
+path = "../gaia-assembler"
+features = ["easy-test"]
+
 [dev-dependencies]
 
 [features]

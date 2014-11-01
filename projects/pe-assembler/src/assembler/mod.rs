@@ -9,6 +9,7 @@ use gaia_types::{helpers::Architecture, GaiaError};
 use pe_coff::types::CoffHeader;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::io::Cursor;
 
 // 定义 ImportTable 类型
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -174,7 +175,7 @@ impl PeAssemblerBuilder {
         let coff_header = CoffHeader {
             machine: match self.architecture {
                 Architecture::X86 => 0x014C,
-                Architecture::X64 => 0x8664,
+                Architecture::X86_64 => 0x8664,
                 _ => 0x014C,
             },
             number_of_sections: section_count,
@@ -394,7 +395,10 @@ impl PeAssemblerBuilder {
     /// 生成PE文件字节数组
     pub fn generate(self) -> Result<Vec<u8>, GaiaError> {
         let program = self.build()?;
-        PeAssembler::write_program(&program)
+        let mut buffer = Cursor::default();
+        let mut assembler = PeAssembler::new(&mut buffer);
+        assembler.write_program(&program)?;
+        Ok(buffer.into_inner())
     }
 }
 

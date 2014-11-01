@@ -3,7 +3,6 @@ use super::{Backend, FunctionMapper, TargetPlatform};
 use crate::instruction::*;
 use clr_msil::writer::MsilWriter;
 use gaia_types::*;
-use std::io::Cursor;
 
 /// IL Backend implementation
 pub struct MsilBackend {}
@@ -275,13 +274,12 @@ fn generate_il_bytecode(context: IlContext) -> Result<Vec<u8>> {
 
 /// IL Context for code generation
 struct IlContext {
-    writer: MsilWriter<Cursor<Vec<u8>>>,
+    writer: MsilWriter<String>,
 }
 
 impl IlContext {
     fn new() -> Self {
-        let buffer = Cursor::new(Vec::new());
-        Self { writer: MsilWriter::new(buffer) }
+        Self { writer: MsilWriter::new(String::new()) }
     }
 
     fn emit_assembly_declaration(&mut self, name: &str) -> Result<()> {
@@ -297,9 +295,7 @@ impl IlContext {
     }
 
     fn generate_bytecode(self) -> Result<Vec<u8>> {
-        // 获取写入器中的内容
-        let buffer = self.writer.finish().into_inner();
-        Ok(buffer)
+        Ok(self.writer.finish().into_bytes())
     }
 
     fn emit_ldc_i4(&mut self, value: i32) -> Result<()> {
