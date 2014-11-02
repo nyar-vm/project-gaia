@@ -199,18 +199,6 @@ interface types {
         supported-features: list<string>,
     }
 
-    /// Gaia 程序抽象语法树节点
-    record ast-node {
-        /// 节点类型
-        node-type: ast-node-type,
-        /// 子节点
-        children: list<ast-node>,
-        /// 节点值（可选）
-        value: option<string>,
-        /// 源代码位置
-        location: option<source-range>,
-    }
-
     /// AST 节点类型
     enum ast-node-type {
         /// 程序根节点
@@ -940,5 +928,15 @@ interface types {
         generate-benchmarks: bool,
         /// 随机种子（用于可重现的代码生成）
         random-seed: option<u64>,
+    }
+
+
+    record format-options {
+        /// 缩进空格数
+        indent-spaces: u32,
+        /// 最大行长度
+        max-line-length: u32,
+        /// 是否使用制表符
+        use-tabs: bool,
     }
 }

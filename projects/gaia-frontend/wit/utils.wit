@@ -1,23 +1,5 @@
 interface utils {
-
+    use types.{target-arch};
     /// 获取版本信息
     get-version: func() -> string;
-
-    /// 生成 Hello World 示例代码
-    generate-hello-world: func(target: target-arch, options: code-generation-options) -> string;
-
-    /// 生成算术测试代码
-    generate-arithmetic-test: func(target: target-arch, options: code-generation-options) -> string;
-
-    /// 格式化源代码
-    format-source: func(source: string, options: format-options) -> string;
-
-    /// 压缩源代码
-    minify-source: func(source: string) -> string;
-
-    /// 获取语法高亮信息
-    get-syntax-highlighting: func(source: string) -> list<syntax-token>;
-
-    /// 获取代码补全建议
-    get-completions: func(source: string, line: u32, column: u32) -> list<completion-item>;
 }

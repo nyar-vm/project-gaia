@@ -8,12 +8,6 @@
 
 package nyar:gaia-assembly;
 
-use nyar:gaia-assembly/types;
-use nyar:gaia-assembly/utils;
-use nyar:gaia-assembly/assembler;
-use nyar:gaia-assembly/metadata;
-use nyar:gaia-assembly/easy-test;
-
 world gaia-assembly {
     export types;
     export utils;

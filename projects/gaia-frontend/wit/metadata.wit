@@ -1,5 +1,5 @@
 interface metadata {
-    use types.{diagnostic, instruction-metadata, target-arch};
+    use types.{diagnostic, instruction-metadata, target-arch, program-metadata, symbol-info, platform-info};
 
     /// 获取程序元数据
     get-program-metadata: func(bytecode: list<u8>, target: target-arch) -> program-metadata;

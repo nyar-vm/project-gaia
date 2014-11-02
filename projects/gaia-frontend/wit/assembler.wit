@@ -1,5 +1,5 @@
 interface assembler {
-    use types.{diagnostic, instruction-metadata, target-arch};
+    use types.{diagnostic, instruction-metadata, target-arch, disassemble-result};
 
     /// 汇编源代码到目标平台
     assemble: func(source: string, target: target-arch, optimize: bool, debug: bool) -> result;

@@ -3,8 +3,8 @@ resolver = "2"
 members = ["projects/*", "examples/mini-rust"]
 default-members = [
     "projects/gaia-types",
-    "projects/jvm-jasm",
-    "projects/clr-msil",
+    "projects/gaia-assembler",
+    "projects/gaia-frontend"
 ]
 exclude = [
     "projects/.DS_Store",

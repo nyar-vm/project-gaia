@@ -1,6 +1,6 @@
 {
     "type": "module",
-    "name": "@gaia/assembler-wasm32",
+    "name": "@nyar/gaia-assembler-wasm32",
     "version": "0.1.0",
     "description": "Gaia Multi-Platform Assembler - WASM32 Frontend",
     "author": "Gaia Project",
@@ -24,21 +24,25 @@
     "publishConfig": {
         "access": "public"
     },
-    "main": "./dist/gaia_assembler.js",
-    "types": "./dist/gaia_assembler.d.ts",
+    "main": "./dist/gaia_frontend.js",
+    "types": "./dist/gaia_frontend.d.ts",
     "files": [
         "dist/**/*"
     ],
     "scripts": {
-        "build": "jco transpile ../gaia-frontend/target/wasm32-wasi/release/gaia_frontend.wasm -o dist",
+        "build:wasm": "cargo build --target wasm32-wasip2 --release",
+        "build:js": "jco transpile ../../target/wasm32-wasip2/release/gaia_frontend.wasm -o dist",
+        "build": "npm run build:wasm && npm run build:js",
         "test": "vitest run",
         "coverage": "vitest run --coverage",
         "dev": "vitest",
         "prepare": "npm run build"
     },
+    "dependencies": {
+        "@bytecodealliance/preview2-shim": "^0.17.4"
+    },
     "devDependencies": {
         "@bytecodealliance/jco": "^1.4.0",
-        "@bytecodealliance/preview2-shim": "^0.17.4",
         "@vitest/coverage-v8": "^2.1.8",
         "@vitest/ui": "^2.1.8",
         "vitest": "^2.1.8"
