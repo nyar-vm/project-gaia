@@ -424,9 +424,12 @@ impl<W: ReadBytesExt + Seek> PeViewer<W> {
         let target_arch = match coff_header.machine {
             0x014c => Architecture::X86,
             0x8664 => Architecture::X86_64,
-            0x01c0 => Architecture::ARM,
+            0x01c0 => Architecture::ARM32,
             0xaa64 => Architecture::ARM64,
-            e => Architecture::Other(e.to_string()),
+            unknown => {
+                tracing::warn!("未知的机器类型: {:04x}", unknown);
+                Architecture::Unknown
+            },
         };
 
         // 获取当前文件大小

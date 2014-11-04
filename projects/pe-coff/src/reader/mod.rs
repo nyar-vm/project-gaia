@@ -90,7 +90,7 @@ impl CoffReader {
                 let lib = read_lib_from_file(&path)?;
                 Ok(CoffInfo {
                     file_type,
-                    target_arch: Architecture::Other("unknown".to_string()),
+                    target_arch: Architecture::Unknown,
                     section_count: 0,
                     symbol_count: lib.symbol_index.len() as u32,
                     file_size: metadata.len(),
@@ -105,9 +105,12 @@ impl CoffReader {
         match machine {
             0x014c => Architecture::X86,
             0x8664 => Architecture::X86_64,
-            0x01c0 => Architecture::ARM,
+            0x01c0 => Architecture::ARM32,
             0xaa64 => Architecture::ARM64,
-            _ => Architecture::Other(format!("machine_{:04x}", machine)),
+            unknown => {
+                tracing::warn!("未知的机器类型: {:04x}", unknown);
+                Architecture::Unknown
+            },
         }
     }
 }

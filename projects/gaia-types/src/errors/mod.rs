@@ -225,7 +225,7 @@ impl GaiaError {
     ///
     /// ```
     /// use gaia_types::{helpers::Architecture, GaiaError};
-    /// let error = GaiaError::unsupported_architecture(Architecture::ARM);
+    /// let error = GaiaError::unsupported_architecture(Architecture::ARM32);
     /// ```
     pub fn unsupported_architecture(architecture: Architecture) -> Self {
         GaiaErrorKind::UnsupportedArchitecture { architecture }.into()

@@ -81,7 +81,7 @@ fn test_different_exit_codes() {
 
 #[test]
 fn test_unsupported_architecture_exit_code() {
-    let result = easy_exit_code(Architecture::ARM, 42);
+    let result = easy_exit_code(Architecture::ARM32, 42);
     assert!(result.is_err());
 
     println!("✅ Unsupported architecture correctly rejected for Exit Code");

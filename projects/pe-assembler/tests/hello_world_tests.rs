@@ -62,7 +62,7 @@ fn test_save_hello_world_files() {
 
 #[test]
 fn test_unsupported_architecture_hello_world() {
-    let result = easy_console_log(Architecture::ARM, "Hello");
+    let result = easy_console_log(Architecture::ARM32, "Hello");
     assert!(result.is_err());
 
     println!("✅ Unsupported architecture correctly rejected for Hello World");
