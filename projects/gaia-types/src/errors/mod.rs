@@ -29,7 +29,7 @@
 //! ```
 
 pub use self::diagnostics::GaiaDiagnostics;
-use crate::{helpers::Architecture, SourceLocation};
+use crate::{helpers::{Architecture, CompilationTarget}, SourceLocation};
 use std::{
     error::Error,
     fmt::{Debug, Display, Formatter},
@@ -128,6 +128,51 @@ pub enum GaiaErrorKind {
     /// 当需要表示特定业务逻辑错误或其他非标准错误时使用
     CustomError {
         /// 自定义错误消息
+        message: String,
+    },
+    /// 适配器错误，当适配器操作失败时使用
+    ///
+    /// 包含适配器名称和具体的错误信息
+    AdapterError {
+        /// 适配器名称
+        adapter_name: String,
+        /// 错误消息
+        message: String,
+        /// 可选的源错误
+        source: Option<Box<GaiaError>>,
+    },
+    /// 平台不支持错误，当目标平台不支持某个操作时使用
+    ///
+    /// 包含平台名称和不支持的操作描述
+    PlatformUnsupported {
+        /// 平台名称
+        platform: String,
+        /// 不支持的操作描述
+        operation: String,
+    },
+    /// 配置错误，当配置文件解析或验证失败时使用
+    ///
+    /// 包含配置文件路径和错误信息
+    ConfigError {
+        /// 配置文件路径
+        config_path: Option<String>,
+        /// 错误消息
+        message: String,
+    },
+    /// 不支持的编译目标错误
+    ///
+    /// 当尝试编译到不支持的目标平台时使用
+    UnsupportedTarget {
+        /// 不支持的编译目标
+        target: CompilationTarget,
+    },
+    /// 编译失败错误
+    ///
+    /// 当编译过程中发生错误时使用
+    CompilationFailed {
+        /// 编译目标
+        target: CompilationTarget,
+        /// 错误消息
         message: String,
     },
 }
@@ -286,5 +331,90 @@ impl GaiaError {
     /// ```
     pub fn not_implemented(feature: impl ToString) -> Self {
         GaiaErrorKind::NotImplemented { feature: feature.to_string() }.into()
+    }
+
+    /// 创建适配器错误
+    ///
+    /// # 参数
+    /// * `adapter_name` - 适配器名称
+    /// * `message` - 错误消息
+    /// * `source` - 可选的源错误
+    ///
+    /// # 示例
+    /// ```
+    /// let error = GaiaError::adapter_error("PeExportAdapter", "导出失败", None);
+    /// ```
+    pub fn adapter_error(adapter_name: impl ToString, message: impl ToString, source: Option<Box<GaiaError>>) -> Self {
+        GaiaErrorKind::AdapterError {
+            adapter_name: adapter_name.to_string(),
+            message: message.to_string(),
+            source,
+        }.into()
+    }
+
+    /// 创建平台不支持错误
+    ///
+    /// # 参数
+    /// * `platform` - 平台名称
+    /// * `operation` - 不支持的操作描述
+    ///
+    /// # 示例
+    /// ```
+    /// let error = GaiaError::platform_unsupported("WASI", "内联汇编");
+    /// ```
+    pub fn platform_unsupported(platform: impl ToString, operation: impl ToString) -> Self {
+        GaiaErrorKind::PlatformUnsupported {
+            platform: platform.to_string(),
+            operation: operation.to_string(),
+        }.into()
+    }
+
+    /// 创建配置错误
+    ///
+    /// # 参数
+    /// * `config_path` - 可选的配置文件路径
+    /// * `message` - 错误消息
+    ///
+    /// # 示例
+    /// ```
+    /// let error = GaiaError::config_error(Some("config.toml"), "配置文件格式错误");
+    /// ```
+    pub fn config_error(config_path: Option<impl ToString>, message: impl ToString) -> Self {
+        GaiaErrorKind::ConfigError {
+            config_path: config_path.map(|p| p.to_string()),
+            message: message.to_string(),
+        }.into()
+    }
+
+    /// 创建不支持的编译目标错误
+    ///
+    /// # 参数
+    /// * `target` - 不支持的编译目标
+    ///
+    /// # 示例
+    /// ```
+    /// let target = CompilationTarget::default();
+    /// let error = GaiaError::unsupported_target(target);
+    /// ```
+    pub fn unsupported_target(target: CompilationTarget) -> Self {
+        GaiaErrorKind::UnsupportedTarget { target }.into()
+    }
+
+    /// 创建编译失败错误
+    ///
+    /// # 参数
+    /// * `target` - 编译目标
+    /// * `message` - 错误消息
+    ///
+    /// # 示例
+    /// ```
+    /// let target = CompilationTarget::default();
+    /// let error = GaiaError::compilation_failed(target, "无法生成字节码");
+    /// ```
+    pub fn compilation_failed(target: CompilationTarget, message: impl ToString) -> Self {
+        GaiaErrorKind::CompilationFailed {
+            target,
+            message: message.to_string(),
+        }.into()
     }
 }

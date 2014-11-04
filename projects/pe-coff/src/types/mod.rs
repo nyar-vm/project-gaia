@@ -182,7 +182,7 @@ pub enum CoffFileType {
 /// COFF 文件信息
 ///
 /// 提供 COFF 相关文件的摘要信息。
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CoffInfo {
     /// 文件类型
     pub file_type: CoffFileType,

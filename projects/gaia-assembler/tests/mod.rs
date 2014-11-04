@@ -1,6 +1,7 @@
-// 测试模块
+use gaia_assembler::GaiaCompiler;
 
-pub mod backend_tests;
-pub mod export_adapter_tests;
-pub mod import_adapter_tests;
-pub mod integration_tests;
+#[test]
+fn test_compiler_creation() {
+    let compiler = GaiaCompiler::new();
+    assert_eq!(compiler.backends().len(), 4);
+}

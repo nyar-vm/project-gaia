@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["projects/*", "examples/mini-rust"]
+members = ["projects/*", "examples/mini-rust", "examples/mini-python"]
 default-members = [
     "projects/gaia-types",
     "projects/gaia-assembler",

@@ -1,35 +1,61 @@
 //! WASI (WebAssembly System Interface) backend compiler
-use super::{Backend, FunctionMapper, TargetPlatform};
+use super::{Backend, FunctionMapper};
 use crate::instruction::*;
-use gaia_types::*;
+use gaia_types::{
+    helpers::{AbiCompatible, ApiCompatible, Architecture, CompilationTarget},
+    *,
+};
 
 /// WASI Backend implementation
-pub struct WASIBackend;
+pub struct WasiBackend;
 
-impl Backend for WASIBackend {
-    fn compile(program: &GaiaProgram) -> Result<Vec<u8>> {
-        // Create WASI assembler context
-        let mut wasi_context = create_wasi_context()?;
-
-        // Compile program
-        compile_program(&mut wasi_context, program)?;
-
-        // Generate WebAssembly bytecode
-        generate_wasm_bytecode(&wasi_context)
+impl Backend for WasiBackend {
+    fn match_score(&self, target: &CompilationTarget) -> f32 {
+        match target.host {
+            AbiCompatible::WebAssemblyTextFormat => 10.0,
+            AbiCompatible::Unknown => match target.build {
+                // wat output, 5% support
+                Architecture::WASM32 => 5.0,
+                Architecture::WASM64 => 0.0,
+                _ => -100.0,
+            },
+            _ => -100.0,
+        }
     }
 
-    fn name() -> &'static str {
+    fn primary_target(&self) -> CompilationTarget {
+        CompilationTarget {
+            build: Architecture::WASM32,
+            host: AbiCompatible::WebAssemblyTextFormat,
+            target: ApiCompatible::WASI,
+        }
+    }
+
+    fn compile(&self, program: &GaiaProgram) -> Result<Vec<u8>> {
+        compile(program)
+    }
+
+    fn name(&self) -> &'static str {
         "WASI"
     }
 
-    fn file_extension() -> &'static str {
+    fn file_extension(&self) -> &'static str {
         "wasm"
+    }
+}
+
+impl WasiBackend {
+    /// Generate WASI WebAssembly bytecode from Gaia program
+    pub fn generate(program: &GaiaProgram) -> Result<Vec<u8>> {
+        let mut context = create_wasi_context()?;
+        compile_program(&mut context, program)?;
+        generate_wasm_bytecode(&context)
     }
 }
 
 /// Compile Gaia program to WASI WebAssembly
 pub fn compile(program: &GaiaProgram) -> Result<Vec<u8>> {
-    WASIBackend::compile(program)
+    WasiBackend::generate(program)
 }
 
 /// Create WASI assembler context
@@ -230,10 +256,15 @@ fn compile_branch_if_false(context: &mut WasiContext, label: &str) -> Result<()>
 fn compile_call(context: &mut WasiContext, function_name: &str) -> Result<()> {
     // Use FunctionMapper to map function names to WASI-specific implementations
     let mapper = FunctionMapper::new();
-    let mapped_name = mapper.map_function(function_name, TargetPlatform::WASI);
+    let wasi_target = CompilationTarget {
+        build: Architecture::WASM32,
+        host: AbiCompatible::WebAssemblyTextFormat,
+        target: ApiCompatible::WASI,
+    };
+    let mapped_name = mapper.map_function(&wasi_target, function_name);
 
     // WASM: call mapped_name
-    context.emit_call(&mapped_name)
+    todo!()
 }
 
 fn compile_return(context: &mut WasiContext) -> Result<()> {

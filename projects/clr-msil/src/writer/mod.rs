@@ -15,7 +15,7 @@ pub struct MsilWriterConfig {
 /// 这个结构体提供了生成 MSIL (Microsoft Intermediate Language) 代码的功能，
 /// 复用了 gaia-types 的 TextWriter 来处理格式化和缩进。
 #[derive(Debug)]
-pub struct MsilWriter<W: Write> {
+pub struct MsilWriter<W> {
     /// 底层的文本写入器
     writer: TextWriter<W>,
 }
@@ -340,15 +340,8 @@ impl<W: Write> MsilWriter<W> {
         Ok(())
     }
 
-    /// 获取生成的字节码
-    pub fn generate_bytecode(&self) -> Result<Vec<u8>> {
-        // 这里需要实现将当前写入器的内容转换为字节码
-        // 暂时返回空的字节码，具体实现需要根据需求调整
-        Ok(Vec::new())
-    }
-
-    /// 获取内部写入器
+    /// 获取结果
     pub fn finish(self) -> W {
-        self.writer.into_inner()
+        self.writer.finish()
     }
 }

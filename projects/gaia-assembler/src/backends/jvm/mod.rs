@@ -1,7 +1,10 @@
 //! JVM (Java Virtual Machine) backend compiler
-use super::{Backend, FunctionMapper, TargetPlatform};
+use super::{Backend, FunctionMapper};
 use crate::instruction::*;
-use gaia_types::*;
+use gaia_types::{
+    helpers::{AbiCompatible, ApiCompatible, Architecture, CompilationTarget},
+    *,
+};
 
 /// JVM assembler context (placeholder)
 pub struct JVMContext {
@@ -10,32 +13,51 @@ pub struct JVMContext {
 }
 
 /// JVM Backend implementation
-pub struct JVMBackend;
+pub struct JvmBackend;
 
-impl Backend for JVMBackend {
-    fn compile(program: &GaiaProgram) -> Result<Vec<u8>> {
-        // Create JVM assembler context
-        let mut jvm_context = create_jvm_context()?;
-
-        // Compile program
-        compile_program(&mut jvm_context, program)?;
-
-        // Generate JVM bytecode
-        generate_jvm_bytecode(&jvm_context)
+impl Backend for JvmBackend {
+    fn match_score(&self, target: &CompilationTarget) -> f32 {
+        match target.build {
+            Architecture::JVM => match target.host {
+                // jasm output, 5% support
+                AbiCompatible::JavaAssembly => 5.0,
+                // bytecode output, 30% support
+                AbiCompatible::Unknown => 30.0,
+                _ => -100.0,
+            },
+            _ => -100.0,
+        }
     }
 
-    fn name() -> &'static str {
+    fn primary_target(&self) -> CompilationTarget {
+        CompilationTarget { build: Architecture::JVM, host: AbiCompatible::JavaAssembly, target: ApiCompatible::JvmRuntime(8) }
+    }
+
+    fn compile(&self, program: &GaiaProgram) -> Result<Vec<u8>> {
+        compile(program)
+    }
+
+    fn name(&self) -> &'static str {
         "JVM"
     }
 
-    fn file_extension() -> &'static str {
+    fn file_extension(&self) -> &'static str {
         "class"
+    }
+}
+
+impl JvmBackend {
+    /// Generate JVM bytecode from Gaia program
+    pub fn generate(program: &GaiaProgram) -> Result<Vec<u8>> {
+        let mut context = create_jvm_context()?;
+        compile_program(&mut context, program)?;
+        generate_jvm_bytecode(&context)
     }
 }
 
 /// Compile Gaia program to JVM bytecode
 pub fn compile(program: &GaiaProgram) -> Result<Vec<u8>> {
-    JVMBackend::compile(program)
+    JvmBackend::generate(program)
 }
 
 /// Create JVM assembler context
@@ -229,13 +251,13 @@ fn compile_branch_if_false(context: &mut JVMContext, label: &str) -> Result<()> 
 fn compile_call(context: &mut JVMContext, function_name: &str) -> Result<()> {
     // Use FunctionMapper to map function names to JVM-specific implementations
     let mapper = FunctionMapper::new();
-    let mapped_name = mapper.map_function(function_name, TargetPlatform::JVM);
+    let jvm_target =
+        CompilationTarget { build: Architecture::JVM, host: AbiCompatible::JavaAssembly, target: ApiCompatible::JvmRuntime(8) };
+    let mapped_name = mapper.map_function(&jvm_target, function_name);
 
     // TODO: Generate invokevirtual/invokestatic instructions for mapped_name
     // For now, just store the mapped name in context for future implementation
-    context.bytecode.extend_from_slice(format!("call {}", mapped_name).as_bytes());
-
-    Ok(())
+    todo!()
 }
 
 fn compile_return(context: &mut JVMContext) -> Result<()> {

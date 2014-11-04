@@ -1,22 +1,42 @@
 //! PE (Portable Executable) backend compiler
 //! This backend generates .NET PE files containing IL code, not native machine code
-use super::{Backend, FunctionMapper, TargetPlatform};
-use crate::{backends::msil::MsilBackend, instruction::*};
-use gaia_types::*;
+use super::Backend;
+use crate::backends::msil::ClrBackend;
+use gaia_types::{
+    helpers::{AbiCompatible, ApiCompatible, Architecture, CompilationTarget},
+    *,
+};
 
 /// PE Backend implementation
-pub struct PEBackend;
+pub struct PeBackend;
 
-impl Backend for PEBackend {
-    fn compile(program: &GaiaProgram) -> Result<Vec<u8>> {
+impl Backend for PeBackend {
+    fn match_score(&self, target: &CompilationTarget) -> f32 {
+        match target.host {
+            AbiCompatible::PE => match target.build {
+                // dll, exe output, 10% support
+                Architecture::X86 => 10.0,
+                // dll, exe output, 10% support
+                Architecture::X86_64 => 10.0,
+                _ => -100.0,
+            },
+            _ => -100.0,
+        }
+    }
+
+    fn primary_target(&self) -> CompilationTarget {
+        CompilationTarget { build: Architecture::X86_64, host: AbiCompatible::PE, target: ApiCompatible::MicrosoftVisualC }
+    }
+
+    fn compile(&self, program: &GaiaProgram) -> Result<Vec<u8>> {
         compile(program)
     }
 
-    fn name() -> &'static str {
+    fn name(&self) -> &'static str {
         "PE"
     }
 
-    fn file_extension() -> &'static str {
+    fn file_extension(&self) -> &'static str {
         "exe"
     }
 }
@@ -24,7 +44,7 @@ impl Backend for PEBackend {
 /// Compile Gaia program to .NET PE executable file
 pub fn compile(program: &GaiaProgram) -> Result<Vec<u8>> {
     // Generate IL code using the IL backend
-    let il_code = MsilBackend::compile(program)?;
+    let il_code = ClrBackend::generate(program)?;
 
     // Convert IL code to .NET PE format
     // For now, we'll create a simple .NET PE wrapper around the IL code

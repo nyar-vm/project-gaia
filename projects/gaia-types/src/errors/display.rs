@@ -58,6 +58,28 @@ impl Display for GaiaErrorKind {
             GaiaErrorKind::CustomError { message } => {
                 write!(f, "自定义错误: {}", message)?;
             }
+            GaiaErrorKind::AdapterError { adapter_name, message, source } => {
+                write!(f, "适配器错误 [{}]: {}", adapter_name, message)?;
+                if let Some(source) = source {
+                    write!(f, " (源错误: {})", source)?;
+                }
+            }
+            GaiaErrorKind::PlatformUnsupported { platform, operation } => {
+                write!(f, "平台 '{}' 不支持操作: {}", platform, operation)?;
+            }
+            GaiaErrorKind::ConfigError { config_path, message } => {
+                if let Some(path) = config_path {
+                    write!(f, "配置错误在 '{}': {}", path, message)?;
+                } else {
+                    write!(f, "配置错误: {}", message)?;
+                }
+            }
+            GaiaErrorKind::UnsupportedTarget { target } => {
+                write!(f, "不支持的编译目标: {:?}", target)?;
+            }
+            GaiaErrorKind::CompilationFailed { target, message } => {
+                write!(f, "编译失败 (目标: {:?}): {}", target, message)?;
+            }
         }
         Ok(())
     }

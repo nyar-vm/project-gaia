@@ -18,7 +18,7 @@ use std::fmt::{Display, Formatter, Write};
 /// ## 虚拟机架构
 /// - JVM：Java虚拟机
 /// - CLR：.NET公共语言运行时
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Architecture {
     /// 未知架构, 无法生成目标代码
     Unknown,
@@ -44,6 +44,8 @@ pub enum Architecture {
     WASM64,
     JVM,
     CLR,
+    /// 其他架构类型
+    Other(String),
 }
 
 impl Display for Architecture {
@@ -62,6 +64,7 @@ impl Display for Architecture {
             Architecture::WASM64 => f.write_str("wasm64"),
             Architecture::JVM => f.write_str("jvm"),
             Architecture::CLR => f.write_str("clr"),
+            Architecture::Other(name) => f.write_str(name),
         }
     }
 }

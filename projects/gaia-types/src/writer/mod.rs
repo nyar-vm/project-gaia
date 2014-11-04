@@ -24,11 +24,11 @@ use std::fmt::Write;
 /// writer.dedent();
 /// writer.write_line("}").unwrap();
 ///
-/// let result = String::from_utf8(writer.into_inner().into_inner()).unwrap();
+/// let result = String::from_utf8(writer.finish().into_inner()).unwrap();
 /// assert_eq!(result, "function main() {\n    return 42;\n}\n");
 /// ```
 #[derive(Debug)]
-pub struct TextWriter<W: Write> {
+pub struct TextWriter<W> {
     /// 底层的写入器
     writer: W,
     /// 当前的缩进级别
@@ -221,9 +221,9 @@ impl<W: Write> TextWriter<W> {
     ///
     /// let buffer = Cursor::new(Vec::new());
     /// let writer = TextWriter::new(buffer, "    ");
-    /// let inner_writer = writer.into_inner();
+    /// let inner_writer = writer.finish();
     /// ```
-    pub fn into_inner(self) -> W {
+    pub fn finish(self) -> W {
         self.writer
     }
 }

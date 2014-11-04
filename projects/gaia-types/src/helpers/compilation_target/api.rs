@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::fmt::{Display, Formatter};
 
 /// API兼容枚举
 ///
@@ -13,8 +14,8 @@ use serde::{Deserialize, Serialize};
 /// - `Gnu`：GNU工具链和glibc，用于Linux等类Unix系统
 ///
 /// ## 运行时版本
-/// - `JDK(u16)`：Java开发工具包版本（如JDK8、JDK11、JDK16）
-/// - `CLR(u16)`：.NET公共语言运行时版本（如.NET 2.0、4.0、5.0）
+/// - `JvmRuntime(u32)`：Java开发工具包版本（如JDK8、JDK11、JDK16）
+/// - `ClrRuntime(u16)`：.NET公共语言运行时版本（如.NET 2.0、4.0、5.0）
 ///
 /// ## 专用API
 /// - `Unity`：Unity引擎API，用于Unity游戏开发
@@ -46,14 +47,28 @@ pub enum ApiCompatible {
 
     /// Java 虚拟机运行时版本
     ///
-    /// 参数 `u16` 表示 JVM 版本号，例如：
-    /// - 8 表示 JDK 8 (Java 8)
-    /// - 11 表示 JDK 11 (Java 11)
-    /// - 16 表示 JDK 16 (Java 16)
-    /// - 65 表示 JVM 65 版本
+    /// 参数 `u32` 表示 JDK 对应的 JVM 字节码版本号：
+    ///
+    /// - JDK 5 对应字节码版本 49
+    /// - JDK 6 对应字节码版本 50
+    /// - JDK 7 对应字节码版本 51
+    /// - JDK 8 对应字节码版本 52
+    /// - JDK 9 对应字节码版本 53
+    /// - JDK 10 对应字节码版本 54
+    /// - JDK 11 对应字节码版本 55
+    /// - JDK 12 对应字节码版本 56
+    /// - JDK 13 对应字节码版本 57
+    /// - JDK 14 对应字节码版本 58
+    /// - JDK 15 对应字节码版本 59
+    /// - JDK 16 对应字节码版本 60
+    /// - JDK 17 对应字节码版本 61
+    /// - JDK 18 对应字节码版本 62
+    /// - JDK 19 对应字节码版本 63
+    /// - JDK 20 对应字节码版本 64
+    /// - JDK 21 对应字节码版本 65
     ///
     /// 用于指定目标 JVM 版本的字节码兼容性和 API 可用性
-    JvmRuntime(u16),
+    JvmRuntime(u32),
 
     /// .NET Common Language Runtime 版本
     ///
@@ -87,4 +102,18 @@ pub enum ApiCompatible {
     ///
     /// 允许 WebAssembly 代码在不同环境中安全地运行
     WASI,
+}
+
+impl Display for ApiCompatible {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ApiCompatible::Unknown => f.write_str("unknown"),
+            ApiCompatible::Gnu => f.write_str("gnu"),
+            ApiCompatible::MicrosoftVisualC => f.write_str("msvc"),
+            ApiCompatible::JvmRuntime(version) => write!(f, "jvm{}", version),
+            ApiCompatible::ClrRuntime(version) => write!(f, "clr{}", version),
+            ApiCompatible::Unity => f.write_str("unity"),
+            ApiCompatible::WASI => f.write_str("wasi"),
+        }
+    }
 }

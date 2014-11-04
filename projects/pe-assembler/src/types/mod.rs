@@ -297,7 +297,7 @@ pub struct PeProgram {
 ///
 /// 提供 PE 文件的摘要信息，包含关键属性和统计信息。
 /// 这个结构用于快速获取文件的基本信息，而无需解析完整的头部结构。
-#[derive(Copy, Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PeInfo {
     /// 目标架构类型，如 x86、x64、ARM 等
     pub target_arch: Architecture,

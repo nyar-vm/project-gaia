@@ -7,25 +7,25 @@ pub mod msil;
 pub mod pe;
 pub mod wasi;
 
-#[cfg(test)]
-mod test_mapper;
+// Re-export backend structs
+pub use jvm::JvmBackend;
+pub use msil::ClrBackend;
+pub use pe::PeBackend;
+pub use wasi::WasiBackend;
 
-use crate::instruction::GaiaProgram;
-use gaia_types::Result;
+use crate::config::GaiaConfig;
+use gaia_types::{
+    helpers::{AbiCompatible, ApiCompatible, Architecture, CompilationTarget},
+    instruction::GaiaProgram,
+    Result,
+};
 use std::collections::HashMap;
 
-/// Target platform enumeration
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum TargetPlatform {
-    IL,
-    JVM,
-    PE,
-    WASI,
-}
-
-/// Function mapper for cross-platform function name mapping
+/// 函数映射器
+#[derive(Debug)]
 pub struct FunctionMapper {
-    mappings: HashMap<TargetPlatform, HashMap<String, String>>,
+    /// 函数映射表 (平台 -> 源函数 -> 目标函数)
+    mappings: HashMap<CompilationTarget, HashMap<String, String>>,
 }
 
 impl FunctionMapper {
@@ -42,53 +42,85 @@ impl FunctionMapper {
         mapper
     }
 
-    /// Add a function mapping for a specific platform
-    pub fn add_mapping(&mut self, platform: TargetPlatform, source_name: &str, target_name: &str) {
-        self.mappings.entry(platform).or_insert_with(HashMap::new).insert(source_name.to_string(), target_name.to_string());
+    /// 从配置创建函数映射器
+    pub fn from_config(config: &GaiaConfig) -> Result<Self> {
+        let mut mapper = Self::new();
+
+        // 加载所有平台的函数映射
+        for mapping in &config.function_mappings {
+            for (platform_name, target_name) in &mapping.platform_mappings {
+                // 找到对应的编译目标
+                for (target, _platform_config) in &config.platforms {
+                    if platform_name == &target.build.to_string() {
+                        mapper.add_mapping(target, &mapping.common_name, target_name);
+                    }
+                }
+            }
+        }
+
+        Ok(mapper)
     }
 
-    /// Map a function name to the target platform equivalent
-    pub fn map_function(&self, func_name: &str, platform: TargetPlatform) -> String {
-        self.mappings
-            .get(&platform)
-            .and_then(|map| map.get(func_name))
-            .map(|s| s.clone())
-            .unwrap_or_else(|| func_name.to_string())
+    /// 添加函数映射
+    pub fn add_mapping(&mut self, target: &CompilationTarget, source_func: &str, target_func: &str) {
+        self.mappings.entry(target.clone()).or_insert_with(HashMap::new).insert(source_func.to_string(), target_func.to_string());
+    }
+
+    /// 映射函数名
+    pub fn map_function(&self, target: &CompilationTarget, function_name: &str) -> Option<&str> {
+        self.mappings.get(target).and_then(|platform_mappings| platform_mappings.get(function_name)).map(|s| s.as_str())
     }
 
     /// Initialize IL (.NET) platform mappings
     fn init_il_mappings(&mut self) {
-        self.add_mapping(TargetPlatform::IL, "__builtin_print", "void [mscorlib]System.Console::WriteLine(string)");
-        self.add_mapping(TargetPlatform::IL, "__builtin_println", "void [mscorlib]System.Console::WriteLine(string)");
-        self.add_mapping(TargetPlatform::IL, "__builtin_read", "string [mscorlib]System.Console::ReadLine()");
-        self.add_mapping(TargetPlatform::IL, "malloc", "System.Runtime.InteropServices.Marshal.AllocHGlobal");
-        self.add_mapping(TargetPlatform::IL, "free", "System.Runtime.InteropServices.Marshal.FreeHGlobal");
+        let il_target = CompilationTarget {
+            build: Architecture::CLR,
+            host: AbiCompatible::MicrosoftIntermediateLanguage,
+            target: ApiCompatible::ClrRuntime(4),
+        };
+        self.add_mapping(&il_target, "__builtin_print", "void [mscorlib]System.Console::WriteLine(string)");
+        self.add_mapping(&il_target, "__builtin_println", "void [mscorlib]System.Console::WriteLine(string)");
+        self.add_mapping(&il_target, "__builtin_read", "string [mscorlib]System.Console::ReadLine()");
+        self.add_mapping(&il_target, "malloc", "System.Runtime.InteropServices.Marshal.AllocHGlobal");
+        self.add_mapping(&il_target, "free", "System.Runtime.InteropServices.Marshal.FreeHGlobal");
     }
 
     /// Initialize JVM platform mappings
     fn init_jvm_mappings(&mut self) {
-        self.add_mapping(TargetPlatform::JVM, "__builtin_print", "java.lang.System.out.println");
-        self.add_mapping(TargetPlatform::JVM, "__builtin_println", "java.lang.System.out.println");
-        self.add_mapping(TargetPlatform::JVM, "__builtin_read", "java.util.Scanner.nextLine");
-        self.add_mapping(TargetPlatform::JVM, "malloc", "java.nio.ByteBuffer.allocateDirect");
+        let jvm_target = CompilationTarget {
+            build: Architecture::JVM,
+            host: AbiCompatible::JavaAssembly,
+            target: ApiCompatible::JvmRuntime(8),
+        };
+        self.add_mapping(&jvm_target, "__builtin_print", "java.lang.System.out.println");
+        self.add_mapping(&jvm_target, "__builtin_println", "java.lang.System.out.println");
+        self.add_mapping(&jvm_target, "__builtin_read", "java.util.Scanner.nextLine");
+        self.add_mapping(&jvm_target, "malloc", "java.nio.ByteBuffer.allocateDirect");
     }
 
     /// Initialize PE (Windows) platform mappings
     fn init_pe_mappings(&mut self) {
-        self.add_mapping(TargetPlatform::PE, "__builtin_print", "printf");
-        self.add_mapping(TargetPlatform::PE, "__builtin_println", "puts");
-        self.add_mapping(TargetPlatform::PE, "__builtin_read", "gets_s");
-        self.add_mapping(TargetPlatform::PE, "malloc", "HeapAlloc");
-        self.add_mapping(TargetPlatform::PE, "free", "HeapFree");
+        let pe_target =
+            CompilationTarget { build: Architecture::X86_64, host: AbiCompatible::PE, target: ApiCompatible::MicrosoftVisualC };
+        self.add_mapping(&pe_target, "__builtin_print", "printf");
+        self.add_mapping(&pe_target, "__builtin_println", "puts");
+        self.add_mapping(&pe_target, "__builtin_read", "gets_s");
+        self.add_mapping(&pe_target, "malloc", "HeapAlloc");
+        self.add_mapping(&pe_target, "free", "HeapFree");
     }
 
     /// Initialize WASI platform mappings
     fn init_wasi_mappings(&mut self) {
-        self.add_mapping(TargetPlatform::WASI, "__builtin_print", "wasi_print");
-        self.add_mapping(TargetPlatform::WASI, "__builtin_println", "wasi_println");
-        self.add_mapping(TargetPlatform::WASI, "__builtin_read", "wasi_read");
-        self.add_mapping(TargetPlatform::WASI, "malloc", "malloc");
-        self.add_mapping(TargetPlatform::WASI, "free", "free");
+        let wasi_target = CompilationTarget {
+            build: Architecture::WASM32,
+            host: AbiCompatible::WebAssemblyTextFormat,
+            target: ApiCompatible::WASI,
+        };
+        self.add_mapping(&wasi_target, "__builtin_print", "wasi_print");
+        self.add_mapping(&wasi_target, "__builtin_println", "wasi_println");
+        self.add_mapping(&wasi_target, "__builtin_read", "wasi_read");
+        self.add_mapping(&wasi_target, "malloc", "malloc");
+        self.add_mapping(&wasi_target, "free", "free");
     }
 }
 
@@ -100,13 +132,24 @@ impl Default for FunctionMapper {
 
 /// Backend compiler trait
 pub trait Backend {
-    const IS_BINARY: bool = true;
+    /// 是否为二进制输出
+    fn is_binary(&self) -> bool {
+        true
+    }
+    
+    /// 计算与给定编译目标的匹配度 (0-100)
+    /// 0 表示不支持
+    fn match_score(&self, target: &CompilationTarget) -> f32;
+    
+    /// 获取此后端支持的主要编译目标
+    fn primary_target(&self) -> CompilationTarget;
+    
     /// Compile Gaia program to target platform
-    fn compile(program: &GaiaProgram) -> Result<Vec<u8>>;
+    fn compile(&self, program: &GaiaProgram) -> Result<Vec<u8>>;
 
     /// Get backend name
-    fn name() -> &'static str;
+    fn name(&self) -> &'static str;
 
     /// Get output file extension
-    fn file_extension() -> &'static str;
+    fn file_extension(&self) -> &'static str;
 }

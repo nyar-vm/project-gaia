@@ -1,37 +1,66 @@
 //! IL (Intermediate Language) backend compiler
-use super::{Backend, FunctionMapper, TargetPlatform};
+use super::{Backend, FunctionMapper};
 use crate::instruction::*;
 use clr_msil::writer::MsilWriter;
-use gaia_types::*;
+use gaia_types::{
+    helpers::{AbiCompatible, ApiCompatible, Architecture, CompilationTarget},
+    *,
+};
 
 /// IL Backend implementation
-pub struct MsilBackend {}
+pub struct ClrBackend {}
 
-impl Backend for MsilBackend {
-    const IS_BINARY: bool = false;
-    fn compile(program: &GaiaProgram) -> Result<Vec<u8>> {
-        // Create IL assembler context
-        let mut il_context = create_il_context()?;
-
-        // Compile program
-        compile_program(&mut il_context, program)?;
-
-        // Generate IL bytecode
-        generate_il_bytecode(il_context)
+impl Backend for ClrBackend {
+    fn is_binary(&self) -> bool {
+        false
     }
 
-    fn name() -> &'static str {
+    fn match_score(&self, target: &CompilationTarget) -> f32 {
+        match target.build {
+            Architecture::CLR => match target.host {
+                // dll, exe output, 5% support
+                AbiCompatible::Unknown => 5.0,
+                // msil output, 30% support
+                AbiCompatible::MicrosoftIntermediateLanguage => 30.0,
+                _ => -100.0,
+            },
+            _ => -100.0,
+        }
+    }
+
+    fn primary_target(&self) -> CompilationTarget {
+        CompilationTarget {
+            build: Architecture::CLR,
+            host: AbiCompatible::MicrosoftIntermediateLanguage,
+            target: ApiCompatible::ClrRuntime(4),
+        }
+    }
+
+    fn compile(&self, program: &GaiaProgram) -> Result<Vec<u8>> {
+        compile(program)
+    }
+
+    fn name(&self) -> &'static str {
         "MSIL"
     }
 
-    fn file_extension() -> &'static str {
-        "msil"
+    fn file_extension(&self) -> &'static str {
+        "il"
+    }
+}
+
+impl ClrBackend {
+    /// Generate IL bytecode from Gaia program
+    pub fn generate(program: &GaiaProgram) -> Result<Vec<u8>> {
+        let mut context = create_il_context()?;
+        compile_program(&mut context, program)?;
+        generate_il_bytecode(context)
     }
 }
 
 /// Compile Gaia program to IL bytecode
 pub fn compile(program: &GaiaProgram) -> Result<Vec<u8>> {
-    MsilBackend::compile(program)
+    ClrBackend::generate(program)
 }
 
 /// Create IL assembler context
@@ -190,8 +219,13 @@ fn compile_branch_if_false(context: &mut IlContext, label: &str) -> Result<()> {
 
 fn compile_call(context: &mut IlContext, function_name: &str) -> Result<()> {
     let mapper = FunctionMapper::new();
-    let mapped_name = mapper.map_function(function_name, TargetPlatform::IL);
-    context.emit_call(&mapped_name)
+    let il_target = CompilationTarget {
+        build: Architecture::CLR,
+        host: AbiCompatible::MicrosoftIntermediateLanguage,
+        target: ApiCompatible::ClrRuntime(4),
+    };
+    let mapped_name = mapper.map_function(&il_target, function_name);
+    context.emit_call(&mapped_name.unwrap_or(function_name))
 }
 
 fn compile_return(context: &mut IlContext) -> Result<()> {

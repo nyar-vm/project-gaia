@@ -7,7 +7,7 @@ pub use self::{abi::AbiCompatible, api::ApiCompatible};
 
 pub use self::arch::Architecture;
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 /// 编译目标平台结构体
 ///
 /// 三要素组合系统，用于精确描述编译输出的目标平台特性。
@@ -47,7 +47,7 @@ use std::fmt::Display;
 ///     target: ApiCompatible::JvmRuntime(8),
 /// };
 /// ```
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct CompilationTarget {
     /// 底层的运行时架构，例如 x86_64, ARM64 等芯片，或是 JVM，CLR 等虚拟机
     pub build: Architecture,
@@ -55,4 +55,10 @@ pub struct CompilationTarget {
     pub host: AbiCompatible,
     /// 提供何种 API 接口
     pub target: ApiCompatible,
+}
+
+impl Display for CompilationTarget {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}-{}-{}", self.build, self.host, self.target)
+    }
 }
