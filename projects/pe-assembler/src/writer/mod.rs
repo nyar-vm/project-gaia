@@ -5,20 +5,43 @@
 use crate::types::{DataDirectory, DosHeader, NtHeader, OptionalHeader, PeHeader, PeProgram, PeSection, SubsystemType};
 use byteorder::{LittleEndian, WriteBytesExt};
 use gaia_types::{BinaryAssembler, GaiaError};
-use std::io::{Seek, Write};
+use std::{
+    io::{Seek, Write},
+    ops::{Deref, DerefMut},
+};
 
 /// PE 文件生成器的通用接口
 #[derive(Debug)]
-pub struct PeAssembler<W: Write> {
+pub struct PeWriter<W> {
     writer: BinaryAssembler<W, LittleEndian>,
 }
 
-impl<W: Write> PeAssembler<W> {
+impl<W> Deref for PeWriter<W> {
+    type Target = BinaryAssembler<W, LittleEndian>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.writer
+    }
+}
+
+impl<W> DerefMut for PeWriter<W> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.writer
+    }
+}
+
+impl<W> PeWriter<W> {
     /// 创建一个新的 PE 写入器
     pub fn new(writer: W) -> Self {
         Self { writer: BinaryAssembler::new(writer) }
     }
 
+    pub fn finish(self) -> W {
+        self.writer.finish()
+    }
+}
+
+impl<W: Write> PeWriter<W> {
     /// 将 PE 程序写入字节数组
     pub fn write_program(&mut self, program: &PeProgram) -> Result<(), GaiaError>
     where
@@ -68,7 +91,7 @@ impl<W: Write> PeAssembler<W> {
     }
 
     /// 写入 DOS 头
-    fn write_dos_header(&mut self, dos_header: &DosHeader) -> Result<(), GaiaError> {
+    pub fn write_dos_header(&mut self, dos_header: &DosHeader) -> Result<(), GaiaError> {
         self.writer.write_u16(dos_header.e_magic)?;
         self.writer.write_u16(dos_header.e_cblp)?;
         self.writer.write_u16(dos_header.e_cp)?;

@@ -9,6 +9,7 @@ pub struct X86Instruction {
 }
 
 /// X86 代码生成器 - 提供常用指令的编码
+#[derive(Debug, Clone)]
 pub struct X86CodeBuilder {
     code: Vec<u8>,
 }

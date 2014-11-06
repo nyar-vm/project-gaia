@@ -134,6 +134,65 @@ pub struct NtHeader {
     pub signature: u32,
 }
 
+impl DosHeader {
+    /// 创建一个标准的 DOS 头，只需要指定 PE 头的偏移
+    pub fn new(pe_header_offset: u32) -> Self {
+        Self {
+            e_magic: 0x5A4D, // "MZ"
+            e_cblp: 0x90,
+            e_cp: 0x03,
+            e_crlc: 0x00,
+            e_cparhdr: 0x04,
+            e_minalloc: 0x00,
+            e_maxalloc: 0xFFFF,
+            e_ss: 0x00,
+            e_sp: 0xB8,
+            e_csum: 0x00,
+            e_ip: 0x00,
+            e_cs: 0x00,
+            e_lfarlc: 0x40,
+            e_ovno: 0x00,
+            e_res: [0; 4],
+            e_oemid: 0x00,
+            e_oeminfo: 0x00,
+            e_res2: [0; 10],
+            e_lfanew: pe_header_offset,
+        }
+    }
+}
+
+impl Default for DosHeader {
+    fn default() -> Self {
+        Self {
+            e_magic: 0x5A4D, // "MZ"
+            e_cblp: 0x90,
+            e_cp: 0x03,
+            e_crlc: 0x00,
+            e_cparhdr: 0x04,
+            e_minalloc: 0x00,
+            e_maxalloc: 0xFFFF,
+            e_ss: 0x00,
+            e_sp: 0xB8,
+            e_csum: 0x00,
+            e_ip: 0x00,
+            e_cs: 0x00,
+            e_lfarlc: 0x40,
+            e_ovno: 0x00,
+            e_res: [0; 4],
+            e_oemid: 0x00,
+            e_oeminfo: 0x00,
+            e_res2: [0; 10],
+            e_lfanew: 0x80, // PE header offset
+        }
+    }
+}
+
+impl Default for DataDirectory {
+    fn default() -> Self {
+        Self { virtual_address: 0, size: 0 }
+    }
+}
+
 /// 可选头结构
 ///
 /// 包含 PE 文件的加载和运行时信息，如入口点地址、内存布局、
@@ -202,6 +261,58 @@ pub struct OptionalHeader {
     pub number_of_rva_and_sizes: u32,
     /// 数据目录表，包含各种数据目录的信息
     pub data_directories: Vec<DataDirectory>,
+}
+
+impl OptionalHeader {
+    /// 创建一个标准的可选头，适用于 .NET 程序
+    pub fn new(
+        entry_point: u32,
+        image_base: u64,
+        size_of_code: u32,
+        size_of_headers: u32,
+        size_of_image: u32,
+        subsystem: SubsystemType,
+    ) -> Self {
+        let mut data_directories = Vec::with_capacity(16);
+        // 初始化 16 个标准数据目录
+        for _ in 0..16 {
+            data_directories.push(DataDirectory::default());
+        }
+
+        Self {
+            magic: 0x020B, // PE32+
+            major_linker_version: 14,
+            minor_linker_version: 0,
+            size_of_code,
+            size_of_initialized_data: 0,
+            size_of_uninitialized_data: 0,
+            address_of_entry_point: entry_point,
+            base_of_code: 0x2000,
+            base_of_data: None, // PE32+ 不使用
+            image_base,
+            section_alignment: 0x2000,
+            file_alignment: 0x200,
+            major_operating_system_version: 6,
+            minor_operating_system_version: 0,
+            major_image_version: 0,
+            minor_image_version: 0,
+            major_subsystem_version: 6,
+            minor_subsystem_version: 0,
+            win32_version_value: 0,
+            size_of_image,
+            size_of_headers,
+            checksum: 0,
+            subsystem,
+            dll_characteristics: 0x8160, // DYNAMIC_BASE | NX_COMPAT | NO_SEH | TERMINAL_SERVER_AWARE
+            size_of_stack_reserve: 0x100000,
+            size_of_stack_commit: 0x1000,
+            size_of_heap_reserve: 0x100000,
+            size_of_heap_commit: 0x1000,
+            loader_flags: 0,
+            number_of_rva_and_sizes: 16,
+            data_directories,
+        }
+    }
 }
 
 /// PE 头结构

@@ -3,13 +3,12 @@ pub mod x86;
 
 use crate::{
     types::{DataDirectory, DosHeader, NtHeader, OptionalHeader, PeHeader, PeProgram, PeSection, SubsystemType},
-    writer::PeAssembler,
+    writer::PeWriter,
 };
 use gaia_types::{helpers::Architecture, GaiaError};
 use pe_coff::types::CoffHeader;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::io::Cursor;
+use std::{collections::HashMap, io::Cursor};
 
 // 定义 ImportTable 类型
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -396,7 +395,7 @@ impl PeAssemblerBuilder {
     pub fn generate(self) -> Result<Vec<u8>, GaiaError> {
         let program = self.build()?;
         let mut buffer = Cursor::default();
-        let mut assembler = PeAssembler::new(&mut buffer);
+        let mut assembler = PeWriter::new(&mut buffer);
         assembler.write_program(&program)?;
         Ok(buffer.into_inner())
     }

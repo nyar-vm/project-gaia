@@ -13,22 +13,13 @@ use std::{
     path::Path,
 };
 
-/// PE 读取器
-///
-/// 支持惰性读取的 PE 文件解析器，可以根据需要逐步解析 PE 文件的不同部分。
-/// 通过配置可以控制解析的深度和范围，在性能和功能之间取得平衡。
-#[derive(Debug, Copy, Clone)]
-pub struct PeReader {
-    config: ReadConfig,
-}
-
 /// PE 视图结构
 ///
 /// 轻量级视图，只持有 BinaryReader 与解析后的关键信息。
 #[derive(Debug)]
-pub struct PeViewer<W> {
+pub struct PeReader<R> {
     /// 二进制读取器（已定位到 DOS 头起始位置）
-    viewer: BinaryReader<W, LittleEndian>,
+    viewer: BinaryReader<R, LittleEndian>,
     headers_read: bool,
     lazy_header: Option<PeHeader>,
     lazy_section_headers: Option<Vec<SectionHeader>>,
@@ -36,11 +27,8 @@ pub struct PeViewer<W> {
     lazy_info: Option<PeInfo>,
 }
 
-impl<W> PeViewer<W> {
-    /// 从已有的 lexer 构造视图
-    ///
-    /// 调用者需保证 lexer 初始位置为文件开头。
-    pub fn new(reader: W) -> Self {
+impl<R> PeReader<R> {
+    pub fn new(reader: R) -> Self {
         Self {
             viewer: BinaryReader::new(reader),
             headers_read: false,
@@ -52,9 +40,12 @@ impl<W> PeViewer<W> {
     }
 }
 
-impl<W: ReadBytesExt + Seek> PeViewer<W> {
+impl<W: Read> PeReader<W> {
     /// 读取 PE 头部信息（惰性读取，会缓存结果）
-    fn read_headers(&mut self) -> Result<PeHeader, GaiaError> {
+    fn read_headers(&mut self) -> Result<PeHeader, GaiaError>
+    where
+        W: Seek,
+    {
         if self.headers_read {
             return Ok(self.lazy_header.clone().unwrap());
         }
@@ -68,7 +59,10 @@ impl<W: ReadBytesExt + Seek> PeViewer<W> {
     }
 
     /// 读取节头信息（惰性读取，会缓存结果）
-    fn read_section_headers(&mut self) -> Result<Vec<SectionHeader>, GaiaError> {
+    fn read_section_headers(&mut self) -> Result<Vec<SectionHeader>, GaiaError>
+    where
+        W: Seek,
+    {
         if let Some(ref sections) = self.lazy_section_headers {
             return Ok(sections.clone());
         }
@@ -101,7 +95,10 @@ impl<W: ReadBytesExt + Seek> PeViewer<W> {
     }
 
     /// 读取完整的 PE 程序（惰性读取，会缓存结果）
-    pub fn read_program(&mut self) -> Result<PeProgram, GaiaError> {
+    pub fn read_program(&mut self) -> Result<PeProgram, GaiaError>
+    where
+        W: Seek,
+    {
         if let Some(ref program) = self.lazy_program {
             return Ok(program.clone());
         }
@@ -147,7 +144,10 @@ impl<W: ReadBytesExt + Seek> PeViewer<W> {
     }
 
     /// 解析导入表
-    fn parse_import_table(&mut self, header: &PeHeader, sections: &[PeSection]) -> Result<ImportTable, GaiaError> {
+    fn parse_import_table(&mut self, header: &PeHeader, sections: &[PeSection]) -> Result<ImportTable, GaiaError>
+    where
+        W: Seek,
+    {
         // 检查数据目录表是否包含导入表信息
         if header.optional_header.data_directories.len() <= 1 {
             return Ok(ImportTable { dll_name: String::new(), functions: Vec::new() });
@@ -276,7 +276,10 @@ impl<W: ReadBytesExt + Seek> PeViewer<W> {
     }
 
     /// 解析导出表
-    fn parse_export_table(&mut self, header: &PeHeader, sections: &[PeSection]) -> Result<ExportTable, GaiaError> {
+    fn parse_export_table(&mut self, header: &PeHeader, sections: &[PeSection]) -> Result<ExportTable, GaiaError>
+    where
+        W: Seek,
+    {
         // 检查数据目录表是否包含导出表信息
         if header.optional_header.data_directories.is_empty() {
             return Ok(ExportTable { name: String::new(), functions: Vec::new() });
@@ -378,7 +381,10 @@ impl<W: ReadBytesExt + Seek> PeViewer<W> {
     }
 
     /// 读取基本视图（轻量级）
-    pub fn view(&mut self) -> Result<PeInfo, GaiaError> {
+    pub fn view(&mut self) -> Result<PeInfo, GaiaError>
+    where
+        W: Seek,
+    {
         // 读取 DOS 头
         let dos_header = DosHeader::read(self)?;
 
@@ -429,7 +435,7 @@ impl<W: ReadBytesExt + Seek> PeViewer<W> {
             unknown => {
                 tracing::warn!("未知的机器类型: {:04x}", unknown);
                 Architecture::Unknown
-            },
+            }
         };
 
         // 获取当前文件大小
@@ -462,77 +468,22 @@ pub struct PeView {
     bytes: Option<Vec<u8>>,
 }
 
-impl PeReader {
-    /// 创建新的 PE 读取器
-    pub fn new() -> Self {
-        Self { config: ReadConfig::default() }
-    }
-
-    /// 使用自定义配置创建 PE 读取器
-    pub fn with_config(config: ReadConfig) -> Self {
-        Self { config }
-    }
-
-    /// 从文件读取完整的 PE 程序
-    pub fn read_file(&self, path: &Path) -> Result<PeProgram, GaiaError> {
-        let mut file = File::open(path)?;
-        let mut buffer = Vec::new();
-        file.read_to_end(&mut buffer)?;
-        self.read_bytes(&buffer)
-    }
-
-    /// 从字节数据读取完整的 PE 程序
-    pub fn read_bytes(&self, bytes: &[u8]) -> Result<PeProgram, GaiaError> {
-        let mut viewer = PeViewer::new(Cursor::new(bytes));
-        viewer.read_program()
-    }
-
-    /// 从文件获取 PE 基本信息（轻量级）
-    pub fn view_file(&self, path: &Path) -> Result<PeInfo, GaiaError> {
-        let file = File::open(path)?;
-        let mut viewer = PeViewer::new(file);
-        viewer.view()
-    }
-
-    /// 从字节数据获取 PE 基本信息（轻量级）
-    pub fn view_bytes(&self, bytes: &[u8]) -> Result<PeInfo, GaiaError> {
-        let mut viewer = PeViewer::new(Cursor::new(bytes));
-        viewer.view()
-    }
-}
-
-impl Default for PeReader {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl PeView {
     /// 从文件路径创建 PE 视图
     pub fn view_file(path: &Path) -> Result<Self, GaiaError> {
         let file = File::open(path)?;
-        let mut pe_reader = PeViewer::new(file);
+        let mut pe_reader = PeReader::new(file);
         let info = pe_reader.view()?;
         Ok(PeView { info, file_path: Some(path.to_path_buf()), bytes: None })
     }
     pub fn view_bytes(bytes: &[u8]) -> Result<Self, GaiaError> {
-        let mut pe_reader = PeViewer::new(Cursor::new(bytes));
+        let mut pe_reader = PeReader::new(Cursor::new(bytes));
         let info = pe_reader.view()?;
         Ok(PeView { info, file_path: None, bytes: Some(bytes.to_vec()) })
     }
     /// 将视图转换为完整的 PeProgram
     pub fn to_program(&self) -> Result<PeProgram, GaiaError> {
-        let reader = PeReader::new();
-
-        if let Some(ref path) = self.file_path {
-            reader.read_file(path)
-        }
-        else if let Some(ref bytes) = self.bytes {
-            reader.read_bytes(bytes)
-        }
-        else {
-            Err(GaiaError::invalid_data("没有可用的数据源来读取完整的 PE 程序"))
-        }
+        todo!()
     }
 
     /// 获取 PE 基本信息
@@ -549,7 +500,7 @@ impl DosHeader {
     ///
     /// # Returns
     /// 返回 DOS 头结构或错误
-    pub fn read<R: ReadBytesExt>(reader: &mut PeViewer<R>) -> Result<Self, GaiaError> {
+    pub fn read<R: ReadBytesExt>(reader: &mut PeReader<R>) -> Result<Self, GaiaError> {
         let e_magic = reader.viewer.read_u16()?;
         let e_cblp = reader.viewer.read_u16()?;
         let e_cp = reader.viewer.read_u16()?;
@@ -612,7 +563,7 @@ impl NtHeader {
     ///
     /// # Returns
     /// 返回 NT 头结构或错误
-    pub fn read<R: ReadBytesExt>(reader: &mut PeViewer<R>) -> Result<Self, GaiaError> {
+    pub fn read<R: ReadBytesExt>(reader: &mut PeReader<R>) -> Result<Self, GaiaError> {
         let signature = reader.viewer.read_u32()?;
         Ok(NtHeader { signature })
     }
@@ -626,7 +577,7 @@ impl PeHeader {
     ///
     /// # Returns
     /// 返回 PE 头结构或错误
-    pub fn read<R: ReadBytesExt + Seek>(reader: &mut PeViewer<R>) -> Result<Self, GaiaError> {
+    pub fn read<R: Read + Seek>(reader: &mut PeReader<R>) -> Result<Self, GaiaError> {
         // 保存当前位置
         let original_pos = reader.viewer.get_position();
 
@@ -701,7 +652,7 @@ impl SectionHeader {
     ///
     /// # Returns
     /// 返回节头结构或错误
-    pub fn read<R: ReadBytesExt + Seek>(reader: &mut PeViewer<R>) -> Result<Self, GaiaError> {
+    pub fn read<R: ReadBytesExt + Seek>(reader: &mut PeReader<R>) -> Result<Self, GaiaError> {
         let name = reader.viewer.read_array::<8>()?;
 
         let virtual_size = reader.viewer.read_u32()?;
@@ -737,7 +688,7 @@ impl OptionalHeader {
     ///
     /// # Returns
     /// 返回可选头结构或错误
-    pub fn read<R: ReadBytesExt>(reader: &mut PeViewer<R>) -> Result<Self, GaiaError> {
+    pub fn read<R: ReadBytesExt>(reader: &mut PeReader<R>) -> Result<Self, GaiaError> {
         let magic = reader.viewer.read_u16()?;
         let major_linker_version = reader.viewer.read_u8()?;
         let minor_linker_version = reader.viewer.read_u8()?;
@@ -846,7 +797,7 @@ impl DataDirectory {
     ///
     /// # Returns
     /// 返回数据目录结构或错误
-    pub fn read<R: ReadBytesExt>(reader: &mut PeViewer<R>) -> Result<Self, GaiaError> {
+    pub fn read<R: ReadBytesExt>(reader: &mut PeReader<R>) -> Result<Self, GaiaError> {
         let virtual_address = reader.viewer.read_u32()?;
         let size = reader.viewer.read_u32()?;
 
@@ -862,7 +813,7 @@ impl PeSection {
     ///
     /// # Returns
     /// 返回 PE 节结构或错误
-    pub fn read<R: ReadBytesExt + Seek>(reader: &mut PeViewer<R>) -> Result<Self, GaiaError> {
+    pub fn read<R: ReadBytesExt + Seek>(reader: &mut PeReader<R>) -> Result<Self, GaiaError> {
         let header = SectionHeader::read(reader)?;
 
         // 读取节的数据

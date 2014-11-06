@@ -110,7 +110,7 @@ impl CoffReader {
             unknown => {
                 tracing::warn!("未知的机器类型: {:04x}", unknown);
                 Architecture::Unknown
-            },
+            }
         }
     }
 }

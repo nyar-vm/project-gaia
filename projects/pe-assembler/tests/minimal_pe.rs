@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use debug_pe::hello_world::{generate_x86_console_log, generate_x86_console_program};
-    use pe_assembler::writer::PeAssembler;
+    use pe_assembler::writer::PeWriter;
     use std::{fs, process::Command};
 
     #[test]
@@ -24,7 +24,7 @@ mod tests {
         println!("========================================");
 
         // 写入二进制数据
-        let pe_data = PeAssembler::write_program(&pe_program).expect("Failed to write PE program");
+        let pe_data = PeWriter::write_program(&pe_program).expect("Failed to write PE program");
 
         // 写入文件
         let output_path = "minimal_pe.exe";

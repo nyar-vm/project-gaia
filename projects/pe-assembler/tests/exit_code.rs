@@ -5,7 +5,7 @@
 use gaia_types::GaiaError;
 use pe_assembler::{
     types::{DataDirectory, DosHeader, NtHeader, OptionalHeader, PeHeader, PeSection, SubsystemType},
-    writer::{PeAssembler, PeBuilder},
+    writer::{PeBuilder, PeWriter},
 };
 use pe_coff::types::CoffHeader;
 
@@ -127,7 +127,7 @@ pub fn generate_x86_exit_code(exit_code: u32) -> Result<Vec<u8>, GaiaError> {
     final_program.exports = export_table;
 
     // 使用 PeAssembler 写入二进制数据
-    PeAssembler::write_program(&final_program)
+    PeWriter::write_program(&final_program)
 }
 
 /// 生成 x64 架构的退出代码 PE 文件
@@ -250,5 +250,5 @@ pub fn generate_x64_exit_code(exit_code: u32) -> Result<Vec<u8>, GaiaError> {
     final_program.exports = export_table;
 
     // 使用 PeAssembler 写入二进制数据
-    PeAssembler::write_program(&final_program)
+    PeWriter::write_program(&final_program)
 }

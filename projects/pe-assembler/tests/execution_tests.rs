@@ -3,7 +3,6 @@
 //! 这个模块测试生成的 PE 文件是否能在 Windows 环境下正常执行
 
 use gaia_types::helpers::Architecture;
-use pe_assembler::generator::{easy_console_log, easy_exit_code};
 use std::{fs, process::Command};
 
 #[cfg(target_os = "windows")]

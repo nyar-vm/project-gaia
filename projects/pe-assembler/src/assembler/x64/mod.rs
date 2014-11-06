@@ -1,3 +1,11 @@
+pub mod code_builder;
+pub mod context;
+pub mod integration;
+
+pub use code_builder::X64CodeBuilder;
+pub use context::{FunctionCall, Label, RelocationInfo, RelocationType, X64Context, X64Register};
+pub use integration::PeGenerator;
+
 use crate::assembler::EncodedInstruction;
 use gaia_types::GaiaError;
 
