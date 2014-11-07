@@ -1,0 +1,30 @@
+[package]
+name = "elf-assembler"
+version = "0.0.0"
+authors = ["Aster <192607617@qq.com>"]
+description = "ELF assembler for Gaia project"
+repository = "https://github.com/oovm/wasm.exe"
+documentation = "https://docs.rs/elf-assembler"
+readme = "readme.md"
+license = "MPL-2.0"
+edition = "2021"
+exclude = ["package.json", "tests/**"]
+
+[dependencies]
+byteorder = "1.5.0"
+gaia-types = { path = "../gaia-types" }
+serde = { version = "1.0.228", features = ["derive"] }
+walkdir = { version = "2.5.0", optional = true }
+serde_json = { version = "1.0.132", optional = true }
+tracing = "0.1.40"
+
+[build-dependencies]
+
+[dev-dependencies]
+
+[features]
+default = []
+easy-test = ["walkdir", "serde_json"]
+
+[package.metadata.docs.rs]
+all-features = true
