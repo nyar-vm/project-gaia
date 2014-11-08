@@ -2,7 +2,6 @@
 //!
 //! 提供测试辅助功能和其他工具函数
 
-use crate::{ast::JasmRoot, lexer::JasmLexer, parser::JasmParser};
 use gaia_types::GaiaError;
 use serde::{Deserialize, Serialize};
 use serde_json::{ser::PrettyFormatter, Serializer};
@@ -137,7 +136,7 @@ impl JasmExpected {
 
 /// 获取 JASM 文件对应的 JSON 期望文件路径
 pub fn get_expected_json_path(path: &Path) -> String {
-    let parent = path.parent().unwrap_or(Path::new("."));
+    let parent = path.parent().unwrap_or(Path::new("../../../.."));
     let stem = path.file_stem().unwrap().to_string_lossy();
     parent.join(format!("{}.expected.json", stem)).to_string_lossy().to_string()
 }

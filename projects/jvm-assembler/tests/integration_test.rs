@@ -1,9 +1,11 @@
 use jvm_assembler::compile_jasm_to_class;
 use std::{fs, path::Path};
 
+pub mod easy_test;
+
 #[test]
 fn test_compile_hello_java() {
-    let jasm_content = include_str!("HelloJava.jasm");
+    let jasm_content = include_str!("formats/jasm/tests/HelloJava.jasm");
 
     // 编译 JASM 到 .class 文件
     let class_bytes = compile_jasm_to_class(jasm_content).expect("Failed to compile JASM");

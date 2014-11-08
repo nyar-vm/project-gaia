@@ -12,8 +12,6 @@ exclude = ["package.json", "tests/**"]
 
 [dependencies]
 gaia-types = { path = "../gaia-types" }
-jvm-jasm = { path = "../jvm-jasm" }
 byteorder = "1.5.0"
-
 
 [features]

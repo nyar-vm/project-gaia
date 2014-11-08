@@ -10,7 +10,7 @@ mod token_type;
 /// # 示例
 ///
 /// ```rust
-/// use jvm_jasm::lexer::JasmLexer;
+/// use jvm_assembler::formats::jasm::lexer::JasmLexer;
 ///
 /// let lexer = JasmLexer::new();
 /// let result = lexer.tokenize("public class HelloJava");
@@ -43,7 +43,7 @@ impl JasmLexer {
     /// # 示例
     ///
     /// ```rust
-    /// use jvm_jasm::lexer::JasmLexer;
+    /// use jvm_assembler::formats::jasm::lexer::JasmLexer;
     ///
     /// let lexer = JasmLexer::new();
     /// let result = lexer.tokenize("public class HelloJava");

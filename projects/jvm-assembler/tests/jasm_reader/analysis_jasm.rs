@@ -8,6 +8,6 @@ fn here() -> &'static Path {
 /// 自动测试所有 JASM 文件
 #[test]
 fn test_all_jasm_files_automatically() {
-    let test_folder = Path::new("tests");
+    let test_folder = Path::new("../../../../tests");
     validate_jasm_files(test_folder);
 }
