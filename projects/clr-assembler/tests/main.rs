@@ -1,6 +1,12 @@
-use clr_msil::easy_test::validate_msil_files;
+use crate::test_tools::validate_msil_files;
 pub use gaia_types::Result;
 use std::path::Path;
+
+mod msil_read;
+mod msil_write;
+mod net_read;
+mod net_write;
+mod test_tools;
 
 #[test]
 fn ready() {
@@ -20,7 +26,7 @@ fn parse_msil_files() {
 #[test]
 fn hello_dll() -> Result<()> {
     // let program =
-    //     IlContext::read(include_bytes!("HelloUnity.msil").to_vec(), ReadConfig { format: IlFormat::Auto, url: None }).program?;
+    //     IlContext::read(include_bytes!("HelloUnity.msil_read").to_vec(), ReadConfig { format: IlFormat::Auto, url: None }).program?;
     // let bytes = IlContext::write(program, WriterConfig { format: IlFormat::Dll })?;
     // // 验证DLL基本结构，不再依赖外部二进制文件
     // assert!(bytes.len() > 0, "DLL字节数组不能为空");

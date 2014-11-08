@@ -5,10 +5,10 @@
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 
-use crate::{
+use clr_assembler::formats::msil::{
     ast::{MsilRoot, MsilStatement},
     parser::MsilParser,
-    ReadConfig,
+    MsilReadConfig,
 };
 use gaia_types::GaiaError;
 use serde_json::{ser::PrettyFormatter, Serializer};
@@ -263,7 +263,7 @@ pub fn compare_msil_file(test_name: &str, file_path: &Path) -> Result<(), Box<dy
     let msil_content = std::fs::read_to_string(file_path)?;
 
     // 创建解析器并解析
-    let config = ReadConfig::default();
+    let config = MsilReadConfig::default();
     let parser = MsilParser::new(&config);
     let ast_result = parser.parse_text(&msil_content);
 
@@ -361,7 +361,7 @@ pub fn test_msil_file_with_expectation(test_name: &str, msil_file_path: &str, ex
     let msil_content = std::fs::read_to_string(msil_file_path).expect(&format!("无法读取文件: {}", msil_file_path));
 
     // 创建解析器并解析
-    let config = ReadConfig::default();
+    let config = MsilReadConfig::default();
     let parser = MsilParser::new(&config);
     let ast_result = parser.parse_text(&msil_content);
 

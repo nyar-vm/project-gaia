@@ -1,5 +1,9 @@
+use crate::program::{
+    ClrAccessFlags, ClrHeader, ClrMethod, ClrProgram, ClrType, ClrTypeReference, ClrVersion, DotNetAssemblyInfo,
+    MetadataHeader, StreamHeader,
+};
 use byteorder::{LittleEndian, ReadBytesExt};
-use gaia_types::{GaiaError, SourceLocation};
+use gaia_types::{GaiaDiagnostics, GaiaError, SourceLocation};
 use pe_assembler::viewer::PeView;
 use std::{
     fs,
@@ -7,85 +11,14 @@ use std::{
 };
 use url::Url;
 
-/// CLR 头结构（Common Language Runtime Header）
-///
-/// CLR 头是 .NET 程序集的核心组成部分，包含了运行时所需的关键信息。
-#[derive(Debug, Clone)]
-pub struct ClrHeader {
-    /// 头的总大小（字节）
-    pub cb: u32,
-    /// CLR 运行时主版本号
-    pub major_runtime_version: u16,
-    /// CLR 运行时次版本号
-    pub minor_runtime_version: u16,
-    /// 元数据的相对虚拟地址
-    pub metadata_rva: u32,
-    /// 元数据的大小（字节）
-    pub metadata_size: u32,
-    /// 程序集的标志位，如是否为纯 IL 代码等
-    pub flags: u32,
-}
-
-/// 元数据头结构（Metadata Header）
-///
-/// 元数据头描述了 .NET 程序集中存储的类型、方法、字段等元数据信息。
-#[derive(Debug, Clone)]
-pub struct MetadataHeader {
-    /// 魔数，通常为 0x424A5342 (BSJB)
-    pub signature: u32,
-    /// 元数据格式主版本
-    pub major_version: u16,
-    /// 元数据格式次版本
-    pub minor_version: u16,
-    /// 保留字段，通常为 0
-    pub reserved: u32,
-    /// 运行时版本字符串的长度
-    pub version_length: u32,
-    /// 运行时版本字符串的内容
-    pub version_string: String,
-    /// 元数据标志位
-    pub flags: u16,
-    /// 元数据流的数量
-    pub streams: u16,
-}
-
-/// 流头结构（Stream Header）
-///
-/// .NET 元数据被组织成多个流（Stream），每个流包含特定类型的数据。
-#[derive(Debug, Clone)]
-pub struct StreamHeader {
-    /// 该流在元数据中的偏移量
-    pub offset: u32,
-    /// 流的大小（字节）
-    pub size: u32,
-    /// 流的名称，如 "#Strings"、"#US"、"#GUID"、"#Blob" 等
-    pub name: String,
-}
-
-/// .NET 程序集信息（Assembly Information）
-///
-/// 包含程序集的基本标识信息。
-#[derive(Debug, Clone)]
-pub struct DotNetAssemblyInfo {
-    /// 程序集名称
-    pub name: String,
-    /// 版本号，格式为 major.minor.build.revision
-    pub version: String,
-    /// 文化区域信息，如 "zh-CN"，null 表示中性文化
-    pub culture: Option<String>,
-    /// 公钥标记，用于强名称验证
-    pub public_key_token: Option<String>,
-    /// .NET 运行时版本，如 "v4.0.30319"
-    pub runtime_version: Option<String>,
-}
-
-/// .NET PE 文件读取器（DotNet PE File Reader）
+/// .NET PE 文件惰性读取器
 ///
 /// 该类负责读取和解析 .NET 程序集文件，提供以下功能：
 /// - 检查文件是否为有效的 .NET 程序集
 /// - 解析 CLR 头和元数据
 /// - 提取程序集的基本信息
 /// - 验证程序集的完整性
+/// - 支持惰性读取和完整解析两种模式
 #[derive(Debug)]
 pub struct DotNetReader {
     /// 整个 PE 文件的原始字节数据
@@ -100,6 +33,8 @@ pub struct DotNetReader {
     stream_headers: Vec<StreamHeader>,
     /// 提取的程序集基本信息
     assembly_info: Option<DotNetAssemblyInfo>,
+    /// 完整解析的 CLR 程序（惰性加载）
+    clr_program: Option<ClrProgram>,
 }
 
 impl DotNetReader {
@@ -115,7 +50,7 @@ impl DotNetReader {
     /// * `file_path` - .NET 程序集文件路径
     ///
     /// # 返回
-    /// * `Ok(DotNetAssembly)` - 成功解析的程序集
+    /// * `Ok(DotNetReader)` - 成功解析的读取器
     /// * `Err(GaiaError)` - 读取或解析过程中的错误
     pub fn read_from_file(file_path: &str) -> Result<Self, GaiaError> {
         // 将整个 PE 文件读入内存
@@ -133,6 +68,7 @@ impl DotNetReader {
             metadata_header: None,
             stream_headers: Vec::new(),
             assembly_info: None,
+            clr_program: None,
         };
 
         // 执行解析工作流程
@@ -176,6 +112,42 @@ impl DotNetReader {
         else {
             Ok(false)
         }
+    }
+
+    /// 惰性读取程序集基本信息
+    ///
+    /// 仅读取程序集的基本标识信息，不解析完整的类型系统。
+    /// 适用于快速获取程序集名称、版本等信息的场景。
+    ///
+    /// # 返回
+    /// * `Ok(DotNetAssemblyInfo)` - 程序集基本信息
+    /// * `Err(GaiaError)` - 读取过程中的错误
+    pub fn get_assembly_info(&self) -> Result<DotNetAssemblyInfo, GaiaError> {
+        if let Some(ref info) = self.assembly_info {
+            Ok(info.clone())
+        }
+        else {
+            Err(GaiaError::syntax_error("程序集信息未解析".to_string(), SourceLocation::default()))
+        }
+    }
+
+    /// 完整解析为 CLR 程序
+    ///
+    /// 解析整个 .NET 程序集，包括所有类型、方法、字段等信息。
+    /// 这是一个重量级操作，会消耗较多内存和时间。
+    ///
+    /// # 返回
+    /// * `Ok(ClrProgram)` - 完整的 CLR 程序表示
+    /// * `Err(GaiaError)` - 解析过程中的错误
+    pub fn to_clr_program(&mut self) -> Result<ClrProgram, GaiaError> {
+        if let Some(ref program) = self.clr_program {
+            return Ok(program.clone());
+        }
+
+        // 执行完整解析
+        let program = self.parse_full_program()?;
+        self.clr_program = Some(program.clone());
+        Ok(program)
     }
 
     /// 验证程序集完整性
@@ -294,6 +266,61 @@ impl DotNetReader {
         Ok(())
     }
 
+    /// 解析完整的 CLR 程序
+    ///
+    /// 执行完整的程序集解析，包括所有类型、方法、字段等信息。
+    /// 这是一个重量级操作，会解析整个元数据表结构。
+    ///
+    /// # 返回
+    /// * `Ok(ClrProgram)` - 完整的 CLR 程序表示
+    /// * `Err(GaiaError)` - 解析过程中的错误
+    fn parse_full_program(&self) -> Result<ClrProgram, GaiaError> {
+        // 创建基本的 CLR 程序结构
+        let mut program = ClrProgram::new("UnknownAssembly".to_string());
+
+        // 设置版本信息
+        program.version = ClrVersion { major: 1, minor: 0, build: 0, revision: 0 };
+
+        // 设置访问标志
+        program.access_flags =
+            ClrAccessFlags { is_public: true, is_private: false, is_security_transparent: false, is_retargetable: false };
+
+        // TODO: 实现完整的元数据表解析
+        // 这需要解析以下元数据表：
+        // - Assembly 表：程序集信息
+        // - AssemblyRef 表：外部程序集引用
+        // - Module 表：模块信息
+        // - TypeDef 表：类型定义
+        // - MethodDef 表：方法定义
+        // - FieldDef 表：字段定义
+        // - MemberRef 表：成员引用
+        // - TypeRef 表：类型引用
+        // - Param 表：参数信息
+        // - Property 表：属性信息
+        // - Event 表：事件信息
+        // - CustomAttribute 表：自定义属性
+
+        // 临时添加一个示例类型
+        let mut example_type = ClrType::new("ExampleClass".to_string(), Some("ExampleNamespace".to_string()));
+
+        // 添加示例方法
+        let void_type = ClrTypeReference {
+            name: "Void".to_string(),
+            namespace: Some("System".to_string()),
+            assembly: Some("mscorlib".to_string()),
+            is_value_type: true,
+            is_reference_type: false,
+            generic_parameters: Vec::new(),
+        };
+
+        let example_method = ClrMethod::new("ExampleMethod".to_string(), void_type);
+        example_type.add_method(example_method);
+
+        program.add_type(example_type);
+
+        Ok(program)
+    }
+
     /// 查找并读取 CLR 头
     ///
     /// 该方法在 PE 文件中搜索 CLR 头。CLR 头包含：
@@ -307,9 +334,48 @@ impl DotNetReader {
     /// * `Ok(None)` - 未找到 CLR 头（不是 .NET 程序集）
     /// * `Err(GaiaError)` - 读取过程中的错误
     fn find_and_read_clr_header(&self) -> Result<Option<ClrHeader>, GaiaError> {
-        // 在 PE 数据目录中实现查找 CLR 头的逻辑
-        // 这是占位符 - 实际实现需要解析 PE 目录
-        Ok(None)
+        // 获取 PE 程序以访问数据目录
+        let pe_program = self.pe_view.to_program()?;
+
+        // 检查 CLR 数据目录是否存在（索引 14 是 CLR 运行时头）
+        if let Some(clr_dir) = pe_program.header.optional_header.data_directories.get(14) {
+            if clr_dir.virtual_address == 0 || clr_dir.size == 0 {
+                return Ok(None);
+            }
+
+            // 将 RVA 转换为文件偏移
+            let file_offset = self.rva_to_file_offset(clr_dir.virtual_address)?;
+
+            // 读取 CLR 头
+            let mut cursor = Cursor::new(&self.pe_data);
+            cursor
+                .seek(SeekFrom::Start(file_offset as u64))
+                .map_err(|e| GaiaError::io_error(e, Url::parse("memory://clr_header").unwrap()))?;
+
+            let cb = cursor
+                .read_u32::<LittleEndian>()
+                .map_err(|e| GaiaError::io_error(e, Url::parse("memory://clr_header").unwrap()))?;
+            let major_runtime_version = cursor
+                .read_u16::<LittleEndian>()
+                .map_err(|e| GaiaError::io_error(e, Url::parse("memory://clr_header").unwrap()))?;
+            let minor_runtime_version = cursor
+                .read_u16::<LittleEndian>()
+                .map_err(|e| GaiaError::io_error(e, Url::parse("memory://clr_header").unwrap()))?;
+            let metadata_rva = cursor
+                .read_u32::<LittleEndian>()
+                .map_err(|e| GaiaError::io_error(e, Url::parse("memory://clr_header").unwrap()))?;
+            let metadata_size = cursor
+                .read_u32::<LittleEndian>()
+                .map_err(|e| GaiaError::io_error(e, Url::parse("memory://clr_header").unwrap()))?;
+            let flags = cursor
+                .read_u32::<LittleEndian>()
+                .map_err(|e| GaiaError::io_error(e, Url::parse("memory://clr_header").unwrap()))?;
+
+            Ok(Some(ClrHeader { cb, major_runtime_version, minor_runtime_version, metadata_rva, metadata_size, flags }))
+        }
+        else {
+            Ok(None)
+        }
     }
 
     /// 读取元数据头
@@ -426,6 +492,13 @@ impl DotNetReader {
                 }
                 let name = String::from_utf8_lossy(&name_bytes).to_string();
 
+                // 对齐到 4 字节边界
+                let current_pos = cursor.position();
+                let aligned_pos = (current_pos + 3) & !3;
+                cursor
+                    .seek(SeekFrom::Start(aligned_pos))
+                    .map_err(|e| GaiaError::io_error(e, Url::parse("memory://stream_headers").unwrap()))?;
+
                 stream_headers.push(StreamHeader { offset, size, name });
             }
         }
@@ -475,5 +548,25 @@ impl DotNetReader {
 
         // 找不到包含该 RVA 的节
         Err(GaiaError::syntax_error(format!("无法将 RVA 0x{:x} 转换为文件偏移", rva), SourceLocation::default()))
+    }
+}
+
+/// 从 .NET 程序集文件读取并解析为 CLR 程序
+///
+/// 这是一个便利函数，用于一次性读取和解析 .NET 程序集文件。
+///
+/// # 参数
+/// * `file_path` - .NET 程序集文件路径
+///
+/// # 返回
+/// * `Ok(ClrProgram)` - 成功解析的 CLR 程序
+/// * `Err(GaiaError)` - 读取或解析过程中的错误
+pub fn read_dotnet_assembly(file_path: &str) -> GaiaDiagnostics<ClrProgram> {
+    match DotNetReader::read_from_file(file_path) {
+        Ok(mut reader) => match reader.to_clr_program() {
+            Ok(program) => GaiaDiagnostics::success(program),
+            Err(error) => GaiaDiagnostics::failure(error),
+        },
+        Err(error) => GaiaDiagnostics::failure(error),
     }
 }

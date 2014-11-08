@@ -1,5 +1,5 @@
 pub use self::token_type::MsilTokenType;
-use crate::ReadConfig;
+use crate::formats::msil::MsilReadConfig;
 use gaia_types::{lexer::LexerState, reader::TokenStream, GaiaDiagnostics};
 
 mod token_type;
@@ -7,11 +7,11 @@ mod token_type;
 /// MSIL 词法分析器
 #[derive(Clone, Debug)]
 pub struct MsilLexer<'config> {
-    config: &'config ReadConfig,
+    config: &'config MsilReadConfig,
 }
 
 impl<'config> MsilLexer<'config> {
-    pub fn new(config: &'config ReadConfig) -> Self {
+    pub fn new(config: &'config MsilReadConfig) -> Self {
         Self { config }
     }
 

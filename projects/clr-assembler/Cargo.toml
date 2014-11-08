@@ -7,7 +7,7 @@ repository = "https://github.com/oovm/wasm.exe"
 documentation = "https://docs.rs/wasm-exe"
 readme = "readme.md"
 license = "MPL-2.0"
-edition = "2024"
+edition = "2021"
 exclude = ["package.json", "tests/**"]
 
 [lib]
@@ -17,17 +17,19 @@ crate-type = ["cdylib", "rlib"]
 byteorder = "1.4"
 gaia-types = { path = "../gaia-types" }
 pe-assembler = { path = "../pe-assembler" }
-clr-msil = { path = "../clr-msil" }
+pe-coff = { path = "../pe-coff" }
 url = "2.4"
 serde = { version = "1.0", features = ["derive"] }
 
 [build-dependencies]
 
 [dev-dependencies]
+serde_json = "1.0.145"
+walkdir = "2.5.0"
 
 [features]
 default = []
-easy-test = ["clr-msil/easy-test"]
+easy-test = []
 
 [package.metadata.docs.rs]
 all-features = true

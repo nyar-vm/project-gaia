@@ -1,15 +1,6 @@
 use gaia_types::{helpers::Url, writer::TextWriter, GaiaType, Result};
 use std::fmt::Write;
 
-/// MSIL 写入器配置
-#[derive(Debug, Clone)]
-pub struct MsilWriterConfig {
-    /// 是否生成调试信息
-    pub generate_debug_info: bool,
-    /// 目标 URL
-    pub url: Option<Url>,
-}
-
 /// MSIL 代码写入器
 ///
 /// 这个结构体提供了生成 MSIL (Microsoft Intermediate Language) 代码的功能，

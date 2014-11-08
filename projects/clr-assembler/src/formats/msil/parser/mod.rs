@@ -1,42 +1,9 @@
-//! MSIL (Microsoft Intermediate Language) 解析器模块
-//!
-//! 这个模块提供了 MSIL 汇编语言的解析功能，将 MSIL 源代码转换为抽象语法树 (AST)。
-//! 解析器使用递归下降解析技术，支持 MSIL 的各种语法构造。
-//!
-//! # 特性
-//!
-//! - 支持 MSIL 程序集声明（`.assembly`）
-//! - 支持外部程序集引用（`.assembly extern`）
-//! - 支持模块声明（`.module`）
-//! - 支持类声明（`.class`）
-//! - 支持方法声明（`.method`）
-//! - 支持方法体解析（指令、局部变量等）
-//! - 支持各种修饰符和属性
-//!
-//! # 示例
-//!
-//! ```rust
-//! use clr_msil::{MsilParser, ReadConfig};
-//!
-//! let config = ReadConfig::default();
-//! let parser = MsilParser::new(&config);
-//!
-//! let msil_code = r#"
-//! .assembly extern UnityEngine
-//! .assembly MyAssembly
-//! .module MyModule.dll
-//! "#;
-//!
-//! let result = parser.parse_text(msil_code);
-//! if let Ok(ast) = result.result {
-//!     println!("解析成功，找到 {} 个语句", ast.statements.len());
-//! }
-//! ```
+#![doc = include_str!("readme.md")]
 
-use crate::{
+use crate::formats::msil::{
     ast::{MsilClass, MsilInstruction, MsilMethod, MsilMethodBody, MsilParameter, MsilRoot, MsilStatement},
     lexer::{MsilLexer, MsilTokenType},
-    ReadConfig,
+    MsilReadConfig,
 };
 use gaia_types::{reader::TokenStream, GaiaDiagnostics};
 
@@ -60,7 +27,7 @@ use gaia_types::{reader::TokenStream, GaiaDiagnostics};
 #[derive(Clone, Debug)]
 pub struct MsilParser<'config> {
     /// 解析器配置
-    config: &'config ReadConfig,
+    config: &'config MsilReadConfig,
 }
 
 impl<'config> MsilParser<'config> {
@@ -82,7 +49,7 @@ impl<'config> MsilParser<'config> {
     /// let config = ReadConfig::default();
     /// let parser = MsilParser::new(&config);
     /// ```
-    pub fn new(config: &'config ReadConfig) -> Self {
+    pub fn new(config: &'config MsilReadConfig) -> Self {
         Self { config }
     }
 
@@ -180,17 +147,15 @@ impl<'config> MsilParser<'config> {
             if current_index >= token_vec.len() {
                 break;
             }
+
             let token = &token_vec[current_index];
             match &token.token_type {
                 MsilTokenType::Dot => {
-                    println!("找到 Dot token");
                     // 处理以 . 开头的指令
                     if current_index + 1 < token_vec.len() {
                         let next_token = &token_vec[current_index + 1];
-                        println!("Dot 后的 token: {:?}", next_token.token_type);
                         match &next_token.token_type {
                             MsilTokenType::Assembly => {
-                                println!("找到 Assembly 指令");
                                 current_index += 2; // 跳过 '.' 和 'assembly'
                                 skip_ignored(&mut current_index);
 
@@ -205,22 +170,23 @@ impl<'config> MsilParser<'config> {
                                             let name_token = &token_vec[current_index];
                                             if name_token.token_type == MsilTokenType::Identifier {
                                                 let name = tokens.get_text(name_token).unwrap_or("unknown").to_string();
-                                                statements.push(MsilStatement::AssemblyExtern(name.clone()));
+                                                statements.push(MsilStatement::AssemblyExtern(name));
                                                 current_index += 1;
-                                                println!("创建了 AssemblyExtern 语句: {}", name);
+                                                // 跳过可能的程序集块 {...}
+                                                self.skip_block(&tokens, &mut current_index);
                                             }
                                         }
                                     }
                                     else if peek_token.token_type == MsilTokenType::Identifier {
                                         let name = tokens.get_text(peek_token).unwrap_or("unknown").to_string();
-                                        statements.push(MsilStatement::Assembly(name.clone()));
+                                        statements.push(MsilStatement::Assembly(name));
                                         current_index += 1;
-                                        println!("创建了 Assembly 语句: {}", name);
+                                        // 跳过可能的程序集块 {...}
+                                        self.skip_block(&tokens, &mut current_index);
                                     }
                                 }
                             }
                             MsilTokenType::Module => {
-                                println!("找到 Module 指令");
                                 current_index += 2; // 跳过 '.' 和 'module'
                                 skip_ignored(&mut current_index);
 
@@ -228,220 +194,67 @@ impl<'config> MsilParser<'config> {
                                     let name_token = &token_vec[current_index];
                                     if name_token.token_type == MsilTokenType::Identifier {
                                         let name = tokens.get_text(name_token).unwrap_or("unknown").to_string();
-                                        statements.push(MsilStatement::Module(name.clone()));
+                                        statements.push(MsilStatement::Module(name));
                                         current_index += 1;
-                                        println!("创建了 Module 语句: {}", name);
                                     }
                                 }
                             }
                             MsilTokenType::Class => {
-                                println!("找到 Class 指令");
                                 current_index += 2; // 跳过 '.' 和 'class'
                                 skip_ignored(&mut current_index);
 
-                                let mut modifiers = Vec::new();
-                                let mut class_name = String::new();
-                                let mut extends = None;
-                                let mut methods = Vec::new();
-
-                                // 收集修饰符
-                                while current_index < token_vec.len() {
-                                    let peek_token = &token_vec[current_index];
-                                    match peek_token.token_type {
-                                        MsilTokenType::Public => {
-                                            modifiers.push("public".to_string());
-                                            current_index += 1;
-                                            skip_ignored(&mut current_index);
-                                        }
-                                        MsilTokenType::Private => {
-                                            modifiers.push("private".to_string());
-                                            current_index += 1;
-                                            skip_ignored(&mut current_index);
-                                        }
-                                        MsilTokenType::Auto => {
-                                            modifiers.push("auto".to_string());
-                                            current_index += 1;
-                                            skip_ignored(&mut current_index);
-                                        }
-                                        MsilTokenType::Ansi => {
-                                            modifiers.push("ansi".to_string());
-                                            current_index += 1;
-                                            skip_ignored(&mut current_index);
-                                        }
-                                        MsilTokenType::Beforefieldinit => {
-                                            modifiers.push("beforefieldinit".to_string());
-                                            current_index += 1;
-                                            skip_ignored(&mut current_index);
-                                        }
-                                        MsilTokenType::Identifier => {
-                                            let name = tokens.get_text(peek_token).unwrap_or("unknown").to_string();
-                                            class_name = name;
-                                            current_index += 1;
-
-                                            // 检查是否有更多的点和标识符组成完整的类名
-                                            while current_index < token_vec.len() {
-                                                if token_vec[current_index].token_type == MsilTokenType::Dot {
-                                                    current_index += 1; // 跳过 '.'
-                                                    if current_index < token_vec.len()
-                                                        && token_vec[current_index].token_type == MsilTokenType::Identifier
-                                                    {
-                                                        class_name.push('.');
-                                                        class_name
-                                                            .push_str(tokens.get_text(&token_vec[current_index]).unwrap_or(""));
-                                                        current_index += 1;
-                                                    }
-                                                    else {
-                                                        current_index -= 1; // 回退，这个点不是类名的一部分
-                                                        break;
-                                                    }
-                                                }
-                                                else {
-                                                    break;
-                                                }
-                                            }
-                                            break;
-                                        }
-                                        _ => break,
-                                    }
+                                if let Some(class) = self.parse_class(&tokens, &mut current_index) {
+                                    statements.push(MsilStatement::Class(class));
                                 }
-
-                                skip_ignored(&mut current_index);
-
-                                // 检查是否有 extends
-                                if current_index < token_vec.len() {
-                                    let peek_token = &token_vec[current_index];
-                                    if peek_token.token_type == MsilTokenType::Extends {
-                                        current_index += 1; // 消费 extends token
-                                        skip_ignored(&mut current_index);
-
-                                        if current_index < token_vec.len() {
-                                            let base_token = &token_vec[current_index];
-                                            match base_token.token_type {
-                                                MsilTokenType::Identifier => {
-                                                    extends =
-                                                        Some(tokens.get_text(base_token).unwrap_or("unknown").to_string());
-                                                    current_index += 1;
-                                                }
-                                                MsilTokenType::LeftBracket => {
-                                                    // 处理 [Assembly]Type 格式的基类
-                                                    let mut base_type = String::new();
-                                                    while current_index < token_vec.len()
-                                                        && token_vec[current_index].token_type != MsilTokenType::RightBracket
-                                                    {
-                                                        base_type
-                                                            .push_str(tokens.get_text(&token_vec[current_index]).unwrap_or(""));
-                                                        current_index += 1;
-                                                    }
-                                                    if current_index < token_vec.len()
-                                                        && token_vec[current_index].token_type == MsilTokenType::RightBracket
-                                                    {
-                                                        current_index += 1; // 跳过 ']'
-                                                        base_type.push(']');
-
-                                                        // 继续读取类型名
-                                                        while current_index < token_vec.len() {
-                                                            let type_token = &token_vec[current_index];
-                                                            match type_token.token_type {
-                                                                MsilTokenType::Identifier => {
-                                                                    base_type
-                                                                        .push_str(tokens.get_text(type_token).unwrap_or(""));
-                                                                    current_index += 1;
-                                                                }
-                                                                MsilTokenType::Dot => {
-                                                                    base_type.push('.');
-                                                                    current_index += 1;
-                                                                }
-                                                                _ => break,
-                                                            }
-                                                        }
-
-                                                        extends = Some(format!("[{}", base_type));
-                                                    }
-                                                }
-                                                _ => {}
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // 跳过到类体开始 '{'
-                                skip_ignored(&mut current_index);
-                                if current_index < token_vec.len()
-                                    && token_vec[current_index].token_type == MsilTokenType::LeftBrace
-                                {
-                                    current_index += 1;
-
-                                    // 解析类体中的方法
-                                    while current_index < token_vec.len() {
-                                        skip_ignored(&mut current_index);
-
-                                        if current_index >= token_vec.len() {
-                                            break;
-                                        }
-
-                                        let token = &token_vec[current_index];
-                                        if token.token_type == MsilTokenType::RightBrace {
-                                            current_index += 1; // 消费 '}'
-                                            break;
-                                        }
-
-                                        if token.token_type == MsilTokenType::Dot {
-                                            if current_index + 1 < token_vec.len()
-                                                && token_vec[current_index + 1].token_type == MsilTokenType::Method
-                                            {
-                                                // 解析方法
-                                                if let Some(method) = self.parse_method(&tokens, &mut current_index) {
-                                                    methods.push(method);
-                                                }
-                                            }
-                                            else {
-                                                current_index += 1; // 跳过其他 . 指令
-                                            }
-                                        }
-                                        else {
-                                            current_index += 1; // 跳过其他 token
-                                        }
-                                    }
-                                }
-
-                                statements.push(MsilStatement::Class(MsilClass {
-                                    modifiers,
-                                    name: class_name.clone(),
-                                    extends,
-                                    methods,
-                                }));
-                                println!("创建了 Class 语句: {}", class_name);
-                            }
-                            MsilTokenType::Identifier => {
-                                // 检查标识符的内容来确定是什么指令
-                                let identifier_text = tokens.get_text(next_token).unwrap_or("");
-                                println!("标识符内容: {}", identifier_text);
-                                println!("忽略其他以 . 开头的指令: {}", identifier_text);
-                                current_index += 2; // 跳过 '.' 和标识符
                             }
                             _ => {
-                                println!("忽略其他以 . 开头的指令: {:?}", next_token.token_type);
-                                current_index += 1; // 只跳过当前的 '.' token，让下一次循环处理下一个 token
+                                // 跳过未知的指令
+                                current_index += 1;
                             }
                         }
                     }
                     else {
-                        println!("Dot token 后没有更多 token");
-                        current_index += 1; // 跳过当前 token
+                        current_index += 1;
                     }
                 }
-
-                MsilTokenType::Eof => break,
-
                 _ => {
-                    // 忽略其他 token
                     current_index += 1;
                 }
             }
         }
 
-        println!("解析完成，语句数量: {}", statements.len());
         GaiaDiagnostics::success(MsilRoot { statements })
+    }
+
+    /// 跳过代码块 {...}
+    fn skip_block(&self, tokens: &TokenStream<MsilTokenType>, current_index: &mut usize) {
+        let token_vec = tokens.tokens.get_ref();
+        let mut skip_ignored = |index: &mut usize| {
+            while *index < token_vec.len() {
+                match token_vec[*index].token_type {
+                    MsilTokenType::Whitespace | MsilTokenType::Comment => {
+                        *index += 1;
+                    }
+                    _ => break,
+                }
+            }
+        };
+
+        skip_ignored(current_index);
+
+        if *current_index < token_vec.len() && token_vec[*current_index].token_type == MsilTokenType::LeftBrace {
+            *current_index += 1; // 跳过 '{'
+            let mut brace_count = 1;
+
+            while *current_index < token_vec.len() && brace_count > 0 {
+                match token_vec[*current_index].token_type {
+                    MsilTokenType::LeftBrace => brace_count += 1,
+                    MsilTokenType::RightBrace => brace_count -= 1,
+                    _ => {}
+                }
+                *current_index += 1;
+            }
+        }
     }
 
     /// 解析 MSIL 方法声明
@@ -630,6 +443,232 @@ impl<'config> MsilParser<'config> {
         };
 
         Some(MsilMethod { modifiers, return_type, name: method_name, parameters, body })
+    }
+
+    /// 解析 MSIL 类声明
+    ///
+    /// 这个方法解析 `.class` 指令，提取类的修饰符、名称、继承关系和类成员。
+    ///
+    /// # 参数
+    ///
+    /// - `tokens`: token 流
+    /// - `current_index`: 当前解析位置的索引（会被更新）
+    ///
+    /// # 返回值
+    ///
+    /// 返回解析出的 `MsilClass` 结构，如果解析失败则返回 `None`
+    ///
+    /// # 解析过程
+    ///
+    /// 1. 收集类修饰符（public, private, auto, ansi 等）
+    /// 2. 解析类名（支持命名空间）
+    /// 3. 解析继承关系（extends 子句）
+    /// 4. 解析类体中的成员（方法等）
+    ///
+    /// # 支持的语法构造
+    ///
+    /// - `.class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object`
+    /// - 类修饰符：public, private, auto, ansi, beforefieldinit
+    /// - 继承：extends BaseClass 或 extends [Assembly]Namespace.BaseClass
+    ///
+    /// # 示例
+    ///
+    /// 解析以下类声明：
+    /// ```msil
+    /// .class public auto ansi beforefieldinit MyNamespace.MyClass
+    ///        extends [mscorlib]System.Object
+    /// {
+    ///     .method public hidebysig specialname rtspecialname
+    ///             instance void .ctor() cil managed { ... }
+    /// }
+    /// ```
+    fn parse_class(&self, tokens: &TokenStream<MsilTokenType>, current_index: &mut usize) -> Option<MsilClass> {
+        let token_vec = tokens.tokens.get_ref();
+        let mut skip_ignored = |index: &mut usize| {
+            while *index < token_vec.len() {
+                match token_vec[*index].token_type {
+                    MsilTokenType::Whitespace | MsilTokenType::Comment => {
+                        *index += 1;
+                    }
+                    _ => break,
+                }
+            }
+        };
+
+        let mut modifiers = Vec::new();
+        let mut class_name = String::new();
+        let mut extends = None;
+        let mut methods = Vec::new();
+
+        // 收集修饰符
+        while *current_index < token_vec.len() {
+            let peek_token = &token_vec[*current_index];
+            match peek_token.token_type {
+                MsilTokenType::Public => {
+                    modifiers.push("public".to_string());
+                    *current_index += 1;
+                    skip_ignored(current_index);
+                }
+                MsilTokenType::Private => {
+                    modifiers.push("private".to_string());
+                    *current_index += 1;
+                    skip_ignored(current_index);
+                }
+                MsilTokenType::Auto => {
+                    modifiers.push("auto".to_string());
+                    *current_index += 1;
+                    skip_ignored(current_index);
+                }
+                MsilTokenType::Ansi => {
+                    modifiers.push("ansi".to_string());
+                    *current_index += 1;
+                    skip_ignored(current_index);
+                }
+                MsilTokenType::Beforefieldinit => {
+                    modifiers.push("beforefieldinit".to_string());
+                    *current_index += 1;
+                    skip_ignored(current_index);
+                }
+                MsilTokenType::Identifier => {
+                    let name = tokens.get_text(peek_token).unwrap_or("unknown").to_string();
+                    class_name = name;
+                    *current_index += 1;
+
+                    // 检查是否有更多的点和标识符组成完整的类名
+                    while *current_index < token_vec.len() {
+                        if token_vec[*current_index].token_type == MsilTokenType::Dot {
+                            *current_index += 1; // 跳过 '.'
+                            if *current_index < token_vec.len()
+                                && token_vec[*current_index].token_type == MsilTokenType::Identifier
+                            {
+                                class_name.push('.');
+                                class_name.push_str(tokens.get_text(&token_vec[*current_index]).unwrap_or(""));
+                                *current_index += 1;
+                            }
+                            else {
+                                *current_index -= 1; // 回退，这个点不是类名的一部分
+                                break;
+                            }
+                        }
+                        else {
+                            break;
+                        }
+                    }
+                    break;
+                }
+                _ => break,
+            }
+        }
+
+        skip_ignored(current_index);
+
+        // 检查是否有 extends
+        if *current_index < token_vec.len() {
+            let peek_token = &token_vec[*current_index];
+            if peek_token.token_type == MsilTokenType::Extends {
+                *current_index += 1; // 消费 extends token
+                skip_ignored(current_index);
+
+                if *current_index < token_vec.len() {
+                    let base_token = &token_vec[*current_index];
+                    match base_token.token_type {
+                        MsilTokenType::Identifier => {
+                            extends = Some(tokens.get_text(base_token).unwrap_or("unknown").to_string());
+                            *current_index += 1;
+                        }
+                        MsilTokenType::LeftBracket => {
+                            // 处理 [Assembly]Type 格式的基类
+                            let mut base_type = String::new();
+                            base_type.push('[');
+                            *current_index += 1; // 跳过 '['
+
+                            while *current_index < token_vec.len()
+                                && token_vec[*current_index].token_type != MsilTokenType::RightBracket
+                            {
+                                base_type.push_str(tokens.get_text(&token_vec[*current_index]).unwrap_or(""));
+                                *current_index += 1;
+                            }
+
+                            if *current_index < token_vec.len()
+                                && token_vec[*current_index].token_type == MsilTokenType::RightBracket
+                            {
+                                base_type.push(']');
+                                *current_index += 1; // 跳过 ']'
+
+                                // 继续读取类型名
+                                while *current_index < token_vec.len() {
+                                    let type_token = &token_vec[*current_index];
+                                    if type_token.token_type == MsilTokenType::Identifier {
+                                        base_type.push_str(tokens.get_text(type_token).unwrap_or(""));
+                                        *current_index += 1;
+
+                                        // 检查是否有点分隔的命名空间
+                                        if *current_index < token_vec.len()
+                                            && token_vec[*current_index].token_type == MsilTokenType::Dot
+                                        {
+                                            base_type.push('.');
+                                            *current_index += 1;
+                                        }
+                                        else {
+                                            break;
+                                        }
+                                    }
+                                    else {
+                                        break;
+                                    }
+                                }
+
+                                extends = Some(base_type);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+
+        skip_ignored(current_index);
+
+        // 查找类体开始的大括号
+        if *current_index < token_vec.len() && token_vec[*current_index].token_type == MsilTokenType::LeftBrace {
+            *current_index += 1; // 跳过 '{'
+            skip_ignored(current_index);
+
+            // 解析类成员
+            while *current_index < token_vec.len() {
+                let token = &token_vec[*current_index];
+
+                if token.token_type == MsilTokenType::RightBrace {
+                    *current_index += 1; // 跳过 '}'
+                    break;
+                }
+
+                if token.token_type == MsilTokenType::Dot {
+                    if *current_index + 1 < token_vec.len() {
+                        let next_token = &token_vec[*current_index + 1];
+                        if next_token.token_type == MsilTokenType::Method {
+                            if let Some(method) = self.parse_method(tokens, current_index) {
+                                methods.push(method);
+                            }
+                        }
+                        else {
+                            // 跳过其他类成员（字段、属性等）
+                            *current_index += 1;
+                        }
+                    }
+                    else {
+                        *current_index += 1;
+                    }
+                }
+                else {
+                    *current_index += 1;
+                }
+
+                skip_ignored(current_index);
+            }
+        }
+
+        Some(MsilClass { modifiers, name: class_name, extends, methods })
     }
 
     /// 解析 MSIL 方法体
