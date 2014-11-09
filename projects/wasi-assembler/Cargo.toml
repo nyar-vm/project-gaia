@@ -15,12 +15,17 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 byteorder = "1.5.0"
-wit-bindgen = "0.46.0"
 gaia-types = { path = "../gaia-types" }
+# LEB128 编码支持
+leb128 = "0.2.5"
 
 [build-dependencies]
 
 [dev-dependencies]
+wat = "1.0.82"
+wasmparser = "0.121.0"
+wasmtime = "15.0.1"
+
 
 [features]
 default = []
