@@ -1,0 +1,33 @@
+[package]
+name = "python-assembler"
+version = "0.0.0"
+authors = ["Aster <192607617@qq.com>"]
+description = "解析以及写入 `*.pyc` 字节码"
+categories = ["compilers"]
+keywords = ["python", "pyc", "assembler", "disassembler", "assembly"]
+homepage = "https://github.com/nyar-vm/project-gaia"
+repository = "https://github.com/nyar-vm/project-gaia"
+documentation = "http://docs.rs/python-assembler"
+readme = "readme.md"
+license = "MPL-2.0"
+edition = "2021"
+exclude = ["package.json", "tests/**"]
+
+[dependencies]
+byteorder = "1.5.0"
+gaia-types = { workspace = true }
+url = "2.5.0"
+serde = { version = "1.0.0", features = ["derive"] }
+
+[build-dependencies]
+
+[dev-dependencies]
+gaia-types = { workspace = true, features = ["serde_json"] }
+walkdir = "2.5.0"
+
+[features]
+default = []
+easy-test = []
+
+[package.metadata.docs.rs]
+all-features = true

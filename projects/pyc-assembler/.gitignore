@@ -1,0 +1,5 @@
+# Python
+.venv/
+__pycache__/
+.python-version
+opcode_map.json
