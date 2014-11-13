@@ -1,0 +1,28 @@
+[package]
+name = "x86_64-assembler"
+version = "0.0.1"
+authors = ["Project Gaia <192607617@qq.com>"]
+description = "支持 x64 和 x86 指令集的现代汇编器 - 强类型、面向对象、零依赖核心"
+categories = ["compilers"]
+keywords = ["x86", "x86-64", "assembler", "disassembler", "assembly"]
+homepage = "https://github.com/nyar-vm/project-gaia"
+repository = "https://github.com/nyar-vm/project-gaia"
+documentation = "http://docs.rs/x86_64-assembler"
+readme = "readme.md"
+license = "MPL-2.0"
+edition = "2024"
+exclude = ["package.json", "tests/**"]
+
+[dependencies]
+bitflags = "2.9"
+serde = { version = "1.0.228", features = ["derive"] }
+gaia-types = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = "1.4"
+
+[features]
+default = []
+
+[package.metadata.docs.rs]
+all-features = true
