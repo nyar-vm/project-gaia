@@ -17,7 +17,7 @@ use std::{
 ///
 /// 轻量级视图，只持有 BinaryReader 与解析后的关键信息。
 #[derive(Debug)]
-pub struct PeReader<R> {
+pub struct ElfReader<R> {
     /// 二进制读取器（已定位到 DOS 头起始位置）
     viewer: BinaryReader<R, LittleEndian>,
     headers_read: bool,
@@ -27,7 +27,7 @@ pub struct PeReader<R> {
     lazy_info: Option<PeInfo>,
 }
 
-impl<R> PeReader<R> {
+impl<R> ElfReader<R> {
     pub fn new(reader: R) -> Self {
         Self {
             viewer: BinaryReader::new(reader),
@@ -40,7 +40,7 @@ impl<R> PeReader<R> {
     }
 }
 
-impl<W: Read> PeReader<W> {
+impl<W: Read> ElfReader<W> {
     /// 读取 PE 头部信息（惰性读取，会缓存结果）
     fn read_headers(&mut self) -> Result<PeHeader, GaiaError>
     where
@@ -413,15 +413,12 @@ impl<W: Read> PeReader<W> {
         let size_of_optional_header = self.viewer.read_u16()?;
         let characteristics = self.viewer.read_u16()?;
 
-        let coff_header = CoffHeader {
-            machine,
-            number_of_sections,
-            time_date_stamp,
-            pointer_to_symbol_table,
-            number_of_symbols,
-            size_of_optional_header,
-            characteristics,
-        };
+        let coff_header = CoffHeader::new(machine, number_of_sections)
+            .with_time_date_stamp(time_date_stamp)
+            .with_pointer_to_symbol_table(pointer_to_symbol_table)
+            .with_number_of_symbols(number_of_symbols)
+            .with_size_of_optional_header(size_of_optional_header)
+            .with_characteristics(characteristics);
 
         // 读取可选头
         let optional_header = OptionalHeader::read(self)?;
@@ -472,12 +469,12 @@ impl PeView {
     /// 从文件路径创建 PE 视图
     pub fn view_file(path: &Path) -> Result<Self, GaiaError> {
         let file = File::open(path)?;
-        let mut pe_reader = PeReader::new(file);
+        let mut pe_reader = ElfReader::new(file);
         let info = pe_reader.view()?;
         Ok(PeView { info, file_path: Some(path.to_path_buf()), bytes: None })
     }
     pub fn view_bytes(bytes: &[u8]) -> Result<Self, GaiaError> {
-        let mut pe_reader = PeReader::new(Cursor::new(bytes));
+        let mut pe_reader = ElfReader::new(Cursor::new(bytes));
         let info = pe_reader.view()?;
         Ok(PeView { info, file_path: None, bytes: Some(bytes.to_vec()) })
     }
@@ -500,7 +497,7 @@ impl DosHeader {
     ///
     /// # Returns
     /// 返回 DOS 头结构或错误
-    pub fn read<R: ReadBytesExt>(reader: &mut PeReader<R>) -> Result<Self, GaiaError> {
+    pub fn read<R: ReadBytesExt>(reader: &mut ElfReader<R>) -> Result<Self, GaiaError> {
         let e_magic = reader.viewer.read_u16()?;
         let e_cblp = reader.viewer.read_u16()?;
         let e_cp = reader.viewer.read_u16()?;
@@ -563,7 +560,7 @@ impl NtHeader {
     ///
     /// # Returns
     /// 返回 NT 头结构或错误
-    pub fn read<R: ReadBytesExt>(reader: &mut PeReader<R>) -> Result<Self, GaiaError> {
+    pub fn read<R: ReadBytesExt>(reader: &mut ElfReader<R>) -> Result<Self, GaiaError> {
         let signature = reader.viewer.read_u32()?;
         Ok(NtHeader { signature })
     }
@@ -577,7 +574,7 @@ impl PeHeader {
     ///
     /// # Returns
     /// 返回 PE 头结构或错误
-    pub fn read<R: Read + Seek>(reader: &mut PeReader<R>) -> Result<Self, GaiaError> {
+    pub fn read<R: Read + Seek>(reader: &mut ElfReader<R>) -> Result<Self, GaiaError> {
         // 保存当前位置
         let original_pos = reader.viewer.get_position();
 
@@ -612,15 +609,12 @@ impl PeHeader {
         let size_of_optional_header = reader.viewer.read_u16()?;
         let characteristics = reader.viewer.read_u16()?;
 
-        let coff_header = CoffHeader {
-            machine,
-            number_of_sections,
-            time_date_stamp,
-            pointer_to_symbol_table,
-            number_of_symbols,
-            size_of_optional_header,
-            characteristics,
-        };
+        let coff_header = CoffHeader::new(machine, number_of_sections)
+            .with_time_date_stamp(time_date_stamp)
+            .with_pointer_to_symbol_table(pointer_to_symbol_table)
+            .with_number_of_symbols(number_of_symbols)
+            .with_size_of_optional_header(size_of_optional_header)
+            .with_characteristics(characteristics);
 
         // 验证 COFF 头中的节数量
         if coff_header.number_of_sections == 0 {
@@ -652,7 +646,7 @@ impl SectionHeader {
     ///
     /// # Returns
     /// 返回节头结构或错误
-    pub fn read<R: ReadBytesExt + Seek>(reader: &mut PeReader<R>) -> Result<Self, GaiaError> {
+    pub fn read<R: ReadBytesExt + Seek>(reader: &mut ElfReader<R>) -> Result<Self, GaiaError> {
         let name = reader.viewer.read_array::<8>()?;
 
         let virtual_size = reader.viewer.read_u32()?;
@@ -688,7 +682,7 @@ impl OptionalHeader {
     ///
     /// # Returns
     /// 返回可选头结构或错误
-    pub fn read<R: ReadBytesExt>(reader: &mut PeReader<R>) -> Result<Self, GaiaError> {
+    pub fn read<R: ReadBytesExt>(reader: &mut ElfReader<R>) -> Result<Self, GaiaError> {
         let magic = reader.viewer.read_u16()?;
         let major_linker_version = reader.viewer.read_u8()?;
         let minor_linker_version = reader.viewer.read_u8()?;
@@ -797,7 +791,7 @@ impl DataDirectory {
     ///
     /// # Returns
     /// 返回数据目录结构或错误
-    pub fn read<R: ReadBytesExt>(reader: &mut PeReader<R>) -> Result<Self, GaiaError> {
+    pub fn read<R: ReadBytesExt>(reader: &mut ElfReader<R>) -> Result<Self, GaiaError> {
         let virtual_address = reader.viewer.read_u32()?;
         let size = reader.viewer.read_u32()?;
 
@@ -813,7 +807,7 @@ impl PeSection {
     ///
     /// # Returns
     /// 返回 PE 节结构或错误
-    pub fn read<R: ReadBytesExt + Seek>(reader: &mut PeReader<R>) -> Result<Self, GaiaError> {
+    pub fn read<R: ReadBytesExt + Seek>(reader: &mut ElfReader<R>) -> Result<Self, GaiaError> {
         let header = SectionHeader::read(reader)?;
 
         // 读取节的数据

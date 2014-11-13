@@ -4,7 +4,7 @@
 
 use crate::types::{ElfFile, ElfHeader64, ProgramHeader64, SectionHeader64};
 use byteorder::LittleEndian;
-use gaia_types::{BinaryAssembler, GaiaError};
+use gaia_types::{BinaryWriter, GaiaError};
 use std::{
     io::{Seek, Write},
     ops::{Deref, DerefMut},
@@ -13,11 +13,11 @@ use std::{
 /// ELF 文件生成器的通用接口
 #[derive(Debug)]
 pub struct ElfWriter<W> {
-    writer: BinaryAssembler<W, LittleEndian>,
+    writer: BinaryWriter<W, LittleEndian>,
 }
 
 impl<W> Deref for ElfWriter<W> {
-    type Target = BinaryAssembler<W, LittleEndian>;
+    type Target = BinaryWriter<W, LittleEndian>;
 
     fn deref(&self) -> &Self::Target {
         &self.writer
@@ -33,7 +33,7 @@ impl<W> DerefMut for ElfWriter<W> {
 impl<W> ElfWriter<W> {
     /// 创建一个新的 ELF 写入器
     pub fn new(writer: W) -> Self {
-        Self { writer: BinaryAssembler::new(writer) }
+        Self { writer: BinaryWriter::new(writer) }
     }
 
     pub fn finish(self) -> W {

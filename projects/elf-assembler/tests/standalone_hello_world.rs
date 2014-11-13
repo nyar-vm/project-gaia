@@ -2,6 +2,7 @@
 //!
 //! 这个程序直接包含PE文件生成逻辑，不依赖可能有问题的库
 
+use pe_assembler::types::coff::CoffHeader;
 use std::fs;
 
 /// 子系统类型
@@ -46,18 +47,6 @@ pub struct DosHeader {
 #[derive(Debug, Clone)]
 pub struct NtHeader {
     pub signature: u32,
-}
-
-/// COFF 头
-#[derive(Debug, Clone)]
-pub struct CoffHeader {
-    pub machine: u16,
-    pub number_of_sections: u16,
-    pub time_date_stamp: u32,
-    pub pointer_to_symbol_table: u32,
-    pub number_of_symbols: u32,
-    pub size_of_optional_header: u16,
-    pub characteristics: u16,
 }
 
 /// 可选头
@@ -152,15 +141,11 @@ pub fn generate_hello_world_pe() -> Vec<u8> {
     };
 
     // 创建 COFF 头
-    let coff_header = CoffHeader {
-        machine: 0x014C, // IMAGE_FILE_MACHINE_I386
-        number_of_sections: 2,
-        time_date_stamp: 0,
-        pointer_to_symbol_table: 0,
-        number_of_symbols: 0,
-        size_of_optional_header: 224, // PE32 可选头大小
-        characteristics: 0x0102,      // IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_32BIT_MACHINE
-    };
+    let coff_header = CoffHeader::new(0x014C, 2) // IMAGE_FILE_MACHINE_I386
+        .with_timestamp(0)
+        .with_symbol_table(0, 0)
+        .with_optional_header_size(224) // PE32 可选头大小
+        .with_characteristics(0x0102); // IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_32BIT_MACHINE
 
     // 创建可选头
     let optional_header = OptionalHeader {

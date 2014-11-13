@@ -2,7 +2,7 @@
 //!
 //! 此模块提供生成简单退出代码 PE 文件的功能，使用正确的 PE 汇编器结构。
 
-use gaia_types::GaiaError;
+use gaia_types::{helpers::Architecture, GaiaError};
 use pe_assembler::{
     types::{DataDirectory, DosHeader, NtHeader, OptionalHeader, PeHeader, PeSection, SubsystemType},
     writer::{PeBuilder, PeWriter},
@@ -40,50 +40,23 @@ pub fn generate_x86_exit_code(exit_code: u32) -> Result<Vec<u8>, GaiaError> {
     };
 
     // 创建 COFF 头
-    let coff_header = CoffHeader {
-        machine: 0x014C, // IMAGE_FILE_MACHINE_I386
-        number_of_sections: 1,
-        time_date_stamp: 0,
-        pointer_to_symbol_table: 0,
-        number_of_symbols: 0,
-        size_of_optional_header: 224,
-        characteristics: 0x0102, // IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_32BIT_MACHINE
-    };
+    let coff_header = CoffHeader::new(0x014C, 1) // IMAGE_FILE_MACHINE_I386
+        .with_time_date_stamp(0)
+        .with_pointer_to_symbol_table(0)
+        .with_number_of_symbols(0)
+        .with_size_of_optional_header(224)
+        .with_characteristics(0x0102); // IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_32BIT_MACHINE
 
     // 创建可选头 (PE32)
-    let optional_header = OptionalHeader {
-        magic: 0x010B, // PE32
-        major_linker_version: 14,
-        minor_linker_version: 0,
-        size_of_code: 0x1000,
-        size_of_initialized_data: 0,
-        size_of_uninitialized_data: 0,
-        address_of_entry_point: 0x1000,
-        base_of_code: 0x1000,
-        base_of_data: Some(0x1000), // PE32 only
-        image_base: 0x400000,
-        section_alignment: 0x1000,
-        file_alignment: 0x200,
-        major_operating_system_version: 6,
-        minor_operating_system_version: 0,
-        major_image_version: 0,
-        minor_image_version: 0,
-        major_subsystem_version: 6,
-        minor_subsystem_version: 0,
-        win32_version_value: 0,
-        size_of_image: 0x2000,
-        size_of_headers: 0x200,
-        checksum: 0,
-        subsystem: SubsystemType::Console,
-        dll_characteristics: 0,
-        size_of_stack_reserve: 0x100000,
-        size_of_stack_commit: 0x1000,
-        size_of_heap_reserve: 0x100000,
-        size_of_heap_commit: 0x1000,
-        loader_flags: 0,
-        number_of_rva_and_sizes: 16,
-        data_directories: vec![DataDirectory { virtual_address: 0, size: 0 }; 16],
-    };
+    let optional_header = OptionalHeader::new_for_architecture(
+        &Architecture::X86,
+        0x1000,   // entry_point
+        0x400000, // image_base
+        0x1000,   // size_of_code
+        0x200,    // size_of_headers
+        0x2000,   // size_of_image
+        SubsystemType::Console,
+    );
 
     // 创建 PE 头
     let pe_header = PeHeader { dos_header, nt_header, coff_header, optional_header };
@@ -161,50 +134,23 @@ pub fn generate_x64_exit_code(exit_code: u32) -> Result<Vec<u8>, GaiaError> {
     };
 
     // 创建 COFF 头
-    let coff_header = CoffHeader {
-        machine: 0x8664, // IMAGE_FILE_MACHINE_AMD64
-        number_of_sections: 1,
-        time_date_stamp: 0,
-        pointer_to_symbol_table: 0,
-        number_of_symbols: 0,
-        size_of_optional_header: 240,
-        characteristics: 0x0102, // IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_32BIT_MACHINE
-    };
+    let coff_header = CoffHeader::new(0x8664, 1) // IMAGE_FILE_MACHINE_AMD64
+        .with_time_date_stamp(0)
+        .with_pointer_to_symbol_table(0)
+        .with_number_of_symbols(0)
+        .with_size_of_optional_header(240)
+        .with_characteristics(0x0102); // IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_32BIT_MACHINE
 
     // 创建可选头 (PE32+)
-    let optional_header = OptionalHeader {
-        magic: 0x020B, // PE32+
-        major_linker_version: 14,
-        minor_linker_version: 0,
-        size_of_code: 0x1000,
-        size_of_initialized_data: 0,
-        size_of_uninitialized_data: 0,
-        address_of_entry_point: 0x1000,
-        base_of_code: 0x1000,
-        base_of_data: None, // PE32+ doesn't have base_of_data
-        image_base: 0x140000000,
-        section_alignment: 0x1000,
-        file_alignment: 0x200,
-        major_operating_system_version: 6,
-        minor_operating_system_version: 0,
-        major_image_version: 0,
-        minor_image_version: 0,
-        major_subsystem_version: 6,
-        minor_subsystem_version: 0,
-        win32_version_value: 0,
-        size_of_image: 0x2000,
-        size_of_headers: 0x200,
-        checksum: 0,
-        subsystem: SubsystemType::Console,
-        dll_characteristics: 0,
-        size_of_stack_reserve: 0x100000,
-        size_of_stack_commit: 0x1000,
-        size_of_heap_reserve: 0x100000,
-        size_of_heap_commit: 0x1000,
-        loader_flags: 0,
-        number_of_rva_and_sizes: 16,
-        data_directories: vec![DataDirectory { virtual_address: 0, size: 0 }; 16],
-    };
+    let optional_header = OptionalHeader::new_for_architecture(
+        &Architecture::X86_64,
+        0x1000,      // entry_point
+        0x140000000, // image_base
+        0x1000,      // size_of_code
+        0x200,       // size_of_headers
+        0x2000,      // size_of_image
+        SubsystemType::Console,
+    );
 
     // 创建 PE 头
     let pe_header = PeHeader { dos_header, nt_header, coff_header, optional_header };
