@@ -3,8 +3,8 @@
 //! 测试从 MSIL 源代码到可执行 PE 文件的完整转换流程
 
 use clr_assembler::formats::{
-    dot_net::writer::DotNetWriter,
-    msil::{converter::MsilToClrConverter, lexer::MsilLexer, parser::MsilParser},
+    dll::writer::DotNetWriter,
+    msil::{converter::MsilToClrConverter, lexer::MsilLexer, parser::MsilParser, MsilReadConfig},
 };
 use std::{fs, io::Cursor, process::Command};
 
@@ -49,13 +49,14 @@ fn test_hello_world_compilation() {
 "#;
 
     // 1. 词法分析
-    let mut lexer = MsilLexer::new();
-    let tokens = lexer.tokenize(msil_source).expect("词法分析失败");
-    assert!(!tokens.is_empty(), "应该产生 tokens");
+    let config = MsilReadConfig::default();
+    let lexer = MsilLexer::new(&config);
+    let tokens = lexer.tokenize(msil_source).result.expect("词法分析失败");
+    assert!(!tokens.raw.is_empty(), "应该产生 tokens");
 
     // 2. 语法分析
-    let mut parser = MsilParser::new();
-    let ast = parser.parse(tokens).expect("语法分析失败");
+    let parser = MsilParser::new(&config);
+    let ast = parser.parse(tokens).result.expect("语法分析失败");
     assert!(!ast.statements.is_empty(), "应该产生 AST 语句");
 
     // 3. AST 转换
@@ -65,7 +66,7 @@ fn test_hello_world_compilation() {
     let clr_program = clr_program_result.result.unwrap();
 
     // 验证 CLR Program 结构
-    assert_eq!(clr_program.assembly_name, "GaiaAssembler");
+    assert_eq!(clr_program.name, "GaiaAssembler");
     assert!(!clr_program.types.is_empty(), "应该包含类型定义");
 
     let main_class = &clr_program.types[0];
@@ -108,14 +109,16 @@ fn test_msil_lexer() {
 }
 "#;
 
-    let mut lexer = MsilLexer::new();
-    let tokens = lexer.tokenize(msil_source).expect("词法分析失败");
+    let config = MsilReadConfig::default();
+    let mut lexer = MsilLexer::new(&config);
+    let tokens = lexer.tokenize(msil_source).result.expect("词法分析失败");
 
     // 验证生成的 tokens
-    assert!(!tokens.is_empty());
+    assert!(!tokens.raw.is_empty());
 
     // 检查是否包含关键的 tokens
-    let token_strings: Vec<String> = tokens.iter().map(|t| t.value.clone()).collect();
+    let token_list = tokens.tokens.get_ref();
+    let token_strings: Vec<String> = token_list.iter().map(|t| tokens.get_text(t).unwrap().to_string()).collect();
 
     assert!(token_strings.contains(&".assembly".to_string()));
     assert!(token_strings.contains(&"extern".to_string()));
@@ -142,11 +145,12 @@ fn test_msil_parser() {
 }
 "#;
 
-    let mut lexer = MsilLexer::new();
-    let tokens = lexer.tokenize(msil_source).expect("词法分析失败");
+    let config = MsilReadConfig::default();
+    let lexer = MsilLexer::new(&config);
+    let tokens = lexer.tokenize(msil_source).result.expect("词法分析失败");
 
-    let mut parser = MsilParser::new();
-    let ast = parser.parse(tokens).expect("语法分析失败");
+    let parser = MsilParser::new(&config);
+    let ast = parser.parse(tokens).result.expect("语法分析失败");
 
     // 验证 AST 结构
     assert_eq!(ast.statements.len(), 3); // extern, assembly, class
@@ -207,7 +211,7 @@ fn test_ast_to_clr_conversion() {
     assert!(clr_program_result.result.is_ok());
 
     let clr_program = clr_program_result.result.unwrap();
-    assert_eq!(clr_program.assembly_name, "TestAssembly");
+    assert_eq!(clr_program.name, "TestAssembly");
     assert_eq!(clr_program.types.len(), 1);
     assert_eq!(clr_program.types[0].name, "TestClass");
     assert_eq!(clr_program.types[0].methods.len(), 1);

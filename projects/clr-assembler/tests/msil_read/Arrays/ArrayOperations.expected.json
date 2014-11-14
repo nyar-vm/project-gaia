@@ -1,0 +1,19 @@
+{
+    "assembly_name": null,
+    "extern_assemblies": [],
+    "module_name": null,
+    "class_name": "Valkyrie.Translator.Arrays.ArrayOperations",
+    "class_modifiers": [
+        "public",
+        "auto",
+        "ansi",
+        "beforefieldinit"
+    ],
+    "extends": "[System.Runtime]System.Object",
+    "method_count": 2,
+    "method_names": [
+        "Main",
+        ".ctor"
+    ],
+    "statement_count": 1
+}

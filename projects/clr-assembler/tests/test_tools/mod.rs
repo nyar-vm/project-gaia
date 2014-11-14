@@ -10,10 +10,15 @@ use clr_assembler::formats::msil::{
     parser::MsilParser,
     MsilReadConfig,
 };
-use gaia_types::GaiaError;
-use serde_json::{ser::PrettyFormatter, Serializer};
+use gaia_types::{helpers::save_json, GaiaError};
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
+
+/// 获取测试文件路径
+pub fn test_path(path: &str) -> PathBuf {
+    let here = Path::new(env!("CARGO_MANIFEST_DIR"));
+    here.join("tests").join(path)
+}
 
 /// MSIL 文件期望结构体 - 用于定义测试期望
 
@@ -105,16 +110,8 @@ impl MsilExpected {
         }
     }
 
-    /// 保存期望到 JSON 文件
-    pub fn save_to_json(&self, json_path: &str) -> Result<(), GaiaError> {
-        let file = File::create(json_path)?;
-        let mut json = Serializer::with_formatter(file, PrettyFormatter::with_indent(b"    "));
-        self.serialize(&mut json).map_err(GaiaError::not_implemented)?;
-        Ok(())
-    }
-
     /// 从 JSON 文件加载期望
-    pub fn load_from_json(json_path: &str) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn load_from_json(json_path: &Path) -> Result<Self, Box<dyn std::error::Error>> {
         let json_content = std::fs::read_to_string(json_path)?;
         let expected: Self = serde_json::from_str(&json_content)?;
         Ok(expected)
@@ -199,10 +196,10 @@ impl MsilExpected {
 }
 
 /// 获取 MSIL 文件对应的 JSON 期望文件路径
-pub fn get_expected_json_path(path: &Path) -> String {
+pub fn get_expected_json_path(path: &Path) -> PathBuf {
     let parent = path.parent().unwrap_or(Path::new("."));
     let stem = path.file_stem().unwrap().to_string_lossy();
-    parent.join(format!("{}.expected.json", stem)).to_string_lossy().to_string()
+    parent.join(format!("{}.expected.json", stem))
 }
 
 pub fn validate_msil_files(folder: &Path) {
@@ -278,8 +275,8 @@ pub fn compare_msil_file(test_name: &str, file_path: &Path) -> Result<(), Box<dy
     if !Path::new(&json_path).exists() {
         // 首次运行或强制重新生成，创建期望文件
         let expected = MsilExpected::from_ast(&ast, file_path);
-        expected.save_to_json(&json_path)?;
-        println!("✓ 已生成期望文件: {}", json_path);
+        save_json(&expected, &json_path)?;
+        println!("✓ 已生成期望文件: {}", json_path.display());
         println!("✓ 解析成功: {} 个语句", ast.statements.len());
 
         // 显示解析结果摘要
@@ -289,7 +286,7 @@ pub fn compare_msil_file(test_name: &str, file_path: &Path) -> Result<(), Box<dy
 
     // 加载现有期望文件并验证
     let expected = MsilExpected::load_from_json(&json_path)?;
-    println!("✓ 已加载期望文件: {}", json_path);
+    println!("✓ 已加载期望文件: {}", json_path.display());
 
     match expected.validate_ast(&ast) {
         Ok(()) => {

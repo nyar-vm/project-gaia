@@ -1,30 +1,33 @@
 [package]
 name = "clr-assembler"
 version = "0.0.0"
-authors = ["Aster <192607617@qq.com>"]
-description = "..."
-repository = "https://github.com/oovm/wasm.exe"
-documentation = "https://docs.rs/wasm-exe"
+authors = ["Project Gaia <192607617@qq.com>"]
+description = "支持 x64 和 x86 指令集的现代 CLR 汇编器 - 强类型、面向对象、零依赖核心"
+categories = ["compilers"]
+keywords = ["clr", "assembler", "disassembler", "assembly"]
+homepage = "https://github.com/nyar-vm/project-gaia"
+repository = "https://github.com/nyar-vm/project-gaia"
+documentation = "http://docs.rs/clr-assembler"
 readme = "readme.md"
 license = "MPL-2.0"
 edition = "2021"
 exclude = ["package.json", "tests/**"]
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [dependencies]
-byteorder = "1.4"
-gaia-types = { path = "../gaia-types" }
-pe-assembler = { path = "../pe-assembler" }
-pe-coff = { path = "../pe-coff" }
-url = "2.4"
-serde = { version = "1.0", features = ["derive"] }
+byteorder = "1.5.0"
+gaia-types = { workspace = true }
+url = "2.5.7"
+serde = { version = "1.0.0", features = ["derive"] }
+
+[dependencies.pe-assembler]
+version = "0.0.0"
+path = "../pe-assembler"
 
 [build-dependencies]
 
 [dev-dependencies]
-serde_json = "1.0.145"
+serde_json = "1.0.0"
+gaia-types = { workspace = true, features = ["serde_json"] }
 walkdir = "2.5.0"
 
 [features]

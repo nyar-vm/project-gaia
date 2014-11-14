@@ -1,4 +1,4 @@
-use clr_msil::easy_test::validate_msil_files;
+use crate::test_tools::validate_msil_files;
 use std::path::Path;
 
 fn here() -> &'static Path {

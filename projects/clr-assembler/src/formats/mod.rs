@@ -1,2 +1,2 @@
-pub mod dot_net;
+pub mod dll;
 pub mod msil;

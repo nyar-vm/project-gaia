@@ -1,0 +1,182 @@
+[
+    {
+        "dll_name": "mscorlib.dll",
+        "assembly_info": "Unknown",
+        "version": "0.0.0.0",
+        "type_count": 0,
+        "method_count": 29257,
+        "field_count": 0,
+        "sample_type": "",
+        "sample_method": "get_message",
+        "referenced_assemblies": [
+            "mscorlib",
+            "System",
+            "System.Runtime",
+            "System.Numerics"
+        ],
+        "analysis_success": true,
+        "error_message": null
+    },
+    {
+        "dll_name": "System.dll",
+        "assembly_info": "Unknown",
+        "version": "0.0.0.0",
+        "type_count": 0,
+        "method_count": 18155,
+        "field_count": 0,
+        "sample_type": "",
+        "sample_method": ".ctor",
+        "referenced_assemblies": [
+            "mscorlib",
+            "System",
+            "System.Xml",
+            "System.Runtime",
+            "Microsoft.CSharp",
+            "System.Drawing"
+        ],
+        "analysis_success": true,
+        "error_message": null
+    },
+    {
+        "dll_name": "System.Core.dll",
+        "assembly_info": "Unknown",
+        "version": "0.0.0.0",
+        "type_count": 0,
+        "method_count": 8293,
+        "field_count": 0,
+        "sample_type": "",
+        "sample_method": "CloneByteArray",
+        "referenced_assemblies": [
+            "mscorlib",
+            "System",
+            "System.Core",
+            "System.Xml",
+            "System.Runtime",
+            "System.Numerics"
+        ],
+        "analysis_success": true,
+        "error_message": null
+    },
+    {
+        "dll_name": "System.Data.dll",
+        "assembly_info": "Unknown",
+        "version": "0.0.0.0",
+        "type_count": 0,
+        "method_count": 14072,
+        "field_count": 0,
+        "sample_type": "",
+        "sample_method": "?A0x9ea9c69e.memcpy_s",
+        "referenced_assemblies": [
+            "Sort"
+        ],
+        "analysis_success": true,
+        "error_message": null
+    },
+    {
+        "dll_name": "System.Drawing.dll",
+        "assembly_info": "Unknown",
+        "version": "0.0.0.0",
+        "type_count": 0,
+        "method_count": 4029,
+        "field_count": 0,
+        "sample_type": "",
+        "sample_method": ".ctor",
+        "referenced_assemblies": [
+            "mscorlib",
+            "System",
+            "System.Runtime",
+            "System.Drawing"
+        ],
+        "analysis_success": true,
+        "error_message": null
+    },
+    {
+        "dll_name": "System.Windows.Forms.dll",
+        "assembly_info": "Unknown",
+        "version": "0.0.0.0",
+        "type_count": 0,
+        "method_count": 30144,
+        "field_count": 0,
+        "sample_type": "",
+        "sample_method": "get_Level1",
+        "referenced_assemblies": [
+            "mscorlib",
+            "System",
+            "System.Core",
+            "System.Xml",
+            "System.Runtime",
+            "System.Drawing"
+        ],
+        "analysis_success": true,
+        "error_message": null
+    },
+    {
+        "dll_name": "System.Xml.dll",
+        "assembly_info": "Unknown",
+        "version": "0.0.0.0",
+        "type_count": 0,
+        "method_count": 12743,
+        "field_count": 0,
+        "sample_type": "",
+        "sample_method": "_GetCurrentPackageId",
+        "referenced_assemblies": [
+            "mscorlib",
+            "System",
+            "System.Xml",
+            "System.Data",
+            "System.Runtime",
+            "Microsoft.CSharp"
+        ],
+        "analysis_success": true,
+        "error_message": null
+    },
+    {
+        "dll_name": "System.Web.dll",
+        "assembly_info": "Unknown",
+        "version": "0.0.0.0",
+        "type_count": 0,
+        "method_count": 28551,
+        "field_count": 0,
+        "sample_type": "",
+        "sample_method": "get__entries",
+        "referenced_assemblies": [
+            "er"
+        ],
+        "analysis_success": true,
+        "error_message": null
+    },
+    {
+        "dll_name": "Microsoft.CSharp.dll",
+        "assembly_info": "Unknown",
+        "version": "0.0.0.0",
+        "type_count": 0,
+        "method_count": 2338,
+        "field_count": 0,
+        "sample_type": "",
+        "sample_method": "BinaryOperation",
+        "referenced_assemblies": [
+            "mscorlib",
+            "System",
+            "System.Core",
+            "System.Runtime",
+            "Microsoft.CSharp"
+        ],
+        "analysis_success": true,
+        "error_message": null
+    },
+    {
+        "dll_name": "System.Runtime.dll",
+        "assembly_info": "Unknown",
+        "version": "0.0.0.0",
+        "type_count": 0,
+        "method_count": 0,
+        "field_count": 0,
+        "sample_type": "",
+        "sample_method": "",
+        "referenced_assemblies": [
+            "erence`1"
+        ],
+        "analysis_success": true,
+        "error_message": null
+    }
+]

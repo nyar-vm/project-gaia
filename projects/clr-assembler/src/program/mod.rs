@@ -628,6 +628,52 @@ impl ClrProgram {
 
         Ok(())
     }
+
+    /// 获取类型数量
+    pub fn get_type_count(&self) -> usize {
+        self.types.len()
+    }
+
+    /// 获取方法数量（包括全局方法和类型中的方法）
+    pub fn get_method_count(&self) -> usize {
+        let type_methods: usize = self.types.iter().map(|t| t.methods.len()).sum();
+        type_methods + self.global_methods.len()
+    }
+
+    /// 获取字段数量（包括全局字段和类型中的字段）
+    pub fn get_field_count(&self) -> usize {
+        let type_fields: usize = self.types.iter().map(|t| t.fields.len()).sum();
+        type_fields + self.global_fields.len()
+    }
+
+    /// 获取示例类型名称
+    pub fn get_sample_type_name(&self) -> Option<String> {
+        self.types.first().map(|t| {
+            if let Some(namespace) = &t.namespace {
+                format!("{}.{}", namespace, t.name)
+            }
+            else {
+                t.name.clone()
+            }
+        })
+    }
+
+    /// 获取示例方法名称
+    pub fn get_sample_method_name(&self) -> Option<String> {
+        // 首先尝试从类型中获取方法
+        for clr_type in &self.types {
+            if let Some(method) = clr_type.methods.first() {
+                return Some(format!("{}.{}", clr_type.name, method.name));
+            }
+        }
+        // 如果没有类型方法，尝试全局方法
+        self.global_methods.first().map(|m| m.name.clone())
+    }
+
+    /// 获取引用的程序集列表
+    pub fn get_referenced_assemblies(&self) -> Vec<String> {
+        self.external_assemblies.iter().map(|a| a.name.clone()).collect()
+    }
 }
 
 impl ClrConstantPool {

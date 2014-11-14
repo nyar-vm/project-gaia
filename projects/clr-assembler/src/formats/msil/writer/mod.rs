@@ -1,4 +1,4 @@
-use gaia_types::{helpers::Url, writer::TextWriter, GaiaType, Result};
+use gaia_types::{writer::TextWriter, Result};
 use std::fmt::Write;
 
 /// MSIL 代码写入器
@@ -34,17 +34,8 @@ impl<W: Write> MsilWriter<W> {
     }
 
     /// 开始方法定义
-    pub fn start_method(&mut self, name: &str, parameters: &[GaiaType], return_type: &Option<GaiaType>) -> Result<()> {
-        let return_type_str = match return_type {
-            None => "void",
-            Some(GaiaType::Integer32) => "int32",
-            Some(GaiaType::Integer64) => "int64",
-            Some(GaiaType::Float32) => "float32",
-            Some(GaiaType::Float64) => "float64",
-            Some(GaiaType::Boolean) => "bool",
-            Some(GaiaType::String) => "string",
-            _ => "object",
-        };
+    pub fn start_method(&mut self, name: &str, parameters: &[&str], return_type: Option<&str>) -> Result<()> {
+        let return_type_str = return_type.unwrap_or("void");
 
         self.writer.write_line(&format!(".method public static {} {}() cil managed", return_type_str, name))?;
         self.writer.write_line("{")?;

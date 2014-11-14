@@ -1,9 +1,10 @@
 //! 简单的 DotNetWriter 测试
 
 use clr_assembler::{
-    formats::dot_net::writer::DotNetWriter,
+    formats::dll::writer::DotNetWriter,
     program::{ClrInstruction, ClrMethod, ClrOpcode, ClrProgram, ClrTypeReference},
 };
+use std::io::Cursor;
 
 #[test]
 fn test_dot_net_writer_basic() {
@@ -31,13 +32,15 @@ fn test_dot_net_writer_basic() {
     program.global_methods.push(method);
 
     // 使用 DotNetWriter 生成 PE 文件
-    let writer = DotNetWriter::new();
-    let result = writer.write_program(&program);
+    let buffer = Cursor::new(Vec::new());
+    let writer = DotNetWriter::new(buffer);
+    let result = writer.write(&program);
 
     // 验证结果
-    assert!(result.is_ok(), "DotNetWriter 应该能够成功生成 PE 文件");
+    assert!(result.result.is_ok(), "DotNetWriter 应该能够成功生成 PE 文件");
 
-    let pe_bytes = result.unwrap();
+    let pe_writer = result.result.unwrap();
+    let pe_bytes = pe_writer.into_inner();
     assert!(!pe_bytes.is_empty(), "生成的 PE 文件不应该为空");
 
     // 验证 DOS 头
@@ -71,12 +74,14 @@ fn test_dot_net_writer_with_string() {
 
     program.global_methods.push(method);
 
-    let writer = DotNetWriter::new();
-    let result = writer.write_program(&program);
+    let buffer = Cursor::new(Vec::new());
+    let writer = DotNetWriter::new(buffer);
+    let result = writer.write(&program);
 
-    assert!(result.is_ok(), "包含字符串的程序应该能够成功生成");
+    assert!(result.result.is_ok(), "包含字符串的程序应该能够成功生成");
 
-    let pe_bytes = result.unwrap();
+    let pe_writer = result.result.unwrap();
+    let pe_bytes = pe_writer.into_inner();
     assert!(!pe_bytes.is_empty(), "生成的 PE 文件不应该为空");
 
     println!("✓ DotNetWriter 字符串处理测试通过");

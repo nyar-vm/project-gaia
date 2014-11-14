@@ -1,11 +1,10 @@
 use crate::program::{ClrInstruction, ClrMethod, ClrOpcode, ClrProgram};
 use gaia_types::{GaiaDiagnostics, GaiaError};
 use pe_assembler::{
-    types::{DataDirectory, DosHeader, NtHeader, OptionalHeader, PeHeader, PeProgram, PeSection, SubsystemType},
-    writer::{PeBuilder, PeWriter},
+    exe_write_path,
+    types::{tables::{ImportTable, ExportTable}, CoffHeader, DataDirectory, DosHeader, NtHeader, OptionalHeader, PeHeader, PeProgram, PeSection, SubsystemType},
 };
-use pe_coff::types::CoffHeader;
-use std::io::{Cursor, Seek, Write};
+use std::{io::{Cursor, Seek, Write}, path::Path};
 
 #[derive(Debug)]
 pub struct DotNetWriter<W> {
@@ -27,6 +26,18 @@ impl<W: Write + Seek> DotNetWriter<W> {
             },
             Err(e) => GaiaDiagnostics::failure(e),
         }
+    }
+
+    /// 写入 CLR 程序到指定路径
+    pub fn write_to_path(clr: &ClrProgram, path: &Path) -> Result<gaia_types::helpers::Url, GaiaError> {
+        let pe_program = Self::build_pe_program_static(clr)?;
+        exe_write_path(&pe_program, path).map_err(|e| GaiaError::custom_error(format!("写入 PE 文件失败: {}", e)))
+    }
+
+    /// 静态方法构建 PE 程序
+    fn build_pe_program_static(clr: &ClrProgram) -> Result<PeProgram, GaiaError> {
+        let instance = Self::new(std::io::Cursor::new(Vec::new()));
+        instance.build_pe_program(clr)
     }
 
     fn build_pe_program(&self, clr: &ClrProgram) -> Result<PeProgram, GaiaError> {
@@ -51,14 +62,20 @@ impl<W: Write + Seek> DotNetWriter<W> {
         // 创建 PE 头
         let pe_header = self.build_pe_header(&text_section)?;
 
-        // 使用 PeBuilder 构建 PE 程序
-        let pe_program = PeBuilder::new().with_header(pe_header).add_section(text_section).build()?;
+        // 直接创建 PE 程序
+        let pe_program = PeProgram {
+            header: pe_header,
+            sections: vec![text_section],
+            imports: ImportTable::new(),
+            exports: ExportTable::new(),
+        };
 
         Ok(pe_program)
     }
 
     fn write_pe_program(&mut self, pe_program: &PeProgram) -> Result<(), GaiaError> {
-        let mut pe_writer = PeWriter::new(&mut self.writer);
+        use pe_assembler::formats::exe::writer::ExeWriter;
+        let mut pe_writer = ExeWriter::new(&mut self.writer);
         pe_writer.write_program(pe_program)?;
         Ok(())
     }
@@ -69,15 +86,12 @@ impl<W: Write + Seek> DotNetWriter<W> {
             signature: 0x00004550, // "PE\0\0"
         };
 
-        let coff_header = CoffHeader {
-            machine: 0x014C, // IMAGE_FILE_MACHINE_I386
-            number_of_sections: 1,
-            time_date_stamp: 0,
-            pointer_to_symbol_table: 0,
-            number_of_symbols: 0,
-            size_of_optional_header: 224, // PE32 可选头大小
-            characteristics: 0x0102,      // IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_32BIT_MACHINE
-        };
+        let coff_header = CoffHeader::new(0x014C, 1) // IMAGE_FILE_MACHINE_I386
+            .with_time_date_stamp(0)
+            .with_pointer_to_symbol_table(0)
+            .with_number_of_symbols(0)
+            .with_size_of_optional_header(224) // PE32 可选头大小
+            .with_characteristics(0x0102);     // IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_32BIT_MACHINE
 
         let optional_header = OptionalHeader::new(
             0x2000,                        // entry_point
