@@ -5,8 +5,8 @@
 use crate::formats::jasm::{ast::*, lexer::JasmTokenType};
 use gaia_types::{
     helpers::Url,
-    reader::{Token, TokenStream},
-    GaiaDiagnostics, GaiaError, Result, SourceLocation,
+    reader::{SourcePosition, Token, TokenStream},
+    GaiaError, Result, SourceLocation,
 };
 
 /// JASM 语法分析器
@@ -30,7 +30,7 @@ impl JasmParser {
     /// # 返回值
     /// 返回解析后的 `JasmRoot` AST 或错误
     pub fn parse(&self, tokens: TokenStream<JasmTokenType>) -> Result<JasmRoot> {
-        let mut parser_state = ParserState::new(self.url.as_ref(), tokens.raw, tokens.tokens.into_inner());
+        let mut parser_state = ParserState::new(self.url.clone(), tokens.raw, tokens.tokens.into_inner());
 
         parser_state.parse_root()
     }
@@ -39,7 +39,7 @@ impl JasmParser {
 /// 解析器内部状态
 struct ParserState<'input> {
     /// 源文件 URL
-    url: Option<&'input Url>,
+    url: Option<Url>,
     /// 源代码
     source: &'input str,
     /// Token 列表
@@ -50,7 +50,7 @@ struct ParserState<'input> {
 
 impl<'input> ParserState<'input> {
     /// 创建新的解析器状态
-    fn new(url: Option<&'input Url>, source: &'input str, tokens: Vec<Token<JasmTokenType>>) -> Self {
+    fn new(url: Option<Url>, source: &'input str, tokens: Vec<Token<JasmTokenType>>) -> Self {
         Self { url, source, tokens, position: 0 }
     }
 
@@ -67,11 +67,6 @@ impl<'input> ParserState<'input> {
         self.current()
     }
 
-    /// 查看下一个 token 但不前进
-    fn peek(&self) -> Option<&Token<JasmTokenType>> {
-        self.tokens.get(self.position + 1)
-    }
-
     /// 检查当前 token 是否匹配指定类型
     fn check(&self, token_type: JasmTokenType) -> bool {
         self.current().map(|t| t.token_type) == Some(token_type)
@@ -85,7 +80,12 @@ impl<'input> ParserState<'input> {
             Ok(token)
         }
         else {
-            Err(GaiaError::custom_error(format!("Expected {:?}, found {:?}", token_type, self.current().map(|t| t.token_type))))
+            Err(GaiaError::custom_error(format!(
+                "Expected {:?}, found {:?} at {:?}",
+                token_type,
+                self.current().map(|t| t.token_type),
+                self.location_from_token(self.current().unwrap())
+            )))
         }
     }
 
@@ -209,7 +209,11 @@ impl<'input> ParserState<'input> {
                         source_file = Some(self.parse_source_file()?);
                     }
                     _ => {
-                        return Err(GaiaError::custom_error(format!("Unexpected token in class body: {:?}", token.token_type)));
+                        return Err(GaiaError::custom_error(format!(
+                            "Unexpected token in class body: {:?} at {:?}",
+                            token.token_type,
+                            self.location_from_token(token)
+                        )));
                     }
                 }
             }
@@ -399,7 +403,13 @@ impl<'input> ParserState<'input> {
                             format!("String {}", arg_text)
                         }
                         else {
-                            return Err(GaiaError::custom_error("Expected string literal after String".to_string()));
+                            return Err(GaiaError::custom_error(format!(
+                                "Expected string literal after String at {:?}",
+                                self.location_from_token(self.current().unwrap_or(&Token {
+                                    token_type: JasmTokenType::Eof,
+                                    position: SourcePosition { line: 0, column: 0, offset: 0, length: 0 }
+                                }))
+                            )));
                         }
                     }
                     else if self.check(JasmTokenType::StringLiteral) || self.check(JasmTokenType::Number) {
@@ -409,7 +419,13 @@ impl<'input> ParserState<'input> {
                         arg_text
                     }
                     else {
-                        return Err(GaiaError::custom_error("Expected argument for ldc instruction".to_string()));
+                        return Err(GaiaError::custom_error(format!(
+                            "Expected argument for ldc instruction at {:?}",
+                            self.location_from_token(self.current().unwrap_or(&Token {
+                                token_type: JasmTokenType::Eof,
+                                position: SourcePosition { line: 0, column: 0, offset: 0, length: 0 }
+                            }))
+                        )));
                     };
 
                     self.skip_whitespace_and_comments();
@@ -694,7 +710,7 @@ impl<'input> ParserState<'input> {
 
     /// 从 token 创建源位置
     fn location_from_token(&self, token: &Token<JasmTokenType>) -> SourceLocation {
-        SourceLocation { line: token.position.line, column: token.position.column, url: self.url.cloned() }
+        SourceLocation { line: token.position.line, column: token.position.column, url: self.url.clone().map(|u| u.clone()) }
     }
 }
 

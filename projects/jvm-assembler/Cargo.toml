@@ -2,16 +2,29 @@
 name = "jvm-assembler"
 version = "0.0.0"
 authors = ["Aster <192607617@qq.com>"]
-description = "JVM assembler and disassembler"
-repository = "https://github.com/oovm/project-gaia"
-documentation = "https://docs.rs/jvm-rust"
+description = "支持 jvm 指令集的现代汇编器 - 强类型、面向对象、零依赖核心"
+categories = ["compilers"]
+keywords = ["jvm", "jasm", "assembler", "disassembler", "assembly"]
+homepage = "https://github.com/nyar-vm/project-gaia"
+repository = "https://github.com/nyar-vm/project-gaia"
+documentation = "http://docs.rs/jvm-assembler"
 readme = "readme.md"
 license = "MPL-2.0"
 edition = "2024"
 exclude = ["package.json", "tests/**"]
 
 [dependencies]
-gaia-types = { path = "../gaia-types" }
 byteorder = "1.5.0"
+gaia-types = { workspace = true }
+
+[build-dependencies]
+
+[dev-dependencies]
+gaia-types = { workspace = true, features = ["serde_json"] }
+
 
 [features]
+default = []
+
+[package.metadata.docs.rs]
+all-features = true

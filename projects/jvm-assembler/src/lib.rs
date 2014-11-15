@@ -5,7 +5,7 @@ pub mod helpers;
 pub mod program;
 
 // 重新导出主要类型和函数
-pub use formats::jasm::converter::{convert_jasm_to_jvm, JasmToJvmConverter};
+pub use crate::formats::jasm::ast::to_program::{convert_jasm_to_jvm, JasmToJvmConverter};
 // 重新导出主要类型和函数
 pub use crate::program::{opcodes, ConstantPoolEntry, JvmField, JvmInstruction, JvmMethod};
 

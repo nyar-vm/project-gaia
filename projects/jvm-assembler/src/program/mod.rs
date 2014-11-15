@@ -81,28 +81,57 @@ pub struct JvmConstantPool {
 /// JVM 常量池条目（高层表示）
 #[derive(Debug, Clone, PartialEq)]
 pub enum JvmConstantPoolEntry {
-    /// UTF-8 字符串
-    Utf8 { value: String },
+    Nop,
+    Utf8 {
+        value: String,
+    },
     /// 整数常量
-    Integer { value: i32 },
+    Integer {
+        value: i32,
+    },
     /// 浮点数常量
-    Float { value: f32 },
+    Float {
+        value: f32,
+    },
     /// 长整数常量
-    Long { value: i64 },
+    Long {
+        value: i64,
+    },
     /// 双精度浮点数常量
-    Double { value: f64 },
+    Double {
+        value: f64,
+    },
     /// 类引用
-    Class { name: String },
+    Class {
+        name: String,
+    },
     /// 字符串引用
-    String { value: String },
+    String {
+        value: String,
+    },
     /// 字段引用
-    Fieldref { class_name: String, name: String, descriptor: String },
+    Fieldref {
+        class_name: String,
+        name: String,
+        descriptor: String,
+    },
     /// 方法引用
-    Methodref { class_name: String, name: String, descriptor: String },
+    Methodref {
+        class_name: String,
+        name: String,
+        descriptor: String,
+    },
     /// 接口方法引用
-    InterfaceMethodref { class_name: String, name: String, descriptor: String },
+    InterfaceMethodref {
+        class_name: String,
+        name: String,
+        descriptor: String,
+    },
     /// 名称和类型
-    NameAndType { name: String, descriptor: String },
+    NameAndType {
+        name: String,
+        descriptor: String,
+    },
 }
 
 /// JVM 方法信息（高层表示）
@@ -144,6 +173,8 @@ pub struct JvmField {
 /// JVM 指令（高层表示）
 #[derive(Debug, Clone, PartialEq)]
 pub enum JvmInstruction {
+    /// 空操作
+    Nop,
     /// 无操作数指令
     Simple { opcode: JvmOpcode },
     /// 带立即数的指令
@@ -388,12 +419,16 @@ pub enum JvmAttribute {
     },
     /// 常量值属性
     ConstantValue { value: JvmConstantPoolEntry },
+    /// Signature 属性
+    Signature { signature: String },
+    /// 异常属性
+    Exceptions { exceptions: Vec<String> },
     /// 行号表属性
     LineNumberTable { entries: Vec<(u16, u16)> },
     /// 局部变量表属性
     LocalVariableTable { entries: Vec<JvmLocalVariable> },
-    /// 其他属性
-    Other { name: String, data: Vec<u8> },
+    /// 未知属性
+    Unknown { name: String, data: Vec<u8> },
 }
 
 /// JVM 局部变量信息
@@ -589,6 +624,62 @@ impl JvmAccessFlags {
         flags
     }
 
+    /// 从 JVM 字节码中的访问标志值创建访问标志
+    pub fn from_flags(flags: u16) -> Self {
+        Self {
+            is_public: (flags & 0x0001) != 0,
+            is_private: (flags & 0x0002) != 0,
+            is_protected: (flags & 0x0004) != 0,
+            is_static: (flags & 0x0008) != 0,
+            is_final: (flags & 0x0010) != 0,
+            is_super: (flags & 0x0020) != 0,
+            is_interface: (flags & 0x0200) != 0,
+            is_abstract: (flags & 0x0400) != 0,
+            is_synthetic: (flags & 0x1000) != 0,
+            is_annotation: (flags & 0x2000) != 0,
+            is_enum: (flags & 0x4000) != 0,
+        }
+    }
+
+    /// 将访问标志转换为修饰符字符串列表
+    pub fn to_modifiers(&self) -> Vec<String> {
+        let mut modifiers = Vec::new();
+        if self.is_public {
+            modifiers.push("public".to_string());
+        }
+        if self.is_private {
+            modifiers.push("private".to_string());
+        }
+        if self.is_protected {
+            modifiers.push("protected".to_string());
+        }
+        if self.is_static {
+            modifiers.push("static".to_string());
+        }
+        if self.is_final {
+            modifiers.push("final".to_string());
+        }
+        if self.is_super {
+            modifiers.push("super".to_string());
+        }
+        if self.is_interface {
+            modifiers.push("interface".to_string());
+        }
+        if self.is_abstract {
+            modifiers.push("abstract".to_string());
+        }
+        if self.is_synthetic {
+            modifiers.push("synthetic".to_string());
+        }
+        if self.is_annotation {
+            modifiers.push("annotation".to_string());
+        }
+        if self.is_enum {
+            modifiers.push("enum".to_string());
+        }
+        modifiers
+    }
+
     /// 转换为 JVM 字节码中的访问标志值
     pub fn to_flags(&self) -> u16 {
         let mut flags = 0u16;
@@ -628,6 +719,12 @@ impl JvmAccessFlags {
         }
 
         flags
+    }
+}
+
+impl std::fmt::Display for JvmOpcode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 

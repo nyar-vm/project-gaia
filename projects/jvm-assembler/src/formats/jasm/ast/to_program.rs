@@ -6,8 +6,6 @@ use std::collections::HashMap;
 
 /// JASM 到 JVM 转换器
 pub struct JasmToJvmConverter {
-    /// 常量池映射
-    constant_pool_map: HashMap<String, u16>,
     /// 常量池
     constant_pool: JvmConstantPool,
 }
@@ -15,7 +13,7 @@ pub struct JasmToJvmConverter {
 impl JasmToJvmConverter {
     /// 创建新的转换器
     pub fn new() -> Self {
-        Self { constant_pool_map: HashMap::new(), constant_pool: JvmConstantPool::new() }
+        Self { constant_pool: JvmConstantPool::new() }
     }
 
     /// 转换 JASM AST 到 JVM 程序
@@ -116,19 +114,19 @@ impl JasmToJvmConverter {
                     // 字符串常量
                     let string_literal = &argument[7..]; // 去掉 "String " 前缀
                     let string_value = self.parse_string_literal(string_literal)?;
-                    let symbol = format!("string_{}", string_value);
 
                     // 添加到常量池
-                    self.add_string_constant(string_value);
+                    let string_index = self.add_string_constant(string_value);
+
+                    let symbol = format!("string_{}", string_index);
+                    self.constant_pool.add_symbol(symbol.clone(), string_index);
 
                     Ok(JvmInstruction::WithConstantPool { opcode, symbol })
                 }
                 else if let Ok(value) = argument.parse::<i32>() {
-                    // 数字常量
                     Ok(JvmInstruction::WithImmediate { opcode, value })
                 }
                 else {
-                    // 其他常量池引用
                     Ok(JvmInstruction::WithConstantPool { opcode, symbol: argument })
                 }
             }
@@ -235,21 +233,22 @@ impl JasmToJvmConverter {
     }
 
     /// 添加字符串常量到常量池
-    fn add_string_constant(&mut self, value: String) {
+    fn add_string_constant(&mut self, value: String) -> u16 {
         let utf8_entry = JvmConstantPoolEntry::Utf8 { value: value.clone() };
-        let utf8_index = self.constant_pool.add_entry(utf8_entry);
+        let _utf8_index = self.constant_pool.add_entry(utf8_entry);
 
         let string_entry = JvmConstantPoolEntry::String { value };
         let string_index = self.constant_pool.add_entry(string_entry);
 
         let symbol = format!("string_{}", string_index);
         self.constant_pool.add_symbol(symbol, string_index);
+        string_index
     }
 
     /// 添加方法引用到常量池
     fn add_method_reference(&mut self, class_name: &str, method_name: &str, descriptor: &str) {
         let class_entry = JvmConstantPoolEntry::Class { name: class_name.to_string() };
-        let class_index = self.constant_pool.add_entry(class_entry);
+        let _class_index = self.constant_pool.add_entry(class_entry);
 
         let method_entry = JvmConstantPoolEntry::Methodref {
             class_name: class_name.to_string(),
@@ -265,7 +264,7 @@ impl JasmToJvmConverter {
     /// 添加字段引用到常量池
     fn add_field_reference(&mut self, class_name: &str, field_name: &str, descriptor: &str) {
         let class_entry = JvmConstantPoolEntry::Class { name: class_name.to_string() };
-        let class_index = self.constant_pool.add_entry(class_entry);
+        let _class_index = self.constant_pool.add_entry(class_entry);
 
         let field_entry = JvmConstantPoolEntry::Fieldref {
             class_name: class_name.to_string(),

@@ -2,4 +2,5 @@
 
 pub mod reader;
 
+pub mod view;
 pub mod writer;

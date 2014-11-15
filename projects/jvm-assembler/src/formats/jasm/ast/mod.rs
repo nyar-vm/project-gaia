@@ -1,3 +1,6 @@
+pub mod to_jasm;
+pub mod to_program;
+
 #[derive(Clone, Debug)]
 pub struct JasmClass {
     /// 访问修饰符（如 public, private 等）

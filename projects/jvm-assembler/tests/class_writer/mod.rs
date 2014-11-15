@@ -1,3 +1,4 @@
+use gaia_types::GaiaError;
 use jvm_assembler::{
     self, convert_jasm_to_jvm,
     formats::{
@@ -8,7 +9,7 @@ use jvm_assembler::{
 use std::{fs, path::Path};
 
 #[test]
-fn hello_java_class_generation() {
+fn hello_java_class_generation() -> Result<(), GaiaError> {
     // 读取 HelloJava.jasm 文件
     let jasm_path = Path::new("tests/jasm_reader/HelloJava/HelloJava.jasm");
     let jasm_content = fs::read_to_string(jasm_path).expect("Failed to read HelloJava.jasm file");
@@ -29,18 +30,14 @@ fn hello_java_class_generation() {
     let program = program_result.result.unwrap();
 
     // 步骤 4: 生成 Class 字节码
-    let binary_assembler: gaia_types::BinaryAssembler<Vec<u8>, byteorder::BigEndian> =
-        gaia_types::BinaryAssembler::new(Vec::new());
+    let binary_assembler: gaia_types::BinaryWriter<Vec<u8>, byteorder::BigEndian> = gaia_types::BinaryWriter::new(Vec::new());
     let mut class_writer = ClassWriter::new(binary_assembler);
-    let class_bytes_result = class_writer.write(program);
+    let class_bytes_result = class_writer.write(program.to_class_view().result?);
 
     // 检查结果
     assert!(class_bytes_result.result.is_ok(), "Failed to generate Class bytes");
 
-    let class_bytes = class_bytes_result.result.unwrap();
-
-    // 验证 Class 魔数
-    assert_eq!(&class_bytes[0..4], &[0xCA, 0xFE, 0xBA, 0xBE], "Invalid Class magic number");
+    let class_bytes = class_bytes_result.result?.finish();
 
     // 写入输出文件用于调试和验证
     let output_path = Path::new("tests/class_writer/HelloJava.class");
@@ -53,6 +50,7 @@ fn hello_java_class_generation() {
     // 验证生成的 Class 文件可以被 Java 运行时识别
     // 注意：这里只是基本的格式验证，实际运行需要完整的常量池索引
     assert!(class_bytes.len() > 10, "Class file too small");
+    Ok(())
 }
 
 #[test]
