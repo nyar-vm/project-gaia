@@ -1,0 +1,212 @@
+[
+    {
+        "lib_name": "kernel32",
+        "file_type": "StaticLibrary",
+        "member_count": 1373,
+        "symbol_count": 0,
+        "file_size": 329914,
+        "sample_members": [
+            " (84110 bytes)",
+            " (84120 bytes)",
+            "KERNEL32.dll (498 bytes)",
+            "KERNEL32.dll (251 bytes)",
+            "KERNEL32.dll (280 bytes)",
+            "KERNEL32.dll (62 bytes)",
+            "KERNEL32.dll (60 bytes)",
+            "KERNEL32.dll (57 bytes)",
+            "KERNEL32.dll (51 bytes)",
+            "KERNEL32.dll (73 bytes)"
+        ],
+        "sample_symbols": [],
+        "analysis_success": true
+    },
+    {
+        "lib_name": "kernel32",
+        "file_type": "StaticLibrary",
+        "member_count": 1401,
+        "symbol_count": 0,
+        "file_size": 311908,
+        "sample_members": [
+            " (75956 bytes)",
+            " (75966 bytes)",
+            "KERNEL32.dll (498 bytes)",
+            "KERNEL32.dll (251 bytes)",
+            "KERNEL32.dll (288 bytes)",
+            "KERNEL32.dll (57 bytes)",
+            "KERNEL32.dll (54 bytes)",
+            "KERNEL32.dll (48 bytes)",
+            "KERNEL32.dll (70 bytes)",
+            "KERNEL32.dll (42 bytes)"
+        ],
+        "sample_symbols": [],
+        "analysis_success": true
+    },
+    {
+        "lib_name": "user32",
+        "file_type": "StaticLibrary",
+        "member_count": 797,
+        "symbol_count": 0,
+        "file_size": 179598,
+        "sample_members": [
+            " (44552 bytes)",
+            " (44562 bytes)",
+            "USER32.dll (490 bytes)",
+            "USER32.dll (249 bytes)",
+            "USER32.dll (276 bytes)",
+            "USER32.dll (71 bytes)",
+            "USER32.dll (57 bytes)",
+            "USER32.dll (61 bytes)",
+            "USER32.dll (52 bytes)",
+            "USER32.dll (54 bytes)"
+        ],
+        "sample_symbols": [],
+        "analysis_success": true
+    },
+    {
+        "lib_name": "user32",
+        "file_type": "StaticLibrary",
+        "member_count": 805,
+        "symbol_count": 0,
+        "file_size": 167580,
+        "sample_members": [
+            " (39480 bytes)",
+            " (39490 bytes)",
+            "USER32.dll (490 bytes)",
+            "USER32.dll (249 bytes)",
+            "USER32.dll (284 bytes)",
+            "USER32.dll (71 bytes)",
+            "USER32.dll (54 bytes)",
+            "USER32.dll (58 bytes)",
+            "USER32.dll (48 bytes)",
+            "USER32.dll (50 bytes)"
+        ],
+        "sample_symbols": [],
+        "analysis_success": true
+    },
+    {
+        "lib_name": "user32",
+        "file_type": "StaticLibrary",
+        "member_count": 1606,
+        "symbol_count": 0,
+        "file_size": 349086,
+        "sample_members": [
+            " (39480 bytes)",
+            " (42690 bytes)",
+            "/<ECSYMBOLS> (76464 bytes)",
+            "USER32.dll (490 bytes)",
+            "USER32.dll (249 bytes)",
+            "USER32.dll (284 bytes)",
+            "USER32.dll (78 bytes)",
+            "USER32.dll (86 bytes)",
+            "USER32.dll (66 bytes)",
+            "USER32.dll (70 bytes)"
+        ],
+        "sample_symbols": [],
+        "analysis_success": true
+    },
+    {
+        "lib_name": "msvcrt",
+        "file_type": "StaticLibrary",
+        "member_count": 1337,
+        "symbol_count": 0,
+        "file_size": 8031888,
+        "sample_members": [
+            " (40233 bytes)",
+            " (42273 bytes)",
+            " (125063 bytes)",
+            "/0 (486 bytes)",
+            "/77 (486 bytes)",
+            "/154 (498 bytes)",
+            "/233 (500 bytes)",
+            "/313 (498 bytes)",
+            "/392 (486 bytes)",
+            "/469 (480 bytes)"
+        ],
+        "sample_symbols": [],
+        "analysis_success": true
+    },
+    {
+        "lib_name": "msvcrt",
+        "file_type": "StaticLibrary",
+        "member_count": 1359,
+        "symbol_count": 0,
+        "file_size": 8073508,
+        "sample_members": [
+            " (42378 bytes)",
+            " (44392 bytes)",
+            " (124796 bytes)",
+            "/0 (488 bytes)",
+            "/76 (488 bytes)",
+            "/152 (500 bytes)",
+            "/230 (506 bytes)",
+            "/309 (500 bytes)",
+            "/387 (488 bytes)",
+            "/463 (486 bytes)"
+        ],
+        "sample_symbols": [],
+        "analysis_success": true
+    },
+    {
+        "lib_name": "ddraw",
+        "file_type": "StaticLibrary",
+        "member_count": 18,
+        "symbol_count": 0,
+        "file_size": 4536,
+        "sample_members": [
+            " (868 bytes)",
+            " (878 bytes)",
+            "DDRAW.dll (485 bytes)",
+            "DDRAW.dll (248 bytes)",
+            "DDRAW.dll (274 bytes)",
+            "DDRAW.dll (58 bytes)",
+            "DDRAW.dll (48 bytes)",
+            "DDRAW.dll (50 bytes)",
+            "DDRAW.dll (45 bytes)",
+            "DDRAW.dll (51 bytes)"
+        ],
+        "sample_symbols": [],
+        "analysis_success": true
+    },
+    {
+        "lib_name": "ddraw",
+        "file_type": "StaticLibrary",
+        "member_count": 18,
+        "symbol_count": 0,
+        "file_size": 4308,
+        "sample_members": [
+            " (772 bytes)",
+            " (782 bytes)",
+            "DDRAW.dll (485 bytes)",
+            "DDRAW.dll (248 bytes)",
+            "DDRAW.dll (282 bytes)",
+            "DDRAW.dll (54 bytes)",
+            "DDRAW.dll (45 bytes)",
+            "DDRAW.dll (47 bytes)",
+            "DDRAW.dll (41 bytes)",
+            "DDRAW.dll (47 bytes)"
+        ],
+        "sample_symbols": [],
+        "analysis_success": true
+    },
+    {
+        "lib_name": "ddraw",
+        "file_type": "StaticLibrary",
+        "member_count": 32,
+        "symbol_count": 0,
+        "file_size": 7526,
+        "sample_members": [
+            " (772 bytes)",
+            " (834 bytes)",
+            "/<ECSYMBOLS> (1409 bytes)",
+            "DDRAW.dll (485 bytes)",
+            "DDRAW.dll (248 bytes)",
+            "DDRAW.dll (282 bytes)",
+            "DDRAW.dll (79 bytes)",
+            "DDRAW.dll (61 bytes)",
+            "DDRAW.dll (65 bytes)",
+            "DDRAW.dll (53 bytes)"
+        ],
+        "sample_symbols": [],
+        "analysis_success": true
+    }
+]

@@ -1,14 +1,13 @@
 [
     {
         "exe_name": "notepad",
-        "file_path": "C:\\Windows\\System32\\notepad.exe",
         "basic_info": {
             "target_arch": "X86_64",
             "subsystem": "Windows",
             "entry_point": 6576,
             "image_base": 5368709120,
             "section_count": 8,
-            "file_size": 512
+            "file_size": 360448
         },
         "export_count": 0,
         "import_count": 315,
@@ -46,18 +45,30 @@
             ".rsrc",
             ".reloc"
         ],
+        "linker_version": "14.38",
+        "os_version": "10.0",
+        "image_version": "10.0",
+        "subsystem_version": "10.0",
+        "checksum": 372497,
+        "dll_characteristics": 49504,
+        "stack_reserve_size": 524288,
+        "stack_commit_size": 69632,
+        "heap_reserve_size": 1048576,
+        "heap_commit_size": 4096,
+        "code_size": 163840,
+        "initialized_data_size": 200704,
+        "uninitialized_data_size": 0,
         "analysis_success": true
     },
     {
         "exe_name": "calc",
-        "file_path": "C:\\Windows\\System32\\calc.exe",
         "basic_info": {
             "target_arch": "X86_64",
             "subsystem": "Windows",
             "entry_point": 5952,
             "image_base": 5368709120,
             "section_count": 7,
-            "file_size": 520
+            "file_size": 49152
         },
         "export_count": 0,
         "import_count": 34,
@@ -94,18 +105,30 @@
             ".rsrc",
             ".reloc"
         ],
+        "linker_version": "14.38",
+        "os_version": "10.0",
+        "image_version": "10.0",
+        "subsystem_version": "10.0",
+        "checksum": 90741,
+        "dll_characteristics": 49504,
+        "stack_reserve_size": 524288,
+        "stack_commit_size": 8192,
+        "heap_reserve_size": 1048576,
+        "heap_commit_size": 4096,
+        "code_size": 8192,
+        "initialized_data_size": 36864,
+        "uninitialized_data_size": 0,
         "analysis_success": true
     },
     {
         "exe_name": "cmd",
-        "file_path": "C:\\Windows\\System32\\cmd.exe",
         "basic_info": {
             "target_arch": "X86_64",
             "subsystem": "Console",
             "entry_point": 163024,
             "image_base": 5368709120,
             "section_count": 8,
-            "file_size": 512
+            "file_size": 344064
         },
         "export_count": 0,
         "import_count": 286,
@@ -143,18 +166,30 @@
             ".rsrc",
             ".reloc"
         ],
+        "linker_version": "14.38",
+        "os_version": "10.0",
+        "image_version": "10.0",
+        "subsystem_version": "10.0",
+        "checksum": 389408,
+        "dll_characteristics": 49504,
+        "stack_reserve_size": 1048576,
+        "stack_commit_size": 1032192,
+        "heap_reserve_size": 1048576,
+        "heap_commit_size": 4096,
+        "code_size": 237568,
+        "initialized_data_size": 217088,
+        "uninitialized_data_size": 0,
         "analysis_success": true
     },
     {
         "exe_name": "powershell",
-        "file_path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
         "basic_info": {
             "target_arch": "X86_64",
             "subsystem": "Console",
             "entry_point": 21760,
             "image_base": 5368709120,
             "section_count": 7,
-            "file_size": 520
+            "file_size": 454656
         },
         "export_count": 0,
         "import_count": 133,
@@ -191,18 +226,30 @@
             ".rsrc",
             ".reloc"
         ],
+        "linker_version": "14.38",
+        "os_version": "10.0",
+        "image_version": "10.0",
+        "subsystem_version": "10.0",
+        "checksum": 498581,
+        "dll_characteristics": 49504,
+        "stack_reserve_size": 524288,
+        "stack_commit_size": 8192,
+        "heap_reserve_size": 1048576,
+        "heap_commit_size": 4096,
+        "code_size": 45056,
+        "initialized_data_size": 405504,
+        "uninitialized_data_size": 0,
         "analysis_success": true
     },
     {
         "exe_name": "explorer",
-        "file_path": "C:\\Windows\\explorer.exe",
         "basic_info": {
             "target_arch": "X86_64",
             "subsystem": "Windows",
             "entry_point": 756528,
             "image_base": 5368709120,
             "section_count": 9,
-            "file_size": 528
+            "file_size": 3129376
         },
         "export_count": 1,
         "import_count": 777,
@@ -243,18 +290,30 @@
             ".rsrc",
             ".reloc"
         ],
+        "linker_version": "14.38",
+        "os_version": "10.0",
+        "image_version": "10.0",
+        "subsystem_version": "10.0",
+        "checksum": 3147204,
+        "dll_characteristics": 49600,
+        "stack_reserve_size": 524288,
+        "stack_commit_size": 57344,
+        "heap_reserve_size": 1048576,
+        "heap_commit_size": 4096,
+        "code_size": 1888256,
+        "initialized_data_size": 1216512,
+        "uninitialized_data_size": 4096,
         "analysis_success": true
     },
     {
         "exe_name": "taskmgr",
-        "file_path": "C:\\Windows\\System32\\taskmgr.exe",
         "basic_info": {
             "target_arch": "X86_64",
             "subsystem": "Windows",
             "entry_point": 1187616,
             "image_base": 5368709120,
             "section_count": 9,
-            "file_size": 528
+            "file_size": 5542480
         },
         "export_count": 0,
         "import_count": 1080,
@@ -293,18 +352,30 @@
             ".rsrc",
             ".reloc"
         ],
+        "linker_version": "14.38",
+        "os_version": "10.0",
+        "image_version": "10.0",
+        "subsystem_version": "10.0",
+        "checksum": 5575157,
+        "dll_characteristics": 49632,
+        "stack_reserve_size": 524288,
+        "stack_commit_size": 8192,
+        "heap_reserve_size": 1048576,
+        "heap_commit_size": 4096,
+        "code_size": 2625536,
+        "initialized_data_size": 2895872,
+        "uninitialized_data_size": 4096,
         "analysis_success": true
     },
     {
         "exe_name": "regedit",
-        "file_path": "C:\\Windows\\regedit.exe",
         "basic_info": {
             "target_arch": "X86_64",
             "subsystem": "Windows",
             "entry_point": 8096,
             "image_base": 5368709120,
             "section_count": 8,
-            "file_size": 520
+            "file_size": 585728
         },
         "export_count": 0,
         "import_count": 387,
@@ -342,6 +413,19 @@
             ".rsrc",
             ".reloc"
         ],
+        "linker_version": "14.38",
+        "os_version": "10.0",
+        "image_version": "10.0",
+        "subsystem_version": "10.0",
+        "checksum": 607723,
+        "dll_characteristics": 49504,
+        "stack_reserve_size": 524288,
+        "stack_commit_size": 16384,
+        "heap_reserve_size": 1048576,
+        "heap_commit_size": 4096,
+        "code_size": 184320,
+        "initialized_data_size": 667648,
+        "uninitialized_data_size": 0,
         "analysis_success": true
     }
 ]

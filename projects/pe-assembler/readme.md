@@ -25,7 +25,7 @@ pe-rust = { path = "../pe-rust" }
 
 ### 基本示例
 
-```rust
+```rust,ignore
 use pe_assembler::reader::{PeReader, PeView};
 use pe_assembler::types::ReadConfig;
 
@@ -54,7 +54,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ### 读取 PE 头
 
-```rust
+```rust,ignore
 use pe_assembler::reader::PeReader;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -63,7 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     // 演示 PE 读取器的使用
     println!("PE 读取器已创建");
-    println!("可以使用 viewer.view_file() 或 viewer.read_file() 来处理 PE 文件");
+    println!("可以使用 reader.view_file() 或 reader.read_file() 来处理 PE 文件");
     
     Ok(())
 }
@@ -184,3 +184,22 @@ cargo clippy
 - [ ] 添加更全面的测试覆盖
 - [ ] 开发性能基准测试
 - [ ] 创建更详细的示例和教程
+
+## 导入表兼容模式（x64）
+
+为提升在不同加载器/环境下的兼容性，写入导入表时采用“兼容模式”策略：
+
+- x64：`OriginalFirstThunk`（INT）指向名称指针数组，`FirstThunk`（IAT）初始填入对应 `IMAGE_IMPORT_BY_NAME` 的 RVA（指向 Hint+Name）。加载器解析后会将 IAT 条目覆盖为实际函数地址。
+- x86：沿用常见布局，`OriginalFirstThunk` 设为 0，`FirstThunk`（IAT）初始填入 `IMAGE_IMPORT_BY_NAME` 的 RVA。
+- 目的：避免 IAT 初始为 0 时，某些加载路径不解析 INT 导致的未填充问题；统一行为让两种路径都能成功解析。
+
+实现位置与说明：
+
+- 写入逻辑位于 `helpers/pe_writer/mod.rs::write_import_table`，根据 `pointer_size` 在 x64 下为 IAT 写入名称 RVA；x86 维持既有行为。
+- 构建器在 `helpers/builder/mod.rs` 中明确注释了该“兼容模式”，同时可选头会填写 Import Directory（索引 1）与 IAT Directory（索引 12），便于加载器识别范围。
+- 示例与测试：`tests/runnable/exit_code.rs` 提供最小调用示例；新增的 x64-only 导入表测试断言 IAT 非零且指向有效 `IMAGE_IMPORT_BY_NAME`。
+
+注意事项：
+
+- 样例程序会清除 `DllCharacteristics` 的 `DYNAMIC_BASE` 位以禁用 ASLR，配合基于 RVA 的修补与 RIP 相对位移计算，确保加载稳定。
+- 加载完成后 IAT 条目必然被覆盖为真实地址，因此初始写入的名称 RVA 仅用于解析阶段，不影响最终调用。

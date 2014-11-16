@@ -1,8 +1,25 @@
-use crate::assembler::{ExportTable, ImportTable};
+#![doc = include_str!("readme.md")]
+
+pub use self::{
+    dos::DosHeader,
+    nt::NtHeader,
+    tables::{ExportTable, ImportTable},
+};
+use byteorder::{LittleEndian, ReadBytesExt};
 use gaia_types::helpers::Architecture;
-use pe_coff::types::CoffHeader;
 use serde::{Deserialize, Serialize};
-use std::fmt;
+use std::{
+    fmt::{Display, Formatter},
+    io::{Read},
+};
+
+pub mod coff;
+mod dos;
+mod nt;
+pub mod tables;
+
+pub use coff::*;
+use gaia_types::GaiaError;
 
 /// PE 子系统类型枚举
 ///
@@ -34,8 +51,8 @@ pub enum SubsystemType {
     WindowsBootApplication,
 }
 
-impl fmt::Display for SubsystemType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for SubsystemType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             SubsystemType::Console => write!(f, "控制台应用程序"),
             SubsystemType::Windows => write!(f, "Windows GUI 应用程序"),
@@ -74,115 +91,6 @@ impl From<u16> for SubsystemType {
             14 => SubsystemType::Xbox,
             16 => SubsystemType::WindowsBootApplication,
             _ => SubsystemType::Console, // 默认值
-        }
-    }
-}
-
-/// DOS 头结构
-///
-/// 包含 DOS 可执行文件的基本信息，是 PE 文件的第一个结构。
-/// 虽然现代 Windows 程序不运行在 DOS 模式下，但 PE 格式仍保留这个结构用于兼容性。
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
-pub struct DosHeader {
-    /// DOS 签名，通常为 0x5A4D（"MZ"）
-    pub e_magic: u16,
-    /// 文件最后页的字节数
-    pub e_cblp: u16,
-    /// 文件的总页数
-    pub e_cp: u16,
-    /// 重定位项的数量
-    pub e_crlc: u16,
-    /// 段落中头部的大小
-    pub e_cparhdr: u16,
-    /// 所需的最小段落数
-    pub e_minalloc: u16,
-    /// 所需的最大段落数
-    pub e_maxalloc: u16,
-    /// 初始的 SS 寄存器值
-    pub e_ss: u16,
-    /// 初始的 SP 寄存器值
-    pub e_sp: u16,
-    /// 校验和
-    pub e_csum: u16,
-    /// 初始的 IP 寄存器值
-    pub e_ip: u16,
-    /// 初始的 CS 寄存器值
-    pub e_cs: u16,
-    /// 重定位表的文件偏移
-    pub e_lfarlc: u16,
-    /// 覆盖号
-    pub e_ovno: u16,
-    /// 保留字段，通常为 0
-    pub e_res: [u16; 4],
-    /// OEM 标识符
-    pub e_oemid: u16,
-    /// OEM 信息
-    pub e_oeminfo: u16,
-    /// 保留字段，通常为 0
-    pub e_res2: [u16; 10],
-    /// PE 头的文件偏移，指向真正的 PE 结构
-    pub e_lfanew: u32,
-}
-
-/// NT 头结构
-///
-/// 包含 PE 文件的主要签名和基本信息，标识这是一个有效的 PE 文件。
-/// signature 字段必须为 0x00004550（"PE\0\0"）。
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
-pub struct NtHeader {
-    /// PE 签名，必须为 0x00004550（"PE\0\0"）
-    pub signature: u32,
-}
-
-impl DosHeader {
-    /// 创建一个标准的 DOS 头，只需要指定 PE 头的偏移
-    pub fn new(pe_header_offset: u32) -> Self {
-        Self {
-            e_magic: 0x5A4D, // "MZ"
-            e_cblp: 0x90,
-            e_cp: 0x03,
-            e_crlc: 0x00,
-            e_cparhdr: 0x04,
-            e_minalloc: 0x00,
-            e_maxalloc: 0xFFFF,
-            e_ss: 0x00,
-            e_sp: 0xB8,
-            e_csum: 0x00,
-            e_ip: 0x00,
-            e_cs: 0x00,
-            e_lfarlc: 0x40,
-            e_ovno: 0x00,
-            e_res: [0; 4],
-            e_oemid: 0x00,
-            e_oeminfo: 0x00,
-            e_res2: [0; 10],
-            e_lfanew: pe_header_offset,
-        }
-    }
-}
-
-impl Default for DosHeader {
-    fn default() -> Self {
-        Self {
-            e_magic: 0x5A4D, // "MZ"
-            e_cblp: 0x90,
-            e_cp: 0x03,
-            e_crlc: 0x00,
-            e_cparhdr: 0x04,
-            e_minalloc: 0x00,
-            e_maxalloc: 0xFFFF,
-            e_ss: 0x00,
-            e_sp: 0xB8,
-            e_csum: 0x00,
-            e_ip: 0x00,
-            e_cs: 0x00,
-            e_lfarlc: 0x40,
-            e_ovno: 0x00,
-            e_res: [0; 4],
-            e_oemid: 0x00,
-            e_oeminfo: 0x00,
-            e_res2: [0; 10],
-            e_lfanew: 0x80, // PE header offset
         }
     }
 }
@@ -291,6 +199,65 @@ impl OptionalHeader {
             base_of_data: None, // PE32+ 不使用
             image_base,
             section_alignment: 0x2000,
+            file_alignment: 0x200,
+            major_operating_system_version: 6,
+            minor_operating_system_version: 0,
+            major_image_version: 0,
+            minor_image_version: 0,
+            major_subsystem_version: 6,
+            minor_subsystem_version: 0,
+            win32_version_value: 0,
+            size_of_image,
+            size_of_headers,
+            checksum: 0,
+            subsystem,
+            // 关闭 DYNAMIC_BASE 以确保固定映像基址 (0x400000)，避免绝对地址失效
+            // 保留 NX_COMPAT、NO_SEH、TERMINAL_SERVER_AWARE
+            dll_characteristics: 0x8500, // NX_COMPAT | NO_SEH | TERMINAL_SERVER_AWARE
+            size_of_stack_reserve: 0x100000,
+            size_of_stack_commit: 0x1000,
+            size_of_heap_reserve: 0x100000,
+            size_of_heap_commit: 0x1000,
+            loader_flags: 0,
+            number_of_rva_and_sizes: 16,
+            data_directories,
+        }
+    }
+
+    /// 根据架构创建可选头
+    pub fn new_for_architecture(
+        architecture: &Architecture,
+        entry_point: u32,
+        image_base: u64,
+        size_of_code: u32,
+        size_of_headers: u32,
+        size_of_image: u32,
+        subsystem: SubsystemType,
+    ) -> Self {
+        let mut data_directories = Vec::with_capacity(16);
+        // 初始化 16 个标准数据目录
+        for _ in 0..16 {
+            data_directories.push(DataDirectory::default());
+        }
+
+        let (magic, base_of_data) = match architecture {
+            Architecture::X86 => (0x010B, Some(0x2000)), // PE32
+            Architecture::X86_64 => (0x020B, None),      // PE32+
+            _ => (0x010B, Some(0x2000)),                 // 默认为 PE32
+        };
+
+        Self {
+            magic,
+            major_linker_version: 14,
+            minor_linker_version: 0,
+            size_of_code,
+            size_of_initialized_data: 0,
+            size_of_uninitialized_data: 0,
+            address_of_entry_point: entry_point,
+            base_of_code: 0x1000,
+            base_of_data,
+            image_base,
+            section_alignment: 0x1000,
             file_alignment: 0x200,
             major_operating_system_version: 6,
             minor_operating_system_version: 0,
@@ -424,34 +391,6 @@ pub struct PeInfo {
     pub file_size: u64,
 }
 
-/// 节头结构
-///
-/// 包含 PE 文件中一个节（Section）的元数据信息，如名称、大小、
-/// 位置和属性等。这个结构不包含节的实际数据，只包含描述信息。
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
-pub struct SectionHeader {
-    /// 节名称，8字节的ASCII字符串，如 ".text"、".data" 等
-    pub name: [u8; 8],
-    /// 节在内存中的虚拟大小
-    pub virtual_size: u32,
-    /// 节在内存中的虚拟地址（RVA）
-    pub virtual_address: u32,
-    /// 节在文件中的原始数据大小
-    pub size_of_raw_data: u32,
-    /// 节在文件中的偏移地址
-    pub pointer_to_raw_data: u32,
-    /// 重定位表在文件中的偏移地址
-    pub pointer_to_relocations: u32,
-    /// 行号表在文件中的偏移地址
-    pub pointer_to_line_numbers: u32,
-    /// 重定位项的数量
-    pub number_of_relocations: u16,
-    /// 行号项的数量
-    pub number_of_line_numbers: u16,
-    /// 节的特征标志，描述节的属性（可读、可写、可执行等）
-    pub characteristics: u32,
-}
-
 /// 数据目录结构
 ///
 /// 包含 PE 文件中各种数据目录的信息，如导入表、导出表、
@@ -462,4 +401,108 @@ pub struct DataDirectory {
     pub virtual_address: u32,
     /// 数据目录的大小（以字节为单位）
     pub size: u32,
+}
+
+impl DataDirectory {
+    /// 从 ExeReader 读取数据目录
+    pub fn read<R: Read>(mut reader: R) -> Result<Self, GaiaError> {
+        Ok(DataDirectory { virtual_address: reader.read_u32::<LittleEndian>()?, size: reader.read_u32::<LittleEndian>()? })
+    }
+}
+
+impl OptionalHeader {
+    /// 从 ExeReader 读取可选头
+    pub fn read<R: Read>(mut reader: R) -> Result<Self, GaiaError> {
+        let magic = reader.read_u16::<LittleEndian>()?;
+        let is_pe32_plus = magic == 0x020B;
+
+        let major_linker_version = reader.read_u8()?;
+        let minor_linker_version = reader.read_u8()?;
+        let size_of_code = reader.read_u32::<LittleEndian>()?;
+        let size_of_initialized_data = reader.read_u32::<LittleEndian>()?;
+        let size_of_uninitialized_data = reader.read_u32::<LittleEndian>()?;
+        let address_of_entry_point = reader.read_u32::<LittleEndian>()?;
+        let base_of_code = reader.read_u32::<LittleEndian>()?;
+
+        let (base_of_data, image_base) = if is_pe32_plus {
+            (None, reader.read_u64::<LittleEndian>()?)
+        }
+        else {
+            (Some(reader.read_u32::<LittleEndian>()?), reader.read_u32::<LittleEndian>()? as u64)
+        };
+
+        let section_alignment = reader.read_u32::<LittleEndian>()?;
+        let file_alignment = reader.read_u32::<LittleEndian>()?;
+        let major_operating_system_version = reader.read_u16::<LittleEndian>()?;
+        let minor_operating_system_version = reader.read_u16::<LittleEndian>()?;
+        let major_image_version = reader.read_u16::<LittleEndian>()?;
+        let minor_image_version = reader.read_u16::<LittleEndian>()?;
+        let major_subsystem_version = reader.read_u16::<LittleEndian>()?;
+        let minor_subsystem_version = reader.read_u16::<LittleEndian>()?;
+        let win32_version_value = reader.read_u32::<LittleEndian>()?;
+        let size_of_image = reader.read_u32::<LittleEndian>()?;
+        let size_of_headers = reader.read_u32::<LittleEndian>()?;
+        let checksum = reader.read_u32::<LittleEndian>()?;
+        let subsystem = reader.read_u16::<LittleEndian>()?.into();
+        let dll_characteristics = reader.read_u16::<LittleEndian>()?;
+
+        let (size_of_stack_reserve, size_of_stack_commit, size_of_heap_reserve, size_of_heap_commit) = if is_pe32_plus {
+            (
+                reader.read_u64::<LittleEndian>()?,
+                reader.read_u64::<LittleEndian>()?,
+                reader.read_u64::<LittleEndian>()?,
+                reader.read_u64::<LittleEndian>()?,
+            )
+        }
+        else {
+            (
+                reader.read_u32::<LittleEndian>()? as u64,
+                reader.read_u32::<LittleEndian>()? as u64,
+                reader.read_u32::<LittleEndian>()? as u64,
+                reader.read_u32::<LittleEndian>()? as u64,
+            )
+        };
+
+        let loader_flags = reader.read_u32::<LittleEndian>()?;
+        let number_of_rva_and_sizes = reader.read_u32::<LittleEndian>()?;
+
+        let mut data_directories = Vec::new();
+        for _ in 0..number_of_rva_and_sizes {
+            data_directories.push(DataDirectory::read(&mut reader)?);
+        }
+
+        Ok(OptionalHeader {
+            magic,
+            major_linker_version,
+            minor_linker_version,
+            size_of_code,
+            size_of_initialized_data,
+            size_of_uninitialized_data,
+            address_of_entry_point,
+            base_of_code,
+            base_of_data,
+            image_base,
+            section_alignment,
+            file_alignment,
+            major_operating_system_version,
+            minor_operating_system_version,
+            major_image_version,
+            minor_image_version,
+            major_subsystem_version,
+            minor_subsystem_version,
+            win32_version_value,
+            size_of_image,
+            size_of_headers,
+            checksum,
+            subsystem,
+            dll_characteristics,
+            size_of_stack_reserve,
+            size_of_stack_commit,
+            size_of_heap_reserve,
+            size_of_heap_commit,
+            loader_flags,
+            number_of_rva_and_sizes,
+            data_directories,
+        })
+    }
 }

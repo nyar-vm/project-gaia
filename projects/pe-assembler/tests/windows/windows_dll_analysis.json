@@ -1,14 +1,13 @@
 [
     {
         "dll_name": "kernel32",
-        "file_path": "C:\\Windows\\System32\\kernel32.dll",
         "basic_info": {
             "target_arch": "X86_64",
             "subsystem": "Console",
             "entry_point": 188704,
             "image_base": 6442450944,
             "section_count": 8,
-            "file_size": 512
+            "file_size": 836136
         },
         "export_count": 1691,
         "import_count": 1273,
@@ -71,14 +70,13 @@
     },
     {
         "dll_name": "user32",
-        "file_path": "C:\\Windows\\System32\\user32.dll",
         "basic_info": {
             "target_arch": "X86_64",
             "subsystem": "Windows",
             "entry_point": 341280,
             "image_base": 6442450944,
             "section_count": 8,
-            "file_size": 512
+            "file_size": 1873232
         },
         "export_count": 1041,
         "import_count": 1115,
@@ -141,14 +139,13 @@
     },
     {
         "dll_name": "ntdll",
-        "file_path": "C:\\Windows\\System32\\ntdll.dll",
         "basic_info": {
             "target_arch": "X86_64",
             "subsystem": "Console",
             "entry_point": 0,
             "image_base": 6442450944,
             "section_count": 15,
-            "file_size": 504
+            "file_size": 2521976
         },
         "export_count": 2516,
         "import_count": 0,
@@ -197,14 +194,13 @@
     },
     {
         "dll_name": "advapi32",
-        "file_path": "C:\\Windows\\System32\\advapi32.dll",
         "basic_info": {
             "target_arch": "X86_64",
             "subsystem": "Console",
             "entry_point": 135568,
             "image_base": 6442450944,
             "section_count": 8,
-            "file_size": 528
+            "file_size": 745192
         },
         "export_count": 851,
         "import_count": 638,
@@ -267,14 +263,13 @@
     },
     {
         "dll_name": "ole32",
-        "file_path": "C:\\Windows\\System32\\ole32.dll",
         "basic_info": {
             "target_arch": "X86_64",
             "subsystem": "Console",
             "entry_point": 287760,
             "image_base": 6442450944,
             "section_count": 8,
-            "file_size": 536
+            "file_size": 1687288
         },
         "export_count": 549,
         "import_count": 557,
@@ -337,14 +332,13 @@
     },
     {
         "dll_name": "shell32",
-        "file_path": "C:\\Windows\\System32\\shell32.dll",
         "basic_info": {
             "target_arch": "X86_64",
             "subsystem": "Windows",
             "entry_point": 2052672,
             "image_base": 6442450944,
             "section_count": 8,
-            "file_size": 536
+            "file_size": 7699432
         },
         "export_count": 478,
         "import_count": 1084,
@@ -407,14 +401,13 @@
     },
     {
         "dll_name": "comctl32",
-        "file_path": "C:\\Windows\\System32\\comctl32.dll",
         "basic_info": {
             "target_arch": "X86_64",
             "subsystem": "Windows",
             "entry_point": 6000,
             "image_base": 6442450944,
             "section_count": 7,
-            "file_size": 512
+            "file_size": 738688
         },
         "export_count": 119,
         "import_count": 409,
@@ -476,14 +469,13 @@
     },
     {
         "dll_name": "gdi32",
-        "file_path": "C:\\Windows\\System32\\gdi32.dll",
         "basic_info": {
             "target_arch": "X86_64",
             "subsystem": "Console",
             "entry_point": 24272,
             "image_base": 6442450944,
             "section_count": 8,
-            "file_size": 512
+            "file_size": 187392
         },
         "export_count": 993,
         "import_count": 163,
@@ -546,14 +538,13 @@
     },
     {
         "dll_name": "ws2_32",
-        "file_path": "C:\\Windows\\System32\\ws2_32.dll",
         "basic_info": {
             "target_arch": "X86_64",
             "subsystem": "Console",
             "entry_point": 200000,
             "image_base": 6442450944,
             "section_count": 9,
-            "file_size": 536
+            "file_size": 489040
         },
         "export_count": 196,
         "import_count": 236,
@@ -617,14 +608,13 @@
     },
     {
         "dll_name": "msvcrt",
-        "file_path": "C:\\Windows\\System32\\msvcrt.dll",
         "basic_info": {
             "target_arch": "X86_64",
             "subsystem": "Windows",
             "entry_point": 31248,
             "image_base": 6442450944,
             "section_count": 7,
-            "file_size": 520
+            "file_size": 699768
         },
         "export_count": 1330,
         "import_count": 155,

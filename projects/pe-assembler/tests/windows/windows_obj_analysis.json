@@ -1,0 +1,272 @@
+[
+    {
+        "analysis_success": true,
+        "file_size": 2676,
+        "machine_type": 34404,
+        "number_of_sections": 6,
+        "number_of_symbols": 16,
+        "timestamp": {
+            "secs_since_epoch": 4287841230,
+            "nanos_since_epoch": 0
+        },
+        "characteristics": 0,
+        "section_names": [
+            ".drectve",
+            ".debug$S",
+            ".debug$T",
+            ".text$mn",
+            ".debug$S",
+            ".chks64"
+        ],
+        "symbol_names": [
+            "@comp.id",
+            "@feat.00",
+            "@vol.md",
+            ".drectve",
+            "<binary_symbol_1>",
+            ".debug$S",
+            "<binary_symbol_4>",
+            ".debug$T",
+            "<binary_symbol_4>",
+            ".text$mn"
+        ]
+    },
+    {
+        "analysis_success": true,
+        "file_size": 2686,
+        "machine_type": 34404,
+        "number_of_sections": 6,
+        "number_of_symbols": 16,
+        "timestamp": {
+            "secs_since_epoch": 3322369218,
+            "nanos_since_epoch": 0
+        },
+        "characteristics": 0,
+        "section_names": [
+            ".drectve",
+            ".debug$S",
+            ".debug$T",
+            ".text$mn",
+            ".debug$S",
+            ".chks64"
+        ],
+        "symbol_names": [
+            "@comp.id",
+            "@feat.00",
+            "@vol.md",
+            ".drectve",
+            "<binary_symbol_1>",
+            ".debug$S",
+            "<binary_symbol_4>",
+            ".debug$T",
+            "<binary_symbol_4>",
+            ".text$mn"
+        ]
+    },
+    {
+        "analysis_success": true,
+        "file_size": 2168,
+        "machine_type": 34404,
+        "number_of_sections": 6,
+        "number_of_symbols": 20,
+        "timestamp": {
+            "secs_since_epoch": 3324037374,
+            "nanos_since_epoch": 0
+        },
+        "characteristics": 0,
+        "section_names": [
+            ".text$mn",
+            ".data",
+            ".pdata",
+            ".xdata",
+            ".debug$S",
+            ".debug$T"
+        ],
+        "symbol_names": [
+            "@comp.id",
+            "@feat.00",
+            ".text$mn",
+            "^",
+            ".data",
+            "symbol_0",
+            ".pdata",
+            "<binary_symbol_5>",
+            ".xdata",
+            "<binary_symbol_1>"
+        ]
+    },
+    {
+        "analysis_success": true,
+        "file_size": 5286,
+        "machine_type": 34404,
+        "number_of_sections": 9,
+        "number_of_symbols": 25,
+        "timestamp": {
+            "secs_since_epoch": 4033429839,
+            "nanos_since_epoch": 0
+        },
+        "characteristics": 0,
+        "section_names": [
+            ".drectve",
+            ".debug$S",
+            ".debug$T",
+            ".text$mn",
+            ".debug$S",
+            ".text$mn",
+            ".debug$S",
+            ".gfids$y",
+            ".chks64"
+        ],
+        "symbol_names": [
+            "@comp.id",
+            "@feat.00",
+            "@vol.md",
+            ".drectve",
+            "<binary_symbol_1>",
+            ".debug$S",
+            "x",
+            ".debug$T",
+            "d",
+            ".text$mn"
+        ]
+    },
+    {
+        "analysis_success": true,
+        "file_size": 37638,
+        "machine_type": 34404,
+        "number_of_sections": 13,
+        "number_of_symbols": 36,
+        "timestamp": {
+            "secs_since_epoch": 3782200260,
+            "nanos_since_epoch": 0
+        },
+        "characteristics": 0,
+        "section_names": [
+            ".drectve",
+            ".debug$S",
+            ".debug$T",
+            ".text$mn",
+            ".CRT$XIC",
+            ".gfids$y",
+            ".debug$S",
+            ".text$mn",
+            ".debug$S",
+            ".xdata",
+            ".pdata",
+            ".bss",
+            ".chks64"
+        ],
+        "symbol_names": [
+            "@comp.id",
+            "@feat.00",
+            "@vol.md",
+            ".drectve",
+            "<binary_symbol_1>",
+            ".debug$S",
+            "I",
+            ".debug$T",
+            "LA",
+            ".text$mn"
+        ]
+    },
+    {
+        "analysis_success": true,
+        "file_size": 2859,
+        "machine_type": 34404,
+        "number_of_sections": 6,
+        "number_of_symbols": 17,
+        "timestamp": {
+            "secs_since_epoch": 4203195902,
+            "nanos_since_epoch": 0
+        },
+        "characteristics": 0,
+        "section_names": [
+            ".drectve",
+            ".debug$S",
+            ".debug$T",
+            ".text$mn",
+            ".debug$S",
+            ".chks64"
+        ],
+        "symbol_names": [
+            "@comp.id",
+            "@feat.00",
+            "@vol.md",
+            ".drectve",
+            "<binary_symbol_1>",
+            ".debug$S",
+            "<binary_symbol_4>",
+            ".debug$T",
+            "<binary_symbol_4>",
+            ".text$mn"
+        ]
+    },
+    {
+        "analysis_success": true,
+        "file_size": 2427,
+        "machine_type": 34404,
+        "number_of_sections": 6,
+        "number_of_symbols": 16,
+        "timestamp": {
+            "secs_since_epoch": 4122432557,
+            "nanos_since_epoch": 0
+        },
+        "characteristics": 0,
+        "section_names": [
+            ".drectve",
+            ".debug$S",
+            ".debug$T",
+            ".text$mn",
+            ".debug$S",
+            ".chks64"
+        ],
+        "symbol_names": [
+            "@comp.id",
+            "@feat.00",
+            "@vol.md",
+            ".drectve",
+            "<binary_symbol_1>",
+            ".debug$S",
+            "<binary_symbol_4>",
+            ".debug$T",
+            "<binary_symbol_4>",
+            ".text$mn"
+        ]
+    },
+    {
+        "analysis_success": true,
+        "file_size": 3863,
+        "machine_type": 34404,
+        "number_of_sections": 10,
+        "number_of_symbols": 26,
+        "timestamp": {
+            "secs_since_epoch": 3299715747,
+            "nanos_since_epoch": 0
+        },
+        "characteristics": 0,
+        "section_names": [
+            ".drectve",
+            ".debug$S",
+            ".debug$T",
+            ".text$mn",
+            ".debug$S",
+            ".text$mn",
+            ".debug$S",
+            ".text$mn",
+            ".debug$S",
+            ".chks64"
+        ],
+        "symbol_names": [
+            "@comp.id",
+            "@feat.00",
+            "@vol.md",
+            ".drectve",
+            "<binary_symbol_1>",
+            ".debug$S",
+            "4",
+            ".debug$T",
+            "<",
+            ".text$mn"
+        ]
+    }
+]
