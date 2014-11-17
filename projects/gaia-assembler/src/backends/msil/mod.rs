@@ -1,18 +1,29 @@
 //! IL (Intermediate Language) backend compiler
-use super::{Backend, FunctionMapper};
-use crate::instruction::*;
+
+use super::{Backend, FunctionMapper, GeneratedFiles};
+use crate::config::GaiaConfig;
 use clr_msil::writer::MsilWriter;
 use gaia_types::{
     helpers::{AbiCompatible, ApiCompatible, Architecture, CompilationTarget},
     *,
 };
+use std::collections::HashMap;
 
 /// IL Backend implementation
+#[derive(Default)]
 pub struct ClrBackend {}
 
 impl Backend for ClrBackend {
-    fn is_binary(&self) -> bool {
-        false
+    fn name(&self) -> &'static str {
+        "MSIL"
+    }
+
+    fn primary_target(&self) -> CompilationTarget {
+        CompilationTarget {
+            build: Architecture::CLR,
+            host: AbiCompatible::MicrosoftIntermediateLanguage,
+            target: ApiCompatible::ClrRuntime(4),
+        }
     }
 
     fn match_score(&self, target: &CompilationTarget) -> f32 {
@@ -28,24 +39,19 @@ impl Backend for ClrBackend {
         }
     }
 
-    fn primary_target(&self) -> CompilationTarget {
-        CompilationTarget {
-            build: Architecture::CLR,
-            host: AbiCompatible::MicrosoftIntermediateLanguage,
-            target: ApiCompatible::ClrRuntime(4),
+    fn generate(&self, program: &GaiaProgram, _config: &GaiaConfig) -> Result<GeneratedFiles> {
+        let mut files = HashMap::new();
+        match _config.target.host {
+            AbiCompatible::Unknown => {
+                files.insert("main.dll".to_string(), compile(program)?);
+            }
+            AbiCompatible::MicrosoftIntermediateLanguage => {
+                files.insert("main.il".to_string(), compile(program)?);
+            }
+            _ => Err(GaiaError::invalid_data("Unsupported host ABI for CLR backend"))?,
         }
-    }
 
-    fn compile(&self, program: &GaiaProgram) -> Result<Vec<u8>> {
-        compile(program)
-    }
-
-    fn name(&self) -> &'static str {
-        "MSIL"
-    }
-
-    fn file_extension(&self) -> &'static str {
-        "il"
+        Ok(GeneratedFiles { files, diagnostics: vec![] })
     }
 }
 
@@ -272,14 +278,14 @@ fn compile_store_indirect(context: &mut IlContext, gaia_type: &GaiaType) -> Resu
     }
 }
 
-fn compile_convert(context: &mut IlContext, from_type: &GaiaType, to_type: &GaiaType) -> Result<()> {
-    match to_type {
-        GaiaType::Integer8 => context.emit_conv_i4(),  // 8位整数转换为32位
-        GaiaType::Integer16 => context.emit_conv_i4(), // 16位整数转换为32位
-        GaiaType::Integer32 => context.emit_conv_i4(),
-        GaiaType::Integer64 => context.emit_conv_i8(),
-        GaiaType::Float32 => context.emit_conv_r4(),
-        GaiaType::Float64 => context.emit_conv_r8(),
+fn compile_convert(_context: &mut IlContext, _from_type: &GaiaType, _to_type: &GaiaType) -> Result<()> {
+    match _to_type {
+        GaiaType::Integer8 => _context.emit_conv_i4(),  // 8位整数转换为32位
+        GaiaType::Integer16 => _context.emit_conv_i4(), // 16位整数转换为32位
+        GaiaType::Integer32 => _context.emit_conv_i4(),
+        GaiaType::Integer64 => _context.emit_conv_i8(),
+        GaiaType::Float32 => _context.emit_conv_r4(),
+        GaiaType::Float64 => _context.emit_conv_r8(),
         _ => Ok(()),
     }
 }

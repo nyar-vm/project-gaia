@@ -13,21 +13,20 @@ exclude = ["package.json", "tests/**"]
 [dependencies]
 gaia-types = { path = "../gaia-types" }
 clr-assembler = { path = "../clr-assembler" }
-clr-msil = { path = "../clr-msil" }
 jvm-assembler = { path = "../jvm-assembler" }
 pe-assembler = { path = "../pe-assembler" }
-wasi-assembler = { path = "../wasm-assembler" }
+wasi-assembler = { path = "../wasi-assembler" }
 serde = { version = "1.0", features = ["derive"] }
-toml = "0.8"
-num = "0.4.0"
+toml = "0.9"
+num = "0.4.3"
 byteorder = "1.5.0"
-ordered-float = "3.0.0"
+ordered-float = "5.1.0"
 
 [dev-dependencies]
 
 [features]
 default = []
-easy-test = ["clr-msil/easy-test", "clr-assembler/easy-test", "pe-assembler/easy-test"]
+easy-test = ["clr-assembler/easy-test"]
 
 [package.metadata.docs.rs]
 all-features = true

@@ -13,11 +13,11 @@ pub use msil::ClrBackend;
 pub use pe::PeBackend;
 pub use wasi::WasiBackend;
 
-use crate::config::GaiaConfig;
+use crate::config::{GaiaConfig, GaiaSettings};
 use gaia_types::{
     helpers::{AbiCompatible, ApiCompatible, Architecture, CompilationTarget},
     instruction::GaiaProgram,
-    Result,
+    GaiaError, Result,
 };
 use std::collections::HashMap;
 
@@ -43,7 +43,7 @@ impl FunctionMapper {
     }
 
     /// 从配置创建函数映射器
-    pub fn from_config(config: &GaiaConfig) -> Result<Self> {
+    pub fn from_config(config: &GaiaSettings) -> Result<Self> {
         let mut mapper = Self::new();
 
         // 加载所有平台的函数映射
@@ -63,7 +63,10 @@ impl FunctionMapper {
 
     /// 添加函数映射
     pub fn add_mapping(&mut self, target: &CompilationTarget, source_func: &str, target_func: &str) {
-        self.mappings.entry(target.clone()).or_insert_with(HashMap::new).insert(source_func.to_string(), target_func.to_string());
+        self.mappings
+            .entry(target.clone())
+            .or_insert_with(HashMap::new)
+            .insert(source_func.to_string(), target_func.to_string());
     }
 
     /// 映射函数名
@@ -132,24 +135,21 @@ impl Default for FunctionMapper {
 
 /// Backend compiler trait
 pub trait Backend {
-    /// 是否为二进制输出
-    fn is_binary(&self) -> bool {
-        true
-    }
-    
-    /// 计算与给定编译目标的匹配度 (0-100)
-    /// 0 表示不支持
-    fn match_score(&self, target: &CompilationTarget) -> f32;
-    
-    /// 获取此后端支持的主要编译目标
-    fn primary_target(&self) -> CompilationTarget;
-    
-    /// Compile Gaia program to target platform
-    fn compile(&self, program: &GaiaProgram) -> Result<Vec<u8>>;
-
     /// Get backend name
     fn name(&self) -> &'static str;
 
-    /// Get output file extension
-    fn file_extension(&self) -> &'static str;
+    /// 获取此后端支持的主要编译目标
+    fn primary_target(&self) -> CompilationTarget;
+
+    /// 计算与给定编译目标的匹配度 (0-100)
+    /// 0 表示不支持
+    fn match_score(&self, target: &CompilationTarget) -> f32;
+
+    /// Compile Gaia program to target platform
+    fn generate(&self, program: &GaiaProgram, config: &GaiaConfig) -> Result<GeneratedFiles>;
+}
+
+pub struct GeneratedFiles {
+    pub files: HashMap<String, Vec<u8>>,
+    pub diagnostics: Vec<GaiaError>,
 }

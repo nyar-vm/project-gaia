@@ -1,15 +1,30 @@
 //! WASI (WebAssembly System Interface) backend compiler
-use super::{Backend, FunctionMapper};
-use crate::instruction::*;
+
+use super::{Backend, FunctionMapper, GeneratedFiles};
+use crate::config::GaiaConfig;
 use gaia_types::{
     helpers::{AbiCompatible, ApiCompatible, Architecture, CompilationTarget},
     *,
 };
+use std::collections::HashMap;
 
 /// WASI Backend implementation
-pub struct WasiBackend;
+#[derive(Default)]
+pub struct WasiBackend {}
 
 impl Backend for WasiBackend {
+    fn name(&self) -> &'static str {
+        "WASI"
+    }
+
+    fn primary_target(&self) -> CompilationTarget {
+        CompilationTarget {
+            build: Architecture::WASM32,
+            host: AbiCompatible::WebAssemblyTextFormat,
+            target: ApiCompatible::WASI,
+        }
+    }
+
     fn match_score(&self, target: &CompilationTarget) -> f32 {
         match target.host {
             AbiCompatible::WebAssemblyTextFormat => 10.0,
@@ -23,24 +38,10 @@ impl Backend for WasiBackend {
         }
     }
 
-    fn primary_target(&self) -> CompilationTarget {
-        CompilationTarget {
-            build: Architecture::WASM32,
-            host: AbiCompatible::WebAssemblyTextFormat,
-            target: ApiCompatible::WASI,
-        }
-    }
-
-    fn compile(&self, program: &GaiaProgram) -> Result<Vec<u8>> {
-        compile(program)
-    }
-
-    fn name(&self) -> &'static str {
-        "WASI"
-    }
-
-    fn file_extension(&self) -> &'static str {
-        "wasm"
+    fn generate(&self, program: &GaiaProgram, _config: &GaiaConfig) -> Result<GeneratedFiles> {
+        let mut files = HashMap::new();
+        files.insert("main.wasm".to_string(), compile(program)?);
+        Ok(GeneratedFiles { files, diagnostics: vec![] })
     }
 }
 
@@ -253,7 +254,7 @@ fn compile_branch_if_false(context: &mut WasiContext, label: &str) -> Result<()>
     context.emit_if_not_br(label)
 }
 
-fn compile_call(context: &mut WasiContext, function_name: &str) -> Result<()> {
+fn compile_call(_context: &mut WasiContext, function_name: &str) -> Result<()> {
     // Use FunctionMapper to map function names to WASI-specific implementations
     let mapper = FunctionMapper::new();
     let wasi_target = CompilationTarget {
@@ -261,7 +262,7 @@ fn compile_call(context: &mut WasiContext, function_name: &str) -> Result<()> {
         host: AbiCompatible::WebAssemblyTextFormat,
         target: ApiCompatible::WASI,
     };
-    let mapped_name = mapper.map_function(&wasi_target, function_name);
+    let _mapped_name = mapper.map_function(&wasi_target, function_name);
 
     // WASM: call mapped_name
     todo!()
@@ -413,6 +414,7 @@ fn generate_wasm_bytecode(_context: &WasiContext) -> Result<Vec<u8>> {
 
 /// WASI assembler context
 struct WasiContext {
+    #[allow(dead_code)]
     bytecode: Vec<u8>,
 }
 
@@ -482,10 +484,12 @@ impl WasiContext {
         Err(GaiaError::not_implemented("br emission"))
     }
 
+    #[allow(dead_code)]
     fn emit_br_if(&mut self, _label: &str) -> Result<()> {
         Err(GaiaError::not_implemented("br_if emission"))
     }
 
+    #[allow(dead_code)]
     fn emit_call(&mut self, _function_name: &str) -> Result<()> {
         Err(GaiaError::not_implemented("call emission"))
     }
@@ -498,10 +502,12 @@ impl WasiContext {
         Err(GaiaError::not_implemented("drop emission"))
     }
 
+    #[allow(dead_code)]
     fn emit_load_field(&mut self, _field_name: &str) -> Result<()> {
         Err(GaiaError::not_implemented("load field emission"))
     }
 
+    #[allow(dead_code)]
     fn emit_store_field(&mut self, _field_name: &str) -> Result<()> {
         Err(GaiaError::not_implemented("store field emission"))
     }

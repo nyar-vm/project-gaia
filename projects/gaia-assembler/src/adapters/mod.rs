@@ -4,10 +4,9 @@
 //! 这些接口旨在抽象不同平台之间的差异，提供一致的API。
 
 use gaia_types::{
-    GaiaError,
     helpers::CompilationTarget,
     instruction::{GaiaInstruction, GaiaProgram},
-    Result,
+    GaiaError, Result,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -47,7 +46,7 @@ pub struct AdapterMetadata {
 /// 统一的导出适配器接口
 ///
 /// 定义了将Gaia指令和程序导出到特定平台格式的标准接口
-pub trait UnifiedExportAdapter: Send + Sync {
+pub trait ExportAdapter: Send + Sync {
     /// 获取适配器元数据
     fn metadata(&self) -> &AdapterMetadata;
 
@@ -104,7 +103,7 @@ pub trait UnifiedExportAdapter: Send + Sync {
 /// 统一的导入适配器接口
 ///
 /// 定义了从特定平台格式导入到Gaia指令和程序的标准接口
-pub trait UnifiedImportAdapter: Send + Sync {
+pub trait ImportAdapter: Send + Sync {
     /// 获取适配器元数据
     fn metadata(&self) -> &AdapterMetadata;
 
@@ -161,18 +160,15 @@ pub trait UnifiedImportAdapter: Send + Sync {
 /// 适配器管理器
 pub struct AdapterManager {
     /// 导出适配器注册表
-    export_adapters: HashMap<CompilationTarget, Box<dyn UnifiedExportAdapter>>,
+    export_adapters: HashMap<CompilationTarget, Box<dyn ExportAdapter>>,
     /// 导入适配器注册表
-    import_adapters: HashMap<CompilationTarget, Box<dyn UnifiedImportAdapter>>,
+    import_adapters: HashMap<CompilationTarget, Box<dyn ImportAdapter>>,
 }
 
 impl AdapterManager {
     /// 创建新的适配器管理器
     pub fn new() -> Self {
-        Self {
-            export_adapters: HashMap::new(),
-            import_adapters: HashMap::new(),
-        }
+        Self { export_adapters: HashMap::new(), import_adapters: HashMap::new() }
     }
 
     /// 注册导出适配器
@@ -183,13 +179,9 @@ impl AdapterManager {
     ///
     /// # 返回值
     /// 注册成功返回Ok(())，失败返回错误信息
-    pub fn register_export_adapter(&mut self, target: CompilationTarget, adapter: Box<dyn UnifiedExportAdapter>) -> Result<()> {
+    pub fn register_export_adapter(&mut self, target: CompilationTarget, adapter: Box<dyn ExportAdapter>) -> Result<()> {
         if self.export_adapters.contains_key(&target) {
-            return Err(GaiaError::adapter_error(
-                &format!("{:?}", target),
-                "导出适配器已存在",
-                None,
-            ));
+            return Err(GaiaError::adapter_error(&format!("{:?}", target), "导出适配器已存在", None));
         }
         self.export_adapters.insert(target, adapter);
         Ok(())
@@ -203,13 +195,9 @@ impl AdapterManager {
     ///
     /// # 返回值
     /// 注册成功返回Ok(())，失败返回错误信息
-    pub fn register_import_adapter(&mut self, target: CompilationTarget, adapter: Box<dyn UnifiedImportAdapter>) -> Result<()> {
+    pub fn register_import_adapter(&mut self, target: CompilationTarget, adapter: Box<dyn ImportAdapter>) -> Result<()> {
         if self.import_adapters.contains_key(&target) {
-            return Err(GaiaError::adapter_error(
-                &format!("{:?}", target),
-                "导入适配器已存在",
-                None,
-            ));
+            return Err(GaiaError::adapter_error(&format!("{:?}", target), "导入适配器已存在", None));
         }
         self.import_adapters.insert(target, adapter);
         Ok(())
@@ -222,7 +210,7 @@ impl AdapterManager {
     ///
     /// # 返回值
     /// 找到返回适配器引用，未找到返回错误
-    pub fn get_export_adapter(&self, target: &CompilationTarget) -> Result<&dyn UnifiedExportAdapter> {
+    pub fn get_export_adapter(&self, target: &CompilationTarget) -> Result<&dyn ExportAdapter> {
         self.export_adapters
             .get(target)
             .map(|adapter| adapter.as_ref())
@@ -236,10 +224,10 @@ impl AdapterManager {
     ///
     /// # 返回值
     /// 找到返回适配器可变引用，未找到返回错误
-    pub fn get_export_adapter_mut(&mut self, target: &CompilationTarget) -> Result<&mut (dyn UnifiedExportAdapter + '_)> {
+    pub fn get_export_adapter_mut(&mut self, target: &CompilationTarget) -> Result<&mut (dyn ExportAdapter + '_)> {
         match self.export_adapters.get_mut(target) {
             Some(adapter) => Ok(adapter.as_mut()),
-            None => Err(GaiaError::adapter_error(&format!("{:?}", target), "导出适配器未找到", None))
+            None => Err(GaiaError::adapter_error(&format!("{:?}", target), "导出适配器未找到", None)),
         }
     }
 
@@ -250,7 +238,7 @@ impl AdapterManager {
     ///
     /// # 返回值
     /// 找到返回适配器引用，未找到返回错误
-    pub fn get_import_adapter(&self, target: &CompilationTarget) -> Result<&dyn UnifiedImportAdapter> {
+    pub fn get_import_adapter(&self, target: &CompilationTarget) -> Result<&dyn ImportAdapter> {
         self.import_adapters
             .get(target)
             .map(|adapter| adapter.as_ref())
@@ -264,10 +252,10 @@ impl AdapterManager {
     ///
     /// # 返回值
     /// 找到返回适配器可变引用，未找到返回错误
-    pub fn get_import_adapter_mut(&mut self, target: &CompilationTarget) -> Result<&mut (dyn UnifiedImportAdapter + '_)> {
+    pub fn get_import_adapter_mut(&mut self, target: &CompilationTarget) -> Result<&mut (dyn ImportAdapter + '_)> {
         match self.import_adapters.get_mut(target) {
             Some(adapter) => Ok(adapter.as_mut()),
-            None => Err(GaiaError::adapter_error(&format!("{:?}", target), "导入适配器未找到", None))
+            None => Err(GaiaError::adapter_error(&format!("{:?}", target), "导入适配器未找到", None)),
         }
     }
 

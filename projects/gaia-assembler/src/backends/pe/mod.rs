@@ -1,16 +1,27 @@
 //! PE (Portable Executable) backend compiler
 //! This backend generates .NET PE files containing IL code, not native machine code
-use super::Backend;
-use crate::backends::msil::ClrBackend;
+
+use super::{Backend, GeneratedFiles};
+use crate::{backends::msil::ClrBackend, config::GaiaConfig};
 use gaia_types::{
     helpers::{AbiCompatible, ApiCompatible, Architecture, CompilationTarget},
     *,
 };
+use std::collections::HashMap;
 
 /// PE Backend implementation
-pub struct PeBackend;
+#[derive(Default)]
+pub struct PeBackend {}
 
 impl Backend for PeBackend {
+    fn name(&self) -> &'static str {
+        "PE"
+    }
+
+    fn primary_target(&self) -> CompilationTarget {
+        CompilationTarget { build: Architecture::X86_64, host: AbiCompatible::PE, target: ApiCompatible::MicrosoftVisualC }
+    }
+
     fn match_score(&self, target: &CompilationTarget) -> f32 {
         match target.host {
             AbiCompatible::PE => match target.build {
@@ -24,20 +35,10 @@ impl Backend for PeBackend {
         }
     }
 
-    fn primary_target(&self) -> CompilationTarget {
-        CompilationTarget { build: Architecture::X86_64, host: AbiCompatible::PE, target: ApiCompatible::MicrosoftVisualC }
-    }
-
-    fn compile(&self, program: &GaiaProgram) -> Result<Vec<u8>> {
-        compile(program)
-    }
-
-    fn name(&self) -> &'static str {
-        "PE"
-    }
-
-    fn file_extension(&self) -> &'static str {
-        "exe"
+    fn generate(&self, program: &GaiaProgram, _config: &GaiaConfig) -> Result<GeneratedFiles> {
+        let mut files = HashMap::new();
+        files.insert("main.dll".to_string(), compile(program)?);
+        Ok(GeneratedFiles { files, diagnostics: vec![] })
     }
 }
 

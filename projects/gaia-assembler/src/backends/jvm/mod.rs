@@ -1,10 +1,12 @@
 //! JVM (Java Virtual Machine) backend compiler
-use super::{Backend, FunctionMapper};
-use crate::instruction::*;
+
+use super::{Backend, FunctionMapper, GeneratedFiles};
+use crate::config::GaiaConfig;
 use gaia_types::{
     helpers::{AbiCompatible, ApiCompatible, Architecture, CompilationTarget},
     *,
 };
+use std::collections::HashMap;
 
 /// JVM assembler context (placeholder)
 pub struct JVMContext {
@@ -13,9 +15,18 @@ pub struct JVMContext {
 }
 
 /// JVM Backend implementation
-pub struct JvmBackend;
+#[derive(Default)]
+pub struct JvmBackend {}
 
 impl Backend for JvmBackend {
+    fn name(&self) -> &'static str {
+        "JVM"
+    }
+
+    fn primary_target(&self) -> CompilationTarget {
+        CompilationTarget { build: Architecture::JVM, host: AbiCompatible::JavaAssembly, target: ApiCompatible::JvmRuntime(8) }
+    }
+
     fn match_score(&self, target: &CompilationTarget) -> f32 {
         match target.build {
             Architecture::JVM => match target.host {
@@ -29,20 +40,19 @@ impl Backend for JvmBackend {
         }
     }
 
-    fn primary_target(&self) -> CompilationTarget {
-        CompilationTarget { build: Architecture::JVM, host: AbiCompatible::JavaAssembly, target: ApiCompatible::JvmRuntime(8) }
-    }
+    fn generate(&self, program: &GaiaProgram, _config: &GaiaConfig) -> Result<GeneratedFiles> {
+        let mut files = HashMap::new();
+        match _config.target.host {
+            AbiCompatible::Unknown => {
+                files.insert("main.class".to_string(), compile(program)?);
+            }
+            AbiCompatible::JavaAssembly => {
+                files.insert("main.jasm".to_string(), compile(program)?);
+            }
+            _ => Err(GaiaError::invalid_data("Unsupported host ABI for JVM backend"))?,
+        }
 
-    fn compile(&self, program: &GaiaProgram) -> Result<Vec<u8>> {
-        compile(program)
-    }
-
-    fn name(&self) -> &'static str {
-        "JVM"
-    }
-
-    fn file_extension(&self) -> &'static str {
-        "class"
+        Ok(GeneratedFiles { files, diagnostics: vec![] })
     }
 }
 
@@ -178,86 +188,83 @@ fn compile_load_constant(context: &mut JVMContext, constant: &GaiaConstant) -> R
     Ok(())
 }
 
-fn compile_load_local(context: &mut JVMContext, index: u32) -> Result<()> {
-    // TODO: Generate aload/iload/fload/dload instructions
+fn compile_load_local(_context: &mut JVMContext, _index: u32) -> Result<()> {
+    // TODO: Generate iload instruction
     Err(GaiaError::not_implemented("load local compilation"))
 }
 
-fn compile_store_local(context: &mut JVMContext, index: u32) -> Result<()> {
-    // TODO: Generate astore/istore/fstore/dstore instructions
+fn compile_store_local(_context: &mut JVMContext, _index: u32) -> Result<()> {
+    // TODO: Generate istore instruction
     Err(GaiaError::not_implemented("store local compilation"))
 }
 
-fn compile_load_argument(context: &mut JVMContext, index: u32) -> Result<()> {
+fn compile_load_argument(_context: &mut JVMContext, _index: u32) -> Result<()> {
     // TODO: Generate aload/iload/fload/dload instructions (for parameter access)
     Err(GaiaError::not_implemented("load argument compilation"))
 }
 
-fn compile_add(context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate iadd/fadd/dadd/ladd instructions
+fn compile_add(_context: &mut JVMContext) -> Result<()> {
+    // TODO: Generate iadd instruction
     Err(GaiaError::not_implemented("add compilation"))
 }
 
-fn compile_subtract(context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate isub/fsub/dsub/lsub instructions
+fn compile_subtract(_context: &mut JVMContext) -> Result<()> {
+    // TODO: Generate isub instruction
     Err(GaiaError::not_implemented("subtract compilation"))
 }
 
-fn compile_multiply(context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate imul/fmul/dmul/lmul instructions
+fn compile_multiply(_context: &mut JVMContext) -> Result<()> {
+    // TODO: Generate imul instruction
     Err(GaiaError::not_implemented("multiply compilation"))
 }
 
-fn compile_divide(context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate idiv/fdiv/ddiv/ldiv instructions
+fn compile_divide(_context: &mut JVMContext) -> Result<()> {
+    // TODO: Generate idiv instruction
     Err(GaiaError::not_implemented("divide compilation"))
 }
 
-fn compile_equal(context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate comparison instruction sequence
+fn compile_equal(_context: &mut JVMContext) -> Result<()> {
+    // TODO: Generate comparison instruction
     Err(GaiaError::not_implemented("equal compilation"))
 }
 
-fn compile_not_equal(context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate comparison instruction sequence
+fn compile_not_equal(_context: &mut JVMContext) -> Result<()> {
+    // TODO: Generate comparison instruction
     Err(GaiaError::not_implemented("not equal compilation"))
 }
 
-fn compile_less_than(context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate comparison instruction sequence
+fn compile_less_than(_context: &mut JVMContext) -> Result<()> {
+    // TODO: Generate comparison instruction
     Err(GaiaError::not_implemented("less than compilation"))
 }
 
-fn compile_greater_than(context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate comparison instruction sequence
+fn compile_greater_than(_context: &mut JVMContext) -> Result<()> {
+    // TODO: Generate comparison instruction
     Err(GaiaError::not_implemented("greater than compilation"))
 }
 
-fn compile_branch(context: &mut JVMContext, label: &str) -> Result<()> {
+fn compile_branch(_context: &mut JVMContext, _label: &str) -> Result<()> {
     // TODO: Generate goto instruction
     Err(GaiaError::not_implemented("branch compilation"))
 }
 
-fn compile_branch_if_true(context: &mut JVMContext, label: &str) -> Result<()> {
-    // TODO: Generate ifne instruction
+fn compile_branch_if_true(_context: &mut JVMContext, _label: &str) -> Result<()> {
+    // TODO: Generate conditional branch instruction
     Err(GaiaError::not_implemented("branch if true compilation"))
 }
 
-fn compile_branch_if_false(context: &mut JVMContext, label: &str) -> Result<()> {
-    // TODO: Generate ifeq instruction
+fn compile_branch_if_false(_context: &mut JVMContext, _label: &str) -> Result<()> {
+    // TODO: Generate conditional branch instruction
     Err(GaiaError::not_implemented("branch if false compilation"))
 }
 
-fn compile_call(context: &mut JVMContext, function_name: &str) -> Result<()> {
-    // Use FunctionMapper to map function names to JVM-specific implementations
+fn compile_call(_context: &mut JVMContext, function_name: &str) -> Result<()> {
     let mapper = FunctionMapper::new();
     let jvm_target =
-        CompilationTarget { build: Architecture::JVM, host: AbiCompatible::JavaAssembly, target: ApiCompatible::JvmRuntime(8) };
-    let mapped_name = mapper.map_function(&jvm_target, function_name);
-
-    // TODO: Generate invokevirtual/invokestatic instructions for mapped_name
-    // For now, just store the mapped name in context for future implementation
-    todo!()
+        CompilationTarget { build: Architecture::Unknown, host: AbiCompatible::Unknown, target: ApiCompatible::Unknown };
+    let _mapped_name = mapper.map_function(&jvm_target, function_name);
+    // TODO: Generate call instruction
+    Err(GaiaError::not_implemented("call compilation"))
 }
 
 fn compile_return(context: &mut JVMContext) -> Result<()> {
@@ -265,38 +272,38 @@ fn compile_return(context: &mut JVMContext) -> Result<()> {
     Ok(())
 }
 
-fn compile_label(context: &mut JVMContext, name: &str) -> Result<()> {
-    // TODO: Define label
+fn compile_label(_context: &mut JVMContext, _name: &str) -> Result<()> {
+    // TODO: Generate label definition
     Err(GaiaError::not_implemented("label compilation"))
 }
 
-fn compile_duplicate(context: &mut JVMContext) -> Result<()> {
+fn compile_duplicate(_context: &mut JVMContext) -> Result<()> {
     // TODO: Generate dup instruction
     Err(GaiaError::not_implemented("duplicate compilation"))
 }
 
-fn compile_pop(context: &mut JVMContext) -> Result<()> {
+fn compile_pop(_context: &mut JVMContext) -> Result<()> {
     // TODO: Generate pop instruction
     Err(GaiaError::not_implemented("pop compilation"))
 }
 
-fn compile_load_field(context: &mut JVMContext, field_name: &str) -> Result<()> {
+fn compile_load_field(_context: &mut JVMContext, _field_name: &str) -> Result<()> {
     // TODO: Generate getfield instruction
     Err(GaiaError::not_implemented("load field compilation"))
 }
 
-fn compile_store_field(context: &mut JVMContext, field_name: &str) -> Result<()> {
-    // TODO: Generate putfield instruction
+fn compile_store_field(_context: &mut JVMContext, _field_name: &str) -> Result<()> {
+    // TODO: Generate JVM field store instruction
     Err(GaiaError::not_implemented("store field compilation"))
 }
 
-fn compile_new_object(context: &mut JVMContext, type_name: &str) -> Result<()> {
+fn compile_new_object(_context: &mut JVMContext, _type_name: &str) -> Result<()> {
     // TODO: Generate new instruction
     Err(GaiaError::not_implemented("new object compilation"))
 }
 
-fn compile_convert(context: &mut JVMContext, from_type: &GaiaType, to_type: &GaiaType) -> Result<()> {
-    match (from_type, to_type) {
+fn compile_convert(_context: &mut JVMContext, _from_type: &GaiaType, _to_type: &GaiaType) -> Result<()> {
+    match (_from_type, _to_type) {
         (_, GaiaType::Integer32) => {
             // TODO: Generate JVM type conversion instruction to int
             Err(GaiaError::not_implemented("convert to int32 compilation"))
@@ -313,12 +320,12 @@ fn compile_convert(context: &mut JVMContext, from_type: &GaiaType, to_type: &Gai
             // TODO: Generate JVM type conversion instruction to double
             Err(GaiaError::not_implemented("convert to float64 compilation"))
         }
-        _ => Err(GaiaError::not_implemented(&format!("conversion from {:?} to {:?}", from_type, to_type))),
+        _ => Err(GaiaError::not_implemented(&format!("conversion from {:?} to {:?}", _from_type, _to_type))),
     }
 }
 
 // New instruction compilation functions
-fn compile_store_argument(context: &mut JVMContext, index: u32) -> Result<()> {
+fn compile_store_argument(_context: &mut JVMContext, _index: u32) -> Result<()> {
     // TODO: Generate JVM store argument instruction
     Err(GaiaError::not_implemented("store argument compilation"))
 }
