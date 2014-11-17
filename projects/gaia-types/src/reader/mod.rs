@@ -1,4 +1,7 @@
+#![doc = include_str!("readme.md")]
+
 pub use self::{token::Token, token_stream::TokenStream};
+use crate::GaiaError;
 use byteorder::{ByteOrder, ReadBytesExt};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -23,11 +26,21 @@ pub struct BinaryReader<R, E> {
 
 impl<R: Read, E> Read for BinaryReader<R, E> {
     fn read(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
-        self.reader.read(buffer)
+        let bytes_read = self.reader.read(buffer)?;
+        self.position += bytes_read as u64;
+        Ok(bytes_read)
     }
 }
 
-impl<R, E: ByteOrder> BinaryReader<R, E> {
+impl<R: Seek, E> Seek for BinaryReader<R, E> {
+    fn seek(&mut self, pos: SeekFrom) -> std::io::Result<u64> {
+        let new_position = self.reader.seek(pos)?;
+        self.position = new_position;
+        Ok(new_position)
+    }
+}
+
+impl<R, E> BinaryReader<R, E> {
     /// 创建新的二进制读取器
     ///
     /// # Arguments
@@ -56,13 +69,17 @@ impl<R, E: ByteOrder> BinaryReader<R, E> {
     ///
     /// # Returns
     /// 返回操作结果
-    pub fn set_position(&mut self, position: u64) -> std::io::Result<u64>
+    pub fn set_position(&mut self, position: u64) -> Result<u64, GaiaError>
     where
         R: Seek,
     {
         self.reader.seek(SeekFrom::Start(position))?;
         self.position = position;
         Ok(position)
+    }
+    /// 完成读取器并返回结果。
+    pub fn finish(self) -> R {
+        self.reader
     }
 }
 
@@ -158,12 +175,6 @@ impl<R: ReadBytesExt, E: ByteOrder> BinaryReader<R, E> {
         let new_pos = self.reader.seek(SeekFrom::Current(count as i64))?;
         self.position = new_pos;
         Ok(new_pos)
-    }
-}
-
-impl<R: Seek, E: ByteOrder> BinaryReader<R, E> {
-    pub fn seek(&mut self, pos: SeekFrom) -> std::io::Result<u64> {
-        self.reader.seek(pos)
     }
 }
 

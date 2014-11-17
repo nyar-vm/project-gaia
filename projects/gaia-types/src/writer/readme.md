@@ -15,7 +15,6 @@ pub struct TextWriter<W: Write> {
     indent_text: &'static str,
 }
 ```
-
 #### 特性
 
 - **缩进管理**: 支持嵌套缩进，自动处理缩进级别
@@ -51,7 +50,6 @@ pub struct BinaryWriter<W: Write> {
     byte_order: ByteOrder,
 }
 ```
-
 #### 特性
 
 - **字节序控制**: 支持大端序和小端序写入

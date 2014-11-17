@@ -1,7 +1,4 @@
-//! Gaia 诊断系统模块
-//!
-//! 该模块提供了 `GaiaDiagnostics<T>` 类型，用于在编译过程中收集和处理诊断信息。
-//! 它支持错误、警告和跟踪信息的收集，并提供了与 Rust 的 `?` 操作符的集成。
+#![doc = include_str!("../readme.md")]
 
 use crate::{GaiaError, GaiaErrorKind};
 use std::{
@@ -58,6 +55,8 @@ impl<T> GaiaDiagnostics<T> {
     ///
     /// # 示例
     /// ```rust
+    /// use gaia_types::GaiaDiagnostics;
+    ///
     /// let diagnostics = GaiaDiagnostics::success(42);
     /// assert!(diagnostics.result.is_ok());
     /// ```
@@ -75,7 +74,7 @@ impl<T> GaiaDiagnostics<T> {
     ///
     /// # 示例
     /// ```rust
-    /// use gaia_types::errors::GaiaError;
+    /// use gaia_types::{GaiaDiagnostics, GaiaError};
     ///
     /// let error = GaiaError::syntax_error("Invalid syntax", (1, 1));
     /// let diagnostics = GaiaDiagnostics::failure(error);
@@ -95,8 +94,11 @@ impl<T> GaiaDiagnostics<T> {
     ///
     /// # 示例
     /// ```rust
+    /// use gaia_types::{GaiaDiagnostics, GaiaError};
+    ///
     /// let mut diagnostics = GaiaDiagnostics::success(());
-    /// diagnostics.add_warning("Unused variable 'x'");
+    /// let warning = GaiaError::syntax_error("Unused variable 'x'", (1, 1));
+    /// diagnostics.add_warning(warning);
     /// ```
     pub fn add_warning(&mut self, warnings: impl Into<GaiaError>) {
         let mut error = warnings.into();
@@ -114,8 +116,12 @@ impl<T> GaiaDiagnostics<T> {
     ///
     /// # 示例
     /// ```rust
+    /// use gaia_types::{reader::SourceLocation, GaiaDiagnostics, GaiaError};
+    ///
     /// let mut diagnostics = GaiaDiagnostics::success(());
-    /// diagnostics.add_tracing("Entering function parse_expression");
+    /// let tracing =
+    ///     GaiaError::syntax_error("Entering function parse_expression", SourceLocation::new(1, 1));
+    /// diagnostics.add_tracing(tracing);
     /// ```
     pub fn add_tracing(&mut self, tracing: impl Into<GaiaError>) {
         let mut error = tracing.into();
@@ -136,6 +142,8 @@ impl<T> GaiaDiagnostics<T> {
     ///
     /// # 示例
     /// ```rust
+    /// use gaia_types::GaiaDiagnostics;
+    ///
     /// let diagnostics = GaiaDiagnostics::success(());
     /// assert!(!diagnostics.should_halt());
     /// ```
@@ -158,6 +166,9 @@ impl<T> GaiaDiagnostics<T> {
     ///
     /// # 示例
     /// ```rust
+    /// use gaia_types::GaiaDiagnostics;
+    /// use std::ops::ControlFlow;
+    ///
     /// let diagnostics = GaiaDiagnostics::success(42);
     /// match diagnostics.try_value() {
     ///     ControlFlow::Continue(value) => println!("Success: {}", value),

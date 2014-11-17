@@ -1,35 +1,10 @@
-//! Gaia 错误处理系统模块
-//!
-//! 这个模块提供了 Gaia 项目中的错误处理基础设施，包括错误类型定义、
-//! 诊断信息收集和错误转换等功能。
-//!
-//! # 主要组件
-//!
-//! - [`GaiaError`] - 主要的错误类型，包装了具体的错误种类
-//! - [`GaiaErrorKind`] - 错误种类枚举，定义了所有可能的错误类型
-//! - [`GaiaDiagnostics`] - 诊断信息收集器，支持错误恢复和警告收集
-//! - [`Result`] - 类型别名，简化错误处理
-//!
-//! # 使用示例
-//!
-//! ```rust
-//! use gaia_types::{GaiaError, Result, SourceLocation};
-//!
-//! // 创建语法错误
-//! let location = SourceLocation::default();
-//! let error = GaiaError::syntax_error("缺少分号", location);
-//!
-//! // 使用 Result 类型别名
-//! fn parse_source(source: &str) -> Result<()> {
-//!     if source.is_empty() {
-//!         return Err(GaiaError::syntax_error("空源代码", SourceLocation::default()));
-//!     }
-//!     Ok(())
-//! }
-//! ```
+#![doc = include_str!("readme.md")]
 
 pub use self::diagnostics::GaiaDiagnostics;
-use crate::{helpers::{Architecture, CompilationTarget}, SourceLocation};
+use crate::{
+    helpers::{Architecture, CompilationTarget},
+    SourceLocation,
+};
 use std::{
     error::Error,
     fmt::{Debug, Display, Formatter},
@@ -50,6 +25,7 @@ pub type Result<T> = std::result::Result<T, GaiaError>;
 /// Gaia错误类型，包装了具体的错误种类[GaiaErrorKind]
 ///
 /// 使用Box来减少枚举的大小，提高性能
+
 pub struct GaiaError {
     level: Level,
     /// 具体的错误种类，使用Box包装以减少内存占用
@@ -62,11 +38,16 @@ pub struct GaiaError {
 /// Gaia 错误种类枚举，定义了所有可能的错误类型
 #[derive(Debug)]
 pub enum GaiaErrorKind {
+    /// 无效指令错误，当解析到未知或不支持的指令时使用
     InvalidInstruction {
+        /// 无效的指令字符串
         instruction: String,
+        /// 指令所属的架构
         architecture: Architecture,
     },
+    /// 不支持的架构错误，当尝试在不支持的架构上执行操作时使用
     UnsupportedArchitecture {
+        /// 不支持的架构
         architecture: Architecture,
     },
     /// 无效范围错误，当实际长度与期望长度不匹配时使用
@@ -123,6 +104,15 @@ pub enum GaiaErrorKind {
         /// 未实现功能的描述
         feature: String,
     },
+    /// 不支持的功能错误
+    ///
+    /// 当尝试使用不支持的功能时使用
+    UnsupportedFeature {
+        /// 不支持的功能描述
+        feature: String,
+        /// 错误发生的源代码位置信息
+        location: SourceLocation,
+    },
     /// 自定义错误，包含自定义的错误消息
     ///
     /// 当需要表示特定业务逻辑错误或其他非标准错误时使用
@@ -172,6 +162,16 @@ pub enum GaiaErrorKind {
     CompilationFailed {
         /// 编译目标
         target: CompilationTarget,
+        /// 错误消息
+        message: String,
+    },
+
+    /// 保存错误，当保存文件失败时使用
+    ///
+    /// 包含保存格式和错误消息
+    SaveError {
+        /// 保存格式
+        format: String,
         /// 错误消息
         message: String,
     },
@@ -299,14 +299,47 @@ impl GaiaError {
         GaiaErrorKind::InvalidRange { length, expect }.into()
     }
 
-    pub fn invalid_data(data: &str) -> Self {
-        Self { level: Level::ERROR, kind: Box::new(GaiaErrorKind::CustomError { message: format!("无效数据: {}", data) }) }
+    /// 创建一个无效数据错误。
+    ///
+    /// # 参数
+    ///
+    /// * `data` - 无效数据的描述。
+    ///
+    /// # 返回值
+    ///
+    /// 返回一个包含无效数据错误信息的GaiaError实例。
+    pub fn invalid_data(data: impl ToString) -> Self {
+        Self {
+            level: Level::ERROR,
+            kind: Box::new(GaiaErrorKind::CustomError { message: format!("无效数据: {}", data.to_string()) }),
+        }
     }
 
+    /// 创建一个无效魔术头错误。
+    ///
+    /// # 参数
+    ///
+    /// * `head` - 实际的魔术头。
+    /// * `expect` - 期望的魔术头。
+    ///
+    /// # 返回值
+    ///
+    /// 返回一个包含无效魔术头错误信息的GaiaError实例。
+    pub fn invalid_magic_head(head: Vec<u8>, expect: Vec<u8>) -> Self {
+        Self {
+            level: Level::ERROR,
+            kind: Box::new(GaiaErrorKind::CustomError {
+                message: format!("无效数据头: {:?}, 期望: {:?}", head, expect)
+            }),
+        }
+    }
+
+    /// 返回错误的种类。
     pub fn kind(&self) -> &GaiaErrorKind {
         &self.kind
     }
 
+    /// 返回错误的级别。
     pub fn level(&self) -> &Level {
         &self.level
     }
@@ -342,14 +375,11 @@ impl GaiaError {
     ///
     /// # 示例
     /// ```
+    /// use gaia_types::GaiaError;
     /// let error = GaiaError::adapter_error("PeExportAdapter", "导出失败", None);
     /// ```
     pub fn adapter_error(adapter_name: impl ToString, message: impl ToString, source: Option<Box<GaiaError>>) -> Self {
-        GaiaErrorKind::AdapterError {
-            adapter_name: adapter_name.to_string(),
-            message: message.to_string(),
-            source,
-        }.into()
+        GaiaErrorKind::AdapterError { adapter_name: adapter_name.to_string(), message: message.to_string(), source }.into()
     }
 
     /// 创建平台不支持错误
@@ -360,13 +390,11 @@ impl GaiaError {
     ///
     /// # 示例
     /// ```
+    /// use gaia_types::GaiaError;
     /// let error = GaiaError::platform_unsupported("WASI", "内联汇编");
     /// ```
     pub fn platform_unsupported(platform: impl ToString, operation: impl ToString) -> Self {
-        GaiaErrorKind::PlatformUnsupported {
-            platform: platform.to_string(),
-            operation: operation.to_string(),
-        }.into()
+        GaiaErrorKind::PlatformUnsupported { platform: platform.to_string(), operation: operation.to_string() }.into()
     }
 
     /// 创建配置错误
@@ -377,13 +405,11 @@ impl GaiaError {
     ///
     /// # 示例
     /// ```
+    /// use gaia_types::GaiaError;
     /// let error = GaiaError::config_error(Some("config.toml"), "配置文件格式错误");
     /// ```
     pub fn config_error(config_path: Option<impl ToString>, message: impl ToString) -> Self {
-        GaiaErrorKind::ConfigError {
-            config_path: config_path.map(|p| p.to_string()),
-            message: message.to_string(),
-        }.into()
+        GaiaErrorKind::ConfigError { config_path: config_path.map(|p| p.to_string()), message: message.to_string() }.into()
     }
 
     /// 创建不支持的编译目标错误
@@ -393,7 +419,15 @@ impl GaiaError {
     ///
     /// # 示例
     /// ```
-    /// let target = CompilationTarget::default();
+    /// use gaia_types::{
+    ///     helpers::{AbiCompatible, ApiCompatible, Architecture, CompilationTarget},
+    ///     GaiaError,
+    /// };
+    /// let target = CompilationTarget {
+    ///     build: Architecture::X86_64,
+    ///     host: AbiCompatible::ELF,
+    ///     target: ApiCompatible::Gnu,
+    /// };
     /// let error = GaiaError::unsupported_target(target);
     /// ```
     pub fn unsupported_target(target: CompilationTarget) -> Self {
@@ -408,13 +442,57 @@ impl GaiaError {
     ///
     /// # 示例
     /// ```
-    /// let target = CompilationTarget::default();
+    /// use gaia_types::{
+    ///     helpers::{AbiCompatible, ApiCompatible, Architecture, CompilationTarget},
+    ///     GaiaError,
+    /// };
+    /// let target = CompilationTarget {
+    ///     build: Architecture::X86_64,
+    ///     host: AbiCompatible::ELF,
+    ///     target: ApiCompatible::Gnu,
+    /// };
     /// let error = GaiaError::compilation_failed(target, "无法生成字节码");
     /// ```
     pub fn compilation_failed(target: CompilationTarget, message: impl ToString) -> Self {
-        GaiaErrorKind::CompilationFailed {
-            target,
-            message: message.to_string(),
-        }.into()
+        GaiaErrorKind::CompilationFailed { target, message: message.to_string() }.into()
+    }
+
+    /// 创建一个保存错误。
+    ///
+    /// # 参数
+    ///
+    /// * `format` - 保存格式。
+    /// * `message` - 错误消息。
+    ///
+    /// # 返回值
+    ///
+    /// 返回一个包含保存错误信息的GaiaError实例。
+    pub fn save_error(format: impl ToString, message: impl ToString) -> Self {
+        GaiaErrorKind::SaveError { format: format.to_string(), message: message.to_string() }.into()
+    }
+    /// 创建一个不支持的功能错误。
+    ///
+    /// # 参数
+    ///
+    /// * `p0` - 不支持的功能描述。
+    /// * `p1` - 错误发生的源代码位置信息。
+    ///
+    /// # 返回值
+    ///
+    /// 返回一个包含不支持的功能错误信息的GaiaError实例。
+    pub fn unsupported_feature(feature: impl ToString, location: SourceLocation) -> Self {
+        GaiaErrorKind::UnsupportedFeature { feature: feature.to_string(), location }.into()
+    }
+    /// 创建一个自定义错误。
+    ///
+    /// # 参数
+    ///
+    /// * `message` - 错误消息。
+    ///
+    /// # 返回值
+    ///
+    /// 返回一个包含自定义错误信息的GaiaError实例。
+    pub fn custom_error(message: String) -> GaiaError {
+        GaiaErrorKind::CustomError { message }.into()
     }
 }

@@ -70,7 +70,8 @@ impl Display for GaiaErrorKind {
             GaiaErrorKind::ConfigError { config_path, message } => {
                 if let Some(path) = config_path {
                     write!(f, "配置错误在 '{}': {}", path, message)?;
-                } else {
+                }
+                else {
                     write!(f, "配置错误: {}", message)?;
                 }
             }
@@ -79,6 +80,12 @@ impl Display for GaiaErrorKind {
             }
             GaiaErrorKind::CompilationFailed { target, message } => {
                 write!(f, "编译失败 (目标: {:?}): {}", target, message)?;
+            }
+            GaiaErrorKind::SaveError { format, message } => {
+                write!(f, "保存错误 (格式: {}): {}", format, message)?;
+            }
+            GaiaErrorKind::UnsupportedFeature { feature, location } => {
+                write!(f, "不支持的功能 '{}' 在位置 {:?}", feature, location)?;
             }
         }
         Ok(())

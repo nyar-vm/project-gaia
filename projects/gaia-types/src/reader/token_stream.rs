@@ -16,8 +16,11 @@ use std::io::Cursor;
 /// * `raw` - 原始输入字符串的引用
 /// * `tokens` - 令牌向量的游标，用于跟踪当前位置
 #[derive(Clone, Debug)]
+/// 可导航的令牌流。
 pub struct TokenStream<'input, T: Copy> {
+    /// 原始输入字符串。
     pub raw: &'input str,
+    /// 令牌向量的游标，用于跟踪当前位置。
     pub tokens: Cursor<Vec<Token<T>>>,
 }
 
@@ -98,10 +101,12 @@ impl<'input, T: Copy> TokenStream<'input, T> {
         self.get_token(self.get_index())
     }
 
+    /// 返回令牌流的当前索引。
     pub fn get_index(&self) -> usize {
         self.tokens.position() as usize
     }
 
+    /// 返回给定索引处的令牌。
     pub fn get_token(&self, index: usize) -> Result<&Token<T>, GaiaError> {
         let tokens = self.tokens.get_ref();
         if index < tokens.len() {

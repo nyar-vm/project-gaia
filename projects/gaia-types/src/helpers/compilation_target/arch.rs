@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::fmt::{Display, Formatter, Write};
+use std::fmt::{Display, Formatter};
 
 /// 支持的处理器架构类型
 ///
@@ -42,7 +42,9 @@ pub enum Architecture {
     WASM32,
     /// WebAssembly 64位架构
     WASM64,
+    /// Java 虚拟机。
     JVM,
+    /// 公共语言运行时。
     CLR,
     /// 其他架构类型
     Other(String),

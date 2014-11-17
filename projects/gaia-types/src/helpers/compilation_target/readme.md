@@ -13,7 +13,7 @@
 ## 示例组合
 
 ### 传统平台
-```
+```text
 x86-linux-gnu           // 32位x86架构，Linux系统，GNU工具链
 x86_64-windows_pc-msvc  // 64位x86架构，Windows系统，MSVC工具链
 x86_64-windows_pc-gnu   // 64位x86架构，Windows系统，GNU工具链
@@ -21,7 +21,7 @@ arm64-linux-gnu         // 64位ARM架构，Linux系统，GNU工具链
 ```
 
 ### 虚拟机平台
-```
+```text
 jvm-unknown-unknown     // JVM架构，未知ABI，通用API
 jvm-unknown-jdk8        // JVM架构，未知ABI，JDK8 API
 jvm-jasm-jdk8           // JVM架构，JASM文本格式，JDK8 API
@@ -30,7 +30,7 @@ clr-msil-net4_0         // CLR架构，MSIL文本格式，.NET 4.0 API
 ```
 
 ### WebAssembly平台
-```
+```text
 wasm32-unknown-unknown  // 32位WebAssembly，未知ABI，通用API
 wasm32-wat-unknown      // 32位WebAssembly，WAT文本格式，通用API
 wasm32-wat-wasi_p2gnu   // 32位WebAssembly，WAT文本格式，WASI P2 GNU接口

@@ -1,18 +1,24 @@
+#![doc = include_str!("readme.md")]
+
 use crate::{
     reader::{SourcePosition, Token, TokenStream},
     GaiaDiagnostics, GaiaError, SourceLocation,
 };
 use url::Url;
 
+/// 表示令牌类型。
 pub trait TokenType: Copy {
+    /// 表示流的结束。
     const END_OF_STREAM: Self;
 
+    /// 检查令牌是否为空格。
     fn is_whitespace(&self) -> bool {
-        return false;
+        false
     }
 
+    /// 检查令牌是否应被忽略。
     fn is_ignored(&self) -> bool {
-        return false;
+        false
     }
 }
 
@@ -196,6 +202,7 @@ impl<'input, T: TokenType> LexerState<'input, T> {
         Some((self.offset, char))
     }
 
+    /// 返回剩余的文本。
     pub fn rest_text(&self) -> &'input str {
         unsafe {
             debug_assert!(self.offset <= self.input.len());

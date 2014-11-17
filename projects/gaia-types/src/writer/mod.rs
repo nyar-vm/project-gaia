@@ -1,3 +1,6 @@
+#![doc = include_str!("readme.md")]
+
+use crate::GaiaError;
 use std::fmt::Write;
 
 /// 文本写入器，用于写入格式化的文本数据
@@ -81,8 +84,12 @@ impl<W: Write> TextWriter<W> {
     /// writer.dedent(); // 减少缩进
     /// writer.write_line("}").unwrap();
     /// ```
-    pub fn indent(&mut self) {
+    pub fn indent(&mut self, text: &str) -> Result<u16, GaiaError> {
+        if !text.is_empty() {
+            self.writer.write_str(text)?
+        }
         self.indent_level = self.indent_level.saturating_add(1);
+        Ok(self.indent_level)
     }
 
     /// 减少缩进级别
@@ -92,9 +99,13 @@ impl<W: Write> TextWriter<W> {
     ///
     /// # 示例
     ///
-    /// 参见 [`indent`] 方法的示例
-    pub fn dedent(&mut self, marker: &str) {
+    /// 参见 `indent` 方法的示例
+    pub fn dedent(&mut self, text: &str) -> Result<u16, GaiaError> {
         self.indent_level = self.indent_level.saturating_sub(1);
+        if !text.is_empty() {
+            self.writer.write_str(text)?
+        }
+        Ok(self.indent_level)
     }
 
     /// 写入一行文本

@@ -1,23 +1,24 @@
 [package]
 name = "gaia-types"
-version = "0.0.0"
+version = "0.0.1"
 authors = ["Aster <192607617@qq.com>"]
-description = "..."
+description = "盖亚类型"
 categories = ["rust-patterns"]
-homepage = "https://github.com/oovm/RustTemplate"
-repository = "https://github.com/oovm/RustTemplate"
-documentation = "https://docs.rs/sub_projects"
+homepage = "https://github.com/nyar-vm/project-gaia"
+repository = "https://github.com/nyar-vm/project-gaia"
+documentation = "http://docs.rs/gaia-types"
 readme = "readme.md"
 license = "MPL-2.0"
-edition = "2021"
+edition = "2024"
 exclude = ["package.json", "tests/**"]
 
 [dependencies]
 url = { version = "2.5.7", features = ["serde"] }
 source-map = "0.15.0"
 byteorder = "1.5.0"
-tracing = "0.1.40"
-serde = { version = "1.0", features = ["derive"] }
+tracing = "0.1.41"
+serde = { version = "1.0.0", features = ["derive"] }
+serde_json = { version = "1.0.0", optional = true }
 
 [dev-dependencies]
 

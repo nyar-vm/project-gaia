@@ -1,6 +1,9 @@
 use crate::{GaiaError, GaiaErrorKind};
 use tracing::Level;
 
+#[cfg(feature = "serde_json")]
+mod for_serde_json;
+
 /// 将GaiaErrorKind转换为GaiaError的实现
 ///
 /// 这个转换会自动将错误种类包装到Box中，
