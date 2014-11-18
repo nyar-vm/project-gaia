@@ -161,6 +161,13 @@ pub enum WasiAliasTarget {
         /// 导出名称
         name: String,
     },
+    /// 核心导出别名
+    CoreExport {
+        /// 实例名称
+        instance: String,
+        /// 导出名称
+        name: String,
+    },
 }
 
 /// 核心类型枚举
@@ -339,7 +346,7 @@ pub struct WasiDataSegment {
     /// 内存索引（可选，默认为 0）
     pub memory_index: Option<u32>,
     /// 偏移表达式
-    pub offset: Vec<WasmInstruction>,
+    pub offset: Vec<WasiInstruction>,
     /// 数据内容
     pub data: Vec<u8>,
 }
@@ -352,7 +359,7 @@ pub struct WasiElementSegment {
     /// 表索引（可选，默认为 0）
     pub table_index: Option<u32>,
     /// 偏移表达式
-    pub offset: Vec<WasmInstruction>,
+    pub offset: Vec<WasiInstruction>,
     /// 元素列表（函数索引）
     pub elements: Vec<u32>,
 }
@@ -397,6 +404,9 @@ pub enum WasmValueType {
     I64,
     F32,
     F64,
+    V128,
+    Funcref,
+    Externref,
 }
 
 /// WASM 函数定义
@@ -407,7 +417,7 @@ pub struct WasiFunction {
     /// 局部变量
     pub locals: Vec<WasmLocal>,
     /// 函数体指令
-    pub body: Vec<WasmInstruction>,
+    pub body: Vec<WasiInstruction>,
 }
 
 /// WASM 局部变量
@@ -421,7 +431,7 @@ pub struct WasmLocal {
 
 /// WASM 指令
 #[derive(Copy, Debug, Clone)]
-pub enum WasmInstruction {
+pub enum WasiInstruction {
     /// 无操作
     Nop,
     /// 不可达
@@ -592,7 +602,7 @@ pub enum WasmReferenceType {
 #[derive(Debug, Clone)]
 pub struct WasiGlobal {
     pub global_type: WasmGlobalType,
-    pub init_expr: Vec<WasmInstruction>,
+    pub init_expr: Vec<WasiInstruction>,
 }
 
 /// WASM 全局变量类型
@@ -766,5 +776,119 @@ impl WasiProgram {
 impl Default for WasiProgram {
     fn default() -> Self {
         Self::new_core_module()
+    }
+}
+
+/// WasiProgram 的构建器
+pub struct WasiProgramBuilder {
+    program: WasiProgram,
+}
+
+impl WasiProgramBuilder {
+    /// 创建一个新的 WasiProgramBuilder
+    pub fn new(program_type: WasiProgramType) -> Self {
+        Self { program: WasiProgram::new(program_type) }
+    }
+
+    /// 设置程序名称
+    pub fn with_name(mut self, name: impl Into<String>) -> Self {
+        self.program.name = Some(name.into());
+        self
+    }
+
+    /// 添加函数类型定义
+    pub fn with_function_type(mut self, func_type: WasiFunctionType) -> Self {
+        self.program.add_function_type(func_type);
+        self
+    }
+
+    /// 添加函数定义
+    pub fn with_function(mut self, function: WasiFunction) -> Self {
+        self.program.add_function(function);
+        self
+    }
+
+    /// 添加导出定义
+    pub fn with_export(mut self, export: WasiExport) -> Self {
+        self.program.add_export(export);
+        self
+    }
+
+    /// 添加导入定义
+    pub fn with_import(mut self, import: WasiImport) -> Self {
+        self.program.add_import(import);
+        self
+    }
+
+    /// 添加内存定义
+    pub fn with_memory(mut self, memory: WasiMemory) -> Self {
+        self.program.add_memory(memory);
+        self
+    }
+
+    /// 添加表定义
+    pub fn with_table(mut self, table: WasiTable) -> Self {
+        self.program.add_table(table);
+        self
+    }
+
+    /// 添加全局变量定义
+    pub fn with_global(mut self, global: WasiGlobal) -> Self {
+        self.program.add_global(global);
+        self
+    }
+
+    /// 添加自定义段
+    pub fn with_custom_section(mut self, custom_section: WasiCustomSection) -> Self {
+        self.program.custom_sections.push(custom_section);
+        self
+    }
+
+    /// 设置起始函数索引
+    pub fn with_start_function(mut self, start_function_index: u32) -> Self {
+        self.program.start_function = Some(start_function_index);
+        self
+    }
+
+    /// 添加组件项目
+    pub fn with_component_item(mut self, item: WasiComponentItem) -> Self {
+        self.program.component_items.push(item);
+        self
+    }
+
+    /// 添加核心模块
+    pub fn with_core_module(mut self, core_module: WasiCoreModule) -> Self {
+        self.program.add_core_module(core_module);
+        self
+    }
+
+    /// 添加实例
+    pub fn with_instance(mut self, instance: WasiInstance) -> Self {
+        self.program.add_instance(instance);
+        self
+    }
+
+    /// 添加别名
+    pub fn with_alias(mut self, alias: WasiAlias) -> Self {
+        self.program.add_alias(alias);
+        self
+    }
+
+    /// 添加符号到符号表
+    pub fn with_symbol(mut self, name: impl Into<String>, symbol_type: WasiSymbolType, index: u32) -> Self {
+        self.program.add_symbol(name.into(), symbol_type, index);
+        self
+    }
+
+    /// 构建 WasiProgram 实例
+    pub fn build(self) -> Result<WasiProgram> {
+        self.program.validate().map(|_| self.program)
+    }
+}
+
+impl WasiProgram {
+    /// 创建 WasiProgram 的构建器
+    pub fn builder(program_type: WasiProgramType) -> WasiProgramBuilder {
+        WasiProgramBuilder::new(program_type)
     }
 }

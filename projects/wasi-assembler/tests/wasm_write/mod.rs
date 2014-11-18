@@ -1,8 +1,8 @@
-use gaia_types::BinaryAssembler;
+use gaia_types::BinaryWriter;
 use std::{fs, path::Path};
-use wasi_assembler::formats::{
-    wasm::writer::WasmWriter,
-    wat::{WatCompiler, WatLexer, WatParser},
+use wasi_assembler::{
+    formats::wasm::writer::WasmWriter,
+    wat::{lexer::WatLexer, parser::WatParser},
 };
 
 #[test]
@@ -28,8 +28,8 @@ fn hello_world() {
     let program = program_result.result.unwrap();
 
     // 步骤 4: 生成 WASM 字节码
-    let binary_assembler: gaia_types::BinaryAssembler<Vec<u8>, byteorder::LittleEndian> =
-        gaia_types::BinaryAssembler::new(Vec::new());
+    let binary_assembler: gaia_types::BinaryWriter<Vec<u8>, byteorder::LittleEndian> =
+        gaia_types::BinaryWriter::new(Vec::new());
     let mut wasm_writer = WasmWriter::new(binary_assembler);
     let wasm_bytes_result = wasm_writer.write(program);
 

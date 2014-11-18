@@ -35,7 +35,7 @@ impl WatParser {
     ///
     /// # Returns
     /// A `Result` containing the parsed `WatRoot` AST or an error
-    pub fn parse(&self, tokens: TokenStream<WatTokenType>) -> Result<WatRoot> {
+    pub fn parse(&self, _tokens: TokenStream<WatTokenType>) -> Result<WatRoot> {
         // 简化实现，返回空的 AST
         Ok(WatRoot { items: vec![], location: SourceLocation::default() })
     }

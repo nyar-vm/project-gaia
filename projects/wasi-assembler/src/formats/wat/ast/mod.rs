@@ -1,5 +1,7 @@
 #![doc = include_str!("readme.md")]
-#![doc = include_str!("readme.md")]
+
+mod to_program;
+mod to_wat;
 
 use gaia_types::SourceLocation;
 
@@ -14,7 +16,7 @@ use gaia_types::SourceLocation;
 ///
 /// let root = WatRoot { items: vec![WatItem::Component(component)] };
 /// ```
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct WatRoot {
     /// 程序中的所有顶级项目
     pub items: Vec<WatItem>,
@@ -71,6 +73,12 @@ pub enum WatComponentItem {
     CoreFunc(WatCoreFunc),
     /// 核心实例定义
     CoreInstance(WatCoreInstance),
+    /// 自定义段
+    CustomSection(WatCustomSection),
+    /// 全局变量定义
+    Global(WatCoreGlobal),
+    /// 表定义
+    Table(WatTable),
 }
 
 /// 导入声明
@@ -159,6 +167,60 @@ pub enum WatType {
     Primitive(WatPrimitiveType),
 }
 
+impl fmt::Display for WatType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            WatType::Func(func_type) => write!(f, "{}", func_type),
+            WatType::Primitive(primitive_type) => write!(f, "{}", primitive_type),
+            WatType::Resource(resource_type) => write!(f, "{}", resource_type),
+            WatType::Record(record_fields) => {
+                write!(f, "(record")?;
+                for field in record_fields {
+                    write!(f, " {}", field)?;
+                }
+                write!(f, ")")
+            }
+            WatType::Variant(variant_cases) => {
+                write!(f, "(variant")?;
+                for case in variant_cases {
+                    write!(f, " {}", case)?;
+                }
+                write!(f, ")")
+            }
+            WatType::Enum(enum_cases) => {
+                write!(f, "(enum")?;
+                for case in enum_cases {
+                    write!(f, " ${}", case)?;
+                }
+                write!(f, ")")
+            }
+            WatType::Union(union_types) => {
+                write!(f, "(union")?;
+                for union_type in union_types {
+                    write!(f, " {}", union_type)?;
+                }
+                write!(f, ")")
+            }
+            WatType::Option(option_type) => write!(f, "(option {})", option_type),
+            WatType::List(list_type) => write!(f, "(list {})", list_type),
+            WatType::Tuple(tuple_types) => {
+                write!(f, "(tuple")?;
+                for tuple_type in tuple_types {
+                    write!(f, " {}", tuple_type)?;
+                }
+                write!(f, ")")
+            }
+            WatType::Flags(flags) => {
+                write!(f, "(flags")?;
+                for flag in flags {
+                    write!(f, " ${}", flag)?;
+                }
+                write!(f, ")")
+            }
+        }
+    }
+}
+
 /// 函数类型
 #[derive(Clone, Debug)]
 pub struct WatFuncType {
@@ -168,6 +230,27 @@ pub struct WatFuncType {
     pub results: Vec<WatResult>,
     /// 源代码位置信息
     pub location: SourceLocation,
+}
+
+impl fmt::Display for WatFuncType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "(func")?;
+        if !self.params.is_empty() {
+            write!(f, " (param")?;
+            for param in &self.params {
+                write!(f, " {}", param)?;
+            }
+            write!(f, ")")?;
+        }
+        if !self.results.is_empty() {
+            write!(f, " (result")?;
+            for result in &self.results {
+                write!(f, " {}", result)?;
+            }
+            write!(f, ")")?;
+        }
+        write!(f, ")")
+    }
 }
 
 /// 函数参数
@@ -181,6 +264,17 @@ pub struct WatParam {
     pub location: SourceLocation,
 }
 
+impl fmt::Display for WatParam {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(name) = &self.name {
+            write!(f, "${} {}", name, self.param_type)
+        }
+        else {
+            write!(f, "{}", self.param_type)
+        }
+    }
+}
+
 /// 函数返回值
 #[derive(Clone, Debug)]
 pub struct WatResult {
@@ -190,6 +284,17 @@ pub struct WatResult {
     pub result_type: WatType,
     /// 源代码位置信息
     pub location: SourceLocation,
+}
+
+impl fmt::Display for WatResult {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(name) = &self.name {
+            write!(f, "${} {}", name, self.result_type)
+        }
+        else {
+            write!(f, "{}", self.result_type)
+        }
+    }
 }
 
 /// 资源类型
@@ -203,6 +308,16 @@ pub struct WatResourceType {
     pub location: SourceLocation,
 }
 
+impl fmt::Display for WatResourceType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "(resource ${}", self.name)?;
+        for method in &self.methods {
+            write!(f, " {}", method)?;
+        }
+        write!(f, ")")
+    }
+}
+
 /// 资源方法
 #[derive(Clone, Debug)]
 pub struct WatResourceMethod {
@@ -214,15 +329,27 @@ pub struct WatResourceMethod {
     pub location: SourceLocation,
 }
 
+impl fmt::Display for WatResourceMethod {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "(method ${} (func {}", self.name, self.method_type)
+    }
+}
+
 /// 记录字段
 #[derive(Clone, Debug)]
 pub struct WatRecordField {
     /// 字段名称
     pub name: String,
     /// 字段类型
-    pub field_type: WatType,
+    pub field_type: WatValueType,
     /// 源代码位置信息
     pub location: SourceLocation,
+}
+
+impl fmt::Display for WatRecordField {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "(field ${} {})", self.name, self.field_type)
+    }
 }
 
 /// 变体情况
@@ -234,6 +361,16 @@ pub struct WatVariantCase {
     pub case_type: Option<WatType>,
     /// 源代码位置信息
     pub location: SourceLocation,
+}
+
+impl fmt::Display for WatVariantCase {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "(case ${}", self.name)?;
+        if let Some(case_type) = &self.case_type {
+            write!(f, " {}", case_type)?;
+        }
+        write!(f, ")")
+    }
 }
 
 /// 基本类型枚举
@@ -267,6 +404,26 @@ pub enum WatPrimitiveType {
     String,
 }
 
+impl fmt::Display for WatPrimitiveType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            WatPrimitiveType::Bool => write!(f, "bool"),
+            WatPrimitiveType::S8 => write!(f, "s8"),
+            WatPrimitiveType::S16 => write!(f, "s16"),
+            WatPrimitiveType::S32 => write!(f, "s32"),
+            WatPrimitiveType::S64 => write!(f, "s64"),
+            WatPrimitiveType::U8 => write!(f, "u8"),
+            WatPrimitiveType::U16 => write!(f, "u16"),
+            WatPrimitiveType::U32 => write!(f, "u32"),
+            WatPrimitiveType::U64 => write!(f, "u64"),
+            WatPrimitiveType::F32 => write!(f, "f32"),
+            WatPrimitiveType::F64 => write!(f, "f64"),
+            WatPrimitiveType::Char => write!(f, "char"),
+            WatPrimitiveType::String => write!(f, "string"),
+        }
+    }
+}
+
 /// 别名定义
 #[derive(Clone, Debug)]
 pub struct WatAlias {
@@ -279,7 +436,7 @@ pub struct WatAlias {
 }
 
 /// 别名目标枚举
-#[derive(Clone, Debug, Copy)]
+#[derive(Clone, Debug)] // Removed Copy trait
 pub enum WatAliasTarget {
     /// 外部别名
     Outer {
@@ -294,6 +451,20 @@ pub enum WatAliasTarget {
         core_type: WatCoreType,
         /// 项目索引
         item_index: u32,
+    },
+    /// 导出别名 (Component Model)
+    Export {
+        /// 实例名称
+        instance: String,
+        /// 导出名称
+        name: String,
+    },
+    /// 核心导出别名 (Core Module)
+    CoreExport {
+        /// 实例名称
+        instance: String,
+        /// 导出名称
+        name: String,
     },
 }
 
@@ -514,6 +685,20 @@ pub enum WatValueType {
     Externref,
 }
 
+impl fmt::Display for WatValueType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            WatValueType::I32 => write!(f, "i32"),
+            WatValueType::I64 => write!(f, "i64"),
+            WatValueType::F32 => write!(f, "f32"),
+            WatValueType::F64 => write!(f, "f64"),
+            WatValueType::V128 => write!(f, "v128"),
+            WatValueType::Funcref => write!(f, "funcref"),
+            WatValueType::Externref => write!(f, "externref"),
+        }
+    }
+}
+
 /// 核心表定义
 #[derive(Clone, Debug)]
 pub struct WatCoreTable {
@@ -649,6 +834,8 @@ pub struct WatInstruction {
     pub location: SourceLocation,
 }
 
+use std::fmt;
+
 /// 指令操作数枚举
 #[derive(Clone, Debug)]
 pub enum WatOperand {
@@ -662,13 +849,24 @@ pub enum WatOperand {
     Identifier(String),
 }
 
+impl fmt::Display for WatOperand {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            WatOperand::Integer(i) => write!(f, "{}", i),
+            WatOperand::Float(fl) => write!(f, "{}", fl),
+            WatOperand::String(s) => write!(f, "\"{s}\""),
+            WatOperand::Identifier(id) => write!(f, "${}", id),
+        }
+    }
+}
+
 /// 自定义段定义
 #[derive(Debug, Clone)]
 pub struct WatCustomSection {
     /// 段名称
     pub name: String,
     /// 段数据（文本形式）
-    pub data: String,
+    pub data: Vec<u8>,
     /// 源代码位置信息
     pub location: SourceLocation,
 }

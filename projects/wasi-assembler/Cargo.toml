@@ -2,29 +2,32 @@
 name = "wasi-assembler"
 version = "0.0.0"
 authors = ["Aster <192607617@qq.com>"]
-description = "..."
-repository = "https://github.com/oovm/wasm.exe"
-documentation = "https://docs.rs/wasm-exe"
+description = "支持 wasm 和 wasi(wit-component) 指令集的现代汇编器 - 强类型、面向对象、零依赖核心"
+categories = ["compilers"]
+keywords = ["wasm", "wasi", "assembler", "disassembler", "assembly"]
+homepage = "https://github.com/nyar-vm/project-gaia"
+repository = "https://github.com/nyar-vm/project-gaia"
+documentation = "http://docs.rs/wasi-assembler"
 readme = "readme.md"
 license = "MPL-2.0"
 edition = "2024"
 exclude = ["package.json", "tests/**"]
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [dependencies]
 byteorder = "1.5.0"
-gaia-types = { path = "../gaia-types" }
+gaia-types = { workspace = true }
 # LEB128 编码支持
 leb128 = "0.2.5"
 
 [build-dependencies]
 
 [dev-dependencies]
-wat = "1.0.82"
-wasmparser = "0.121.0"
-wasmtime = "15.0.1"
+wat = "1.240.0"
+wasmparser = "0.240.0"
+anyhow = "1.0.100"
+wasmtime = "37.0.2"
+wasmtime-wasi = "37.0.2"
+tempfile = "3.23.0"
 
 
 [features]

@@ -1,31 +1,51 @@
 #![doc = include_str!("readme.md")]
 
-use crate::program::WasiProgram;
-use byteorder::LittleEndian;
-use gaia_types::{BinaryReader, GaiaDiagnostics};
-use std::io::{Read, Seek};
+use crate::formats::wasm::{
+    view::{
+        WasmView, WasmViewCode, WasmViewElement, WasmViewExport, WasmViewFunction, WasmViewFunctionType, WasmViewGlobal,
+        WasmViewImport, WasmViewInstruction, WasmViewMemory, WasmViewTable,
+    },
+    WasmReadConfig,
+};
+use byteorder::ReadBytesExt;
+use gaia_types::{GaiaDiagnostics, GaiaError};
+use leb128;
+use std::io::{Cursor, Read, Seek, SeekFrom};
 
 /// wasm lazy reader
 #[derive(Debug)]
-pub struct WasmReader<W> {
-    reader: BinaryReader<W, LittleEndian>,
+pub struct WasmReader<'config, R> {
+    config: &'config WasmReadConfig,
+    reader: R,
+    view: WasmView,
+    errors: Vec<GaiaError>,
 }
 
-impl<R> WasmReader<R> {
-    pub fn new(reader: R) -> Self {
-        Self { reader: BinaryReader::new(reader) }
+impl<'config, R> WasmReader<'config, R> {
+    pub fn new(reader: R, config: &'config WasmReadConfig) -> Self {
+        Self { reader, view: WasmView::default(), errors: vec![], config }
     }
 
-    pub fn finish(self) -> R {
-        self.reader.finish()
+    fn check_magic_head(&self) -> Result<(), GaiaError> {
+        if self.config.check_magic_head {
+            // \0asm
+            if self.view.magic_head != [0x00, 0x61, 0x73, 0x6D] {
+                Err(GaiaError::invalid_data("Invalid magic number".to_string()))?
+            }
+        }
+        Ok(())
     }
 }
 
-impl<R: Read> WasmReader<R> {
-    pub fn read(&mut self) -> GaiaDiagnostics<WasiProgram>
-    where
-        R: Seek,
-    {
+impl<'config, R: Read + Seek> WasmReader<'config, R> {
+    pub fn read(mut self) -> GaiaDiagnostics<WasmView> {
+        match self.read_to_end() {
+            Ok(_) => GaiaDiagnostics { result: Ok(self.view), diagnostics: self.errors },
+            Err(fatal) => GaiaDiagnostics { result: Err(fatal), diagnostics: self.errors },
+        }
+    }
+
+    fn read_to_end(&mut self) -> Result<(), GaiaError> {
         todo!()
     }
 }

@@ -2,20 +2,20 @@
 
 use crate::program::*;
 use byteorder::{LittleEndian, WriteBytesExt};
-use gaia_types::{BinaryAssembler, GaiaDiagnostics, GaiaError, Result};
+use gaia_types::{BinaryWriter, GaiaDiagnostics, GaiaError, Result};
 use leb128::write::{signed as write_sleb128, unsigned as write_uleb128};
 use std::io::Write;
 
 /// WASM 二进制写入器
 #[derive(Debug)]
 pub struct WasmWriter<W> {
-    writer: BinaryAssembler<W, LittleEndian>,
+    writer: BinaryWriter<W, LittleEndian>,
 }
 
 impl<W> WasmWriter<W> {
     /// 创建新的 WASM 写入器
     pub fn new(assembler: W) -> Self {
-        Self { writer: BinaryAssembler::new(assembler) }
+        Self { writer: BinaryWriter::new(assembler) }
     }
 
     /// 完成写入并返回底层写入器
@@ -364,73 +364,73 @@ impl<W: Write> WasmWriter<W> {
     }
 
     /// 写入指令
-    fn write_instruction(&mut self, buffer: &mut Vec<u8>, instruction: &WasmInstruction) -> Result<()> {
+    fn write_instruction(&mut self, buffer: &mut Vec<u8>, instruction: &WasiInstruction) -> Result<()> {
         match instruction {
-            WasmInstruction::Nop => buffer.push(0x01),
-            WasmInstruction::Unreachable => buffer.push(0x00),
-            WasmInstruction::Block { .. } => buffer.push(0x02),
-            WasmInstruction::Loop { .. } => buffer.push(0x03),
-            WasmInstruction::If { .. } => buffer.push(0x04),
-            WasmInstruction::Else => buffer.push(0x05),
-            WasmInstruction::End => buffer.push(0x0B),
-            WasmInstruction::Br { label_index } => {
+            WasiInstruction::Nop => buffer.push(0x01),
+            WasiInstruction::Unreachable => buffer.push(0x00),
+            WasiInstruction::Block { .. } => buffer.push(0x02),
+            WasiInstruction::Loop { .. } => buffer.push(0x03),
+            WasiInstruction::If { .. } => buffer.push(0x04),
+            WasiInstruction::Else => buffer.push(0x05),
+            WasiInstruction::End => buffer.push(0x0B),
+            WasiInstruction::Br { label_index } => {
                 buffer.push(0x0C);
                 write_uleb128(buffer, *label_index as u64)?;
             }
-            WasmInstruction::BrIf { label_index } => {
+            WasiInstruction::BrIf { label_index } => {
                 buffer.push(0x0D);
                 write_uleb128(buffer, *label_index as u64)?;
             }
-            WasmInstruction::Return => buffer.push(0x0F),
-            WasmInstruction::Call { function_index } => {
+            WasiInstruction::Return => buffer.push(0x0F),
+            WasiInstruction::Call { function_index } => {
                 buffer.push(0x10);
                 write_uleb128(buffer, *function_index as u64)?;
             }
-            WasmInstruction::Drop => buffer.push(0x1A),
-            WasmInstruction::Select => buffer.push(0x1B),
-            WasmInstruction::LocalGet { local_index } => {
+            WasiInstruction::Drop => buffer.push(0x1A),
+            WasiInstruction::Select => buffer.push(0x1B),
+            WasiInstruction::LocalGet { local_index } => {
                 buffer.push(0x20);
                 write_uleb128(buffer, *local_index as u64)?;
             }
-            WasmInstruction::LocalSet { local_index } => {
+            WasiInstruction::LocalSet { local_index } => {
                 buffer.push(0x21);
                 write_uleb128(buffer, *local_index as u64)?;
             }
-            WasmInstruction::I32Const { value } => {
+            WasiInstruction::I32Const { value } => {
                 buffer.push(0x41);
                 write_sleb128(buffer, *value as i64)?;
             }
-            WasmInstruction::I64Const { value } => {
+            WasiInstruction::I64Const { value } => {
                 buffer.push(0x42);
                 write_sleb128(buffer, *value)?;
             }
-            WasmInstruction::F32Const { value } => {
+            WasiInstruction::F32Const { value } => {
                 buffer.push(0x43);
                 buffer.write_f32::<LittleEndian>(*value)?;
             }
-            WasmInstruction::F64Const { value } => {
+            WasiInstruction::F64Const { value } => {
                 buffer.push(0x44);
                 buffer.write_f64::<LittleEndian>(*value)?;
             }
-            WasmInstruction::I32Add => buffer.push(0x6A),
-            WasmInstruction::I32Sub => buffer.push(0x6B),
-            WasmInstruction::I32Mul => buffer.push(0x6C),
-            WasmInstruction::I32DivS => buffer.push(0x6D),
-            WasmInstruction::I32DivU => buffer.push(0x6E),
-            WasmInstruction::I32RemS => buffer.push(0x6F),
-            WasmInstruction::I32RemU => buffer.push(0x70),
-            WasmInstruction::I32And => buffer.push(0x71),
-            WasmInstruction::I32Or => buffer.push(0x72),
-            WasmInstruction::I32Xor => buffer.push(0x73),
-            WasmInstruction::I32Shl => buffer.push(0x74),
-            WasmInstruction::I32ShrS => buffer.push(0x75),
-            WasmInstruction::I32ShrU => buffer.push(0x76),
-            WasmInstruction::I32Rotl => buffer.push(0x77),
-            WasmInstruction::I32Rotr => buffer.push(0x78),
-            WasmInstruction::I32Eqz => buffer.push(0x45),
-            WasmInstruction::I32Eq => buffer.push(0x46),
-            WasmInstruction::I32Ne => buffer.push(0x47),
-            WasmInstruction::I32LtS => buffer.push(0x48),
+            WasiInstruction::I32Add => buffer.push(0x6A),
+            WasiInstruction::I32Sub => buffer.push(0x6B),
+            WasiInstruction::I32Mul => buffer.push(0x6C),
+            WasiInstruction::I32DivS => buffer.push(0x6D),
+            WasiInstruction::I32DivU => buffer.push(0x6E),
+            WasiInstruction::I32RemS => buffer.push(0x6F),
+            WasiInstruction::I32RemU => buffer.push(0x70),
+            WasiInstruction::I32And => buffer.push(0x71),
+            WasiInstruction::I32Or => buffer.push(0x72),
+            WasiInstruction::I32Xor => buffer.push(0x73),
+            WasiInstruction::I32Shl => buffer.push(0x74),
+            WasiInstruction::I32ShrS => buffer.push(0x75),
+            WasiInstruction::I32ShrU => buffer.push(0x76),
+            WasiInstruction::I32Rotl => buffer.push(0x77),
+            WasiInstruction::I32Rotr => buffer.push(0x78),
+            WasiInstruction::I32Eqz => buffer.push(0x45),
+            WasiInstruction::I32Eq => buffer.push(0x46),
+            WasiInstruction::I32Ne => buffer.push(0x47),
+            WasiInstruction::I32LtS => buffer.push(0x48),
             _ => {
                 return Err(GaiaError::not_implemented(format!("Instruction {:?} not yet supported", instruction)));
             }
