@@ -1,6 +1,6 @@
 {
     "private": true,
-    "name": "@nyar/document",
+    "name": "@nyar/gaia-document",
     "version": "1.0.0",
     "description": "Nyar Language Documentation - Comprehensive documentation for the Nyar programming language and compiler framework",
     "type": "module",

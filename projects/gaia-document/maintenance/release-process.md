@@ -177,7 +177,7 @@ cargo publish -p gaia-assembler
 cargo publish -p pe-assembler
 cargo publish -p clr-assembler
 cargo publish -p jvm-assembler
-cargo publish -p wasm-assembler
+cargo publish -p wasi-assembler
 ```
 
 ### 4. 文档部署

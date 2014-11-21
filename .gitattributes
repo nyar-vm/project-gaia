@@ -1,0 +1,126 @@
+# Assembly Language Files
+# x86/x64 Assembly
+*.asm linguist-language=NASM linguist-detectable=true
+*.ASM linguist-language=NASM linguist-detectable=true
+*.s linguist-language=Assembly linguist-detectable=true
+*.S linguist-language=Assembly linguist-detectable=true
+
+# MIPS Assembly
+*.mips linguist-language=Assembly linguist-detectable=true
+*.MIPS linguist-language=Assembly linguist-detectable=true
+
+# ARM Assembly
+*.arm linguist-language=Assembly linguist-detectable=true
+*.ARM linguist-language=Assembly linguist-detectable=true
+
+# RISC-V Assembly
+*.rv linguist-language=Assembly linguist-detectable=true
+*.RV linguist-language=Assembly linguist-detectable=true
+*.riscv linguist-language=Assembly linguist-detectable=true
+*.RISCV linguist-language=Assembly linguist-detectable=true
+
+# 6502 Assembly (Commodore, Apple II, NES)
+*.6502 linguist-language=Assembly linguist-detectable=true
+*.a65 linguist-language=Assembly linguist-detectable=true
+*.nes linguist-language=Assembly linguist-detectable=true
+
+# Z80 Assembly (CP/M, ZX Spectrum)
+*.z80 linguist-language=Assembly linguist-detectable=true
+*.Z80 linguist-language=Assembly linguist-detectable=true
+
+# 8051 Assembly
+*.a51 linguist-language=Assembly linguist-detectable=true
+*.A51 linguist-language=Assembly linguist-detectable=true
+
+# AVR Assembly
+*.avr linguist-language=Assembly linguist-detectable=true
+*.AVR linguist-language=Assembly linguist-detectable=true
+
+# PIC Assembly
+*.pic linguist-language=Assembly linguist-detectable=true
+*.PIC linguist-language=Assembly linguist-detectable=true
+
+# Motorola 68k Assembly
+*.68k linguist-language=Assembly linguist-detectable=true
+*.m68k linguist-language=Assembly linguist-detectable=true
+
+# PowerPC Assembly
+*.ppc linguist-language=Assembly linguist-detectable=true
+*.ppc64 linguist-language=Assembly linguist-detectable=true
+
+# WebAssembly
+*.wat linguist-language=WebAssembly linguist-detectable=true
+*.wasm linguist-language=WebAssembly linguist-detectable=true
+
+# Disable VTS and VRS recognition
+
+# VTS Language (TypeScript-based)
+*.ts linguist-detectable=false
+*.vts linguist-language=TypeScript linguist-detectable=true
+
+# VRS Language (Rust-based)
+*.rs linguist-detectable=false
+*.vrs linguist-language=Rust linguist-detectable=true
+
+# Assembly Headers
+*.inc linguist-language=Assembly linguist-detectable=true
+*.INC linguist-language=Assembly linguist-detectable=true
+*.h linguist-language=C linguist-detectable=false
+
+# Diff and merge settings for assembly files
+*.asm diff=asm
+*.ASM diff=asm
+*.s diff=asm
+*.S diff=asm
+*.mips diff=asm
+*.MIPS diff=asm
+*.arm diff=asm
+*.ARM diff=asm
+*.rv diff=asm
+*.RV diff=asm
+*.riscv diff=asm
+*.RISCV diff=asm
+*.6502 diff=asm
+*.a65 diff=asm
+*.nes diff=asm
+*.z80 diff=asm
+*.Z80 diff=asm
+*.a51 diff=asm
+*.A51 diff=asm
+*.avr diff=asm
+*.AVR diff=asm
+*.pic diff=asm
+*.PIC diff=asm
+*.68k diff=asm
+*.m68k diff=asm
+*.ppc diff=asm
+*.ppc64 diff=asm
+*.wat diff=asm
+*.wasm diff=asm
+*.vts diff=typescript
+*.VTS diff=typescript
+*.vrs diff=rust
+*.VRS diff=rust
+*.inc diff=asm
+*.INC diff=asm
+
+# Binary files that should not be modified
+*.bin binary
+*.BIN binary
+*.obj binary
+*.OBJ binary
+*.o binary
+*.O binary
+*.exe binary
+*.EXE binary
+*.com binary
+*.COM binary
+*.rom binary
+*.ROM binary
+*.img binary
+*.IMG binary
+
+# Documentation files
+*.md linguist-documentation=true
+*.txt linguist-documentation=true
+*.rst linguist-documentation=true
