@@ -18,7 +18,7 @@
     "author": "",
     "license": "MIT",
     "dependencies": {
-        "@gaia/assembler-wasm32": "workspace:*"
+        "@nyar/gaia-assembler-wasm32": "workspace:*"
     },
     "devDependencies": {
         "@types/node": "^18.0.0",

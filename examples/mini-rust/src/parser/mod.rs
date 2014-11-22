@@ -379,27 +379,25 @@ impl Parser {
             }
             Token::Println => {
                 self.advance()?; // 跳过 println!
-                
+
                 // 解析参数列表
                 self.expect(Token::LeftParen)?;
                 let mut arguments = Vec::new();
-                
+
                 while self.current_token != Token::RightParen {
                     arguments.push(self.parse_expression()?);
-                    
+
                     if self.current_token == Token::Comma {
                         self.advance()?;
-                    } else if self.current_token != Token::RightParen {
+                    }
+                    else if self.current_token != Token::RightParen {
                         return Err(GaiaError::syntax_error("期望 ',' 或 ')'", SourceLocation::default()));
                     }
                 }
-                
+
                 self.expect(Token::RightParen)?;
-                
-                Ok(Expression::MacroCall {
-                    name: "println".to_string(),
-                    arguments,
-                })
+
+                Ok(Expression::MacroCall { name: "println".to_string(), arguments })
             }
             Token::Identifier(name) => {
                 let name = name.clone();
