@@ -14,7 +14,7 @@ exclude = ["package.json", "tests/**"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-wit-bindgen = "0.16"
+wit-bindgen = "0.46"
 
 [dependencies.gaia-assembler]
 path = "../gaia-assembler"

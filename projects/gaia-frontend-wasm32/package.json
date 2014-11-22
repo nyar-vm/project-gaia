@@ -35,8 +35,7 @@
         "build": "npm run build:wasm && npm run build:js",
         "test": "vitest run",
         "coverage": "vitest run --coverage",
-        "dev": "vitest",
-        "prepare": "npm run build"
+        "dev": "vitest"
     },
     "dependencies": {
         "@bytecodealliance/preview2-shim": "^0.17.4"

@@ -12,4 +12,3 @@ wit_bindgen::generate!({
         "nyar:gaia-assembly/easy-test": easy_test::EasyTestImpl,
     }
 });
-
