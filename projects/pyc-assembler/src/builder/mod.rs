@@ -38,6 +38,9 @@ impl PythonBuilder {
 
     /// 构建 PythonProgram。
     pub fn build(self, header: PycHeader) -> PythonProgram {
+        use crate::program::PythonVersion;
+        
+        let version = PythonVersion::from_magic(header.magic);
         PythonProgram {
             header,
             code_object: PythonCodeObject {
@@ -59,7 +62,7 @@ impl PythonBuilder {
                 co_consts: self.constants,
                 upvalue_n: 0,
             },
-            version: Default::default(),
+            version,
         }
     }
 }

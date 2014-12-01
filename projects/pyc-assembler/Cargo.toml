@@ -10,7 +10,7 @@ repository = "https://github.com/nyar-vm/project-gaia"
 documentation = "http://docs.rs/python-assembler"
 readme = "readme.md"
 license = "MPL-2.0"
-edition = "2021"
+edition = "2024"
 exclude = ["package.json", "tests/**"]
 
 [dependencies]

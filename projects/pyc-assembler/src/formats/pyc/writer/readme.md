@@ -1,6 +1,23 @@
 # Writer 模块
 
-`writer` 模块负责将 `PycView` 或其他内部表示形式的数据结构序列化为 `.pyc` 文件的字节流。它处理 `.pyc` 文件的头部信息、marshal 数据以及其他相关结构，并将其写入到输出流中。`writer` 模块的设计目标是高效、准确地生成符合 `.pyc` 文件格式规范的二进制数据。
+`writer` 模块负责将 `PythonProgram` 或其他内部表示形式的数据结构序列化为 `.pyc` 文件的字节流。它处理 `.pyc` 文件的头部信息、marshal 数据以及其他相关结构，并将其写入到输出流中。`writer` 模块的设计目标是高效、准确地生成符合 `.pyc` 文件格式规范的二进制数据。
+
+## 主要功能
+
+- **头部写入**：将 `.pyc` 文件的头部信息（如魔数、标志、时间戳和大小）写入到输出流中。
+- **Marshal 序列化**：将 Python 代码对象序列化为 marshal 格式的字节流。
+- **错误处理**：在写入过程中捕获和处理可能发生的错误，确保数据的完整性和一致性。
+
+## 使用示例
+
+```rust
+use crate::formats::pyc::{PycWriteConfig, writer::PycWriter};
+use crate::program::PythonProgram;
+
+let config = PycWriteConfig::default();
+let mut writer = PycWriter::new(output_stream, config);
+let bytes_written = writer.write(&python_program)?;
+```
 
 ## 设计理念
 

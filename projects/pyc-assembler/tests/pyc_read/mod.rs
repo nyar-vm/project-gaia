@@ -1,6 +1,6 @@
 use crate::test_tools::test_path;
 use gaia_types::{helpers::save_json, GaiaError};
-use python_assembler::formats::pyc::pyc_read_path;
+use python_assembler::formats::pyc::{pyc_read_path, PycReadConfig};
 use std::process::Command;
 use walkdir::WalkDir;
 
@@ -21,13 +21,21 @@ fn read_all_pyc_files() -> Result<(), GaiaError> {
         .filter(|e| e.file_type().is_file() && e.path().extension().map_or(false, |ext| ext == "pyc"))
     {
         let path = entry.path();
-        let program = pyc_read_path(path)?;
-        println!("Reading {:?}, Detected Python version: {:?}", path, program.version);
-        let json_path = path.with_extension("json");
-        println!("Attempting to save JSON to: {:?}", json_path);
-        match save_json(&program, &json_path) {
-            Ok(_) => println!("Successfully saved JSON to: {:?}", json_path),
-            Err(e) => eprintln!("Error saving JSON to {:?}: {:?}", json_path, e),
+        let config = PycReadConfig::default();
+        let diagnostics = pyc_read_path(path, &config);
+        match diagnostics.result {
+            Ok(program) => {
+                println!("Reading {:?}, Detected Python version: {:?}", path, program.version);
+                let json_path = path.with_extension("json");
+                println!("Attempting to save JSON to: {:?}", json_path);
+                match save_json(&program, &json_path) {
+                    Ok(_) => println!("Successfully saved JSON to: {:?}", json_path),
+                    Err(e) => eprintln!("Error saving JSON to {:?}: {:?}", json_path, e),
+                }
+            }
+            Err(_) => {
+                eprintln!("Error reading {:?}: {:?}", path, diagnostics.diagnostics);
+            }
         }
     }
     Ok(())
