@@ -1,9 +1,11 @@
 use crate::test_tools::test_path;
-use gaia_types::{helpers::save_json, GaiaError};
+use gaia_types::{
+    helpers::{open_file, save_json},
+    GaiaError,
+};
 use pe_assembler::formats::lib::reader::LibReader;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
-use gaia_types::helpers::open_file;
 
 /// Windows 静态库分析结果
 #[derive(Debug, Serialize, Deserialize)]

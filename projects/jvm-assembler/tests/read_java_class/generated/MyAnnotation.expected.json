@@ -1,0 +1,29 @@
+{
+    "class_name": "MyAnnotation",
+    "class_version": {
+        "major": 65,
+        "minor": 0
+    },
+    "access_flags": [
+        "interface",
+        "abstract",
+        "annotation"
+    ],
+    "super_class": "java/lang/Object",
+    "interfaces": [],
+    "method_count": 1,
+    "field_count": 0,
+    "source_file": null,
+    "constant_pool_count": 20,
+    "fields": [],
+    "methods": [
+        {
+            "name": "value",
+            "descriptor": "()Ljava/lang/String;",
+            "access_flags": [
+                "public",
+                "abstract"
+            ]
+        }
+    ]
+}

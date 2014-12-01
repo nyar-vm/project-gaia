@@ -10,7 +10,7 @@ use gaia_types::helpers::Architecture;
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{Display, Formatter},
-    io::{Read},
+    io::Read,
 };
 
 pub mod coff;

@@ -1,0 +1,50 @@
+{
+    "class_name": "GenericBox",
+    "class_version": {
+        "major": 65,
+        "minor": 0
+    },
+    "access_flags": [
+        "public",
+        "super"
+    ],
+    "super_class": "java/lang/Object",
+    "interfaces": [],
+    "method_count": 3,
+    "field_count": 1,
+    "source_file": null,
+    "constant_pool_count": 47,
+    "fields": [
+        {
+            "name": "value",
+            "descriptor": "Ljava/lang/Object;",
+            "access_flags": [
+                "private"
+            ]
+        }
+    ],
+    "methods": [
+        {
+            "name": "<init>",
+            "descriptor": "(Ljava/lang/Object;)V",
+            "access_flags": [
+                "public"
+            ]
+        },
+        {
+            "name": "getValue",
+            "descriptor": "()Ljava/lang/Object;",
+            "access_flags": [
+                "public"
+            ]
+        },
+        {
+            "name": "main",
+            "descriptor": "([Ljava/lang/String;)V",
+            "access_flags": [
+                "public",
+                "static"
+            ]
+        }
+    ]
+}

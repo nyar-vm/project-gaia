@@ -1,0 +1,117 @@
+{
+    "class_name": "TrafficLight",
+    "class_version": {
+        "major": 65,
+        "minor": 0
+    },
+    "access_flags": [
+        "public",
+        "final",
+        "super",
+        "enum"
+    ],
+    "super_class": "java/lang/Enum",
+    "interfaces": [],
+    "method_count": 7,
+    "field_count": 4,
+    "source_file": null,
+    "constant_pool_count": 72,
+    "fields": [
+        {
+            "name": "RED",
+            "descriptor": "LTrafficLight;",
+            "access_flags": [
+                "public",
+                "static",
+                "final",
+                "enum"
+            ]
+        },
+        {
+            "name": "YELLOW",
+            "descriptor": "LTrafficLight;",
+            "access_flags": [
+                "public",
+                "static",
+                "final",
+                "enum"
+            ]
+        },
+        {
+            "name": "GREEN",
+            "descriptor": "LTrafficLight;",
+            "access_flags": [
+                "public",
+                "static",
+                "final",
+                "enum"
+            ]
+        },
+        {
+            "name": "$VALUES",
+            "descriptor": "[LTrafficLight;",
+            "access_flags": [
+                "private",
+                "static",
+                "final",
+                "synthetic"
+            ]
+        }
+    ],
+    "methods": [
+        {
+            "name": "values",
+            "descriptor": "()[LTrafficLight;",
+            "access_flags": [
+                "public",
+                "static"
+            ]
+        },
+        {
+            "name": "valueOf",
+            "descriptor": "(Ljava/lang/String;)LTrafficLight;",
+            "access_flags": [
+                "public",
+                "static"
+            ]
+        },
+        {
+            "name": "<init>",
+            "descriptor": "(Ljava/lang/String;I)V",
+            "access_flags": [
+                "private"
+            ]
+        },
+        {
+            "name": "getColor",
+            "descriptor": "()Ljava/lang/String;",
+            "access_flags": [
+                "public"
+            ]
+        },
+        {
+            "name": "main",
+            "descriptor": "([Ljava/lang/String;)V",
+            "access_flags": [
+                "public",
+                "static"
+            ]
+        },
+        {
+            "name": "$values",
+            "descriptor": "()[LTrafficLight;",
+            "access_flags": [
+                "private",
+                "static",
+                "synthetic"
+            ]
+        },
+        {
+            "name": "<clinit>",
+            "descriptor": "()V",
+            "access_flags": [
+                "static"
+            ]
+        }
+    ]
+}

@@ -5,11 +5,11 @@ use gaia_types::{
 };
 use pe_assembler::{
     formats::exe::reader::ExeReader,
+    helpers::PeReader,
     types::{PeInfo, SubsystemType},
 };
 use serde::{Deserialize, Serialize};
 use std::path::Path;
-use pe_assembler::helpers::PeReader;
 
 /// Windows 可执行文件分析结果
 #[derive(Debug, Serialize, Deserialize)]

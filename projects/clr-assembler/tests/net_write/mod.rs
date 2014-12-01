@@ -1,6 +1,6 @@
-use clr_assembler::formats::exe::writer::DotNetWriter;
-use clr_assembler::program::{
-    ClrExternalAssembly, ClrInstruction, ClrMethod, ClrOpcode, ClrProgram, ClrTypeReference,
+use clr_assembler::{
+    formats::exe::writer::DotNetWriter,
+    program::{ClrExternalAssembly, ClrInstruction, ClrMethod, ClrOpcode, ClrProgram, ClrTypeReference},
 };
 use std::io::Cursor;
 
@@ -35,7 +35,10 @@ fn generate_hello_world_exe_with_mscorlib() {
 
     // IL: ldstr "Hello, World!"; call void [mscorlib]System.Console::WriteLine(string); ret
     main.add_instruction(ClrInstruction::WithString { opcode: ClrOpcode::Ldstr, value: "Hello, World!".to_string() });
-    main.add_instruction(ClrInstruction::WithMethod { opcode: ClrOpcode::Call, method_ref: "void [mscorlib]System.Console::WriteLine(string)".to_string() });
+    main.add_instruction(ClrInstruction::WithMethod {
+        opcode: ClrOpcode::Call,
+        method_ref: "void [mscorlib]System.Console::WriteLine(string)".to_string(),
+    });
     main.add_instruction(ClrInstruction::Simple { opcode: ClrOpcode::Ret });
 
     program.global_methods.push(main);

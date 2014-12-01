@@ -2,7 +2,6 @@
 
 use crate::{formats::jasm::ast::*, program::*};
 use gaia_types::{GaiaDiagnostics, GaiaError, Result};
-use std::collections::HashMap;
 
 /// JASM 到 JVM 转换器
 pub struct JasmToJvmConverter {

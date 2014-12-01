@@ -13,7 +13,6 @@ mod linux;
 mod runnable;
 mod test_tools;
 
-
 #[test]
 fn ready() {
     println!("ELF Assembler test suite ready!");

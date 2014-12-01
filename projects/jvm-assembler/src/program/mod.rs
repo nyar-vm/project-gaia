@@ -6,6 +6,7 @@
 #![doc = include_str!("readme.md")]
 
 use gaia_types::{GaiaError, Result};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// JVM 程序的高层次表示
@@ -34,7 +35,7 @@ pub struct JvmProgram {
 }
 
 /// JVM 版本信息
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct JvmVersion {
     /// 主版本号
     pub major: u16,

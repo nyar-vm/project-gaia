@@ -3,9 +3,15 @@ use gaia_types::{GaiaDiagnostics, GaiaError};
 use pe_assembler::{
     exe_write_path,
     helpers::PeWriter,
-    types::{tables::{ImportTable, ExportTable}, CoffHeader, DataDirectory, DosHeader, NtHeader, OptionalHeader, PeHeader, PeProgram, PeSection, SubsystemType},
+    types::{
+        tables::{ExportTable, ImportTable},
+        CoffHeader, DataDirectory, DosHeader, NtHeader, OptionalHeader, PeHeader, PeProgram, PeSection, SubsystemType,
+    },
 };
-use std::{io::{Cursor, Seek, Write}, path::Path};
+use std::{
+    io::{Cursor, Seek, Write},
+    path::Path,
+};
 
 #[derive(Debug)]
 pub struct DotNetWriter<W> {
@@ -87,7 +93,7 @@ impl<W: Write + Seek> DotNetWriter<W> {
             .with_timestamp(0)
             .with_symbol_table(0, 0)
             .with_optional_header_size(224) // PE32 可选头大小
-            .with_characteristics(0x0102);     // IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_32BIT_MACHINE
+            .with_characteristics(0x0102); // IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_32BIT_MACHINE
 
         let optional_header = OptionalHeader::new(
             0x2000,                        // entry_point

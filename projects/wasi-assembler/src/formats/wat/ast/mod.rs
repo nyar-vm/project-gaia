@@ -872,6 +872,4 @@ pub struct WatCustomSection {
 }
 
 #[derive(Copy, Debug, Clone)]
-pub struct WatTable {
-
-}
+pub struct WatTable {}

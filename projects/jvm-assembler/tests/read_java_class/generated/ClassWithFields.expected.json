@@ -1,0 +1,49 @@
+{
+    "class_name": "ClassWithFields",
+    "class_version": {
+        "major": 65,
+        "minor": 0
+    },
+    "access_flags": [
+        "public",
+        "super"
+    ],
+    "super_class": "java/lang/Object",
+    "interfaces": [],
+    "method_count": 2,
+    "field_count": 2,
+    "source_file": null,
+    "constant_pool_count": 25,
+    "fields": [
+        {
+            "name": "id",
+            "descriptor": "I",
+            "access_flags": [
+                "private"
+            ]
+        },
+        {
+            "name": "name",
+            "descriptor": "Ljava/lang/String;",
+            "access_flags": [
+                "public"
+            ]
+        }
+    ],
+    "methods": [
+        {
+            "name": "<init>",
+            "descriptor": "()V",
+            "access_flags": [
+                "public"
+            ]
+        },
+        {
+            "name": "getId",
+            "descriptor": "()I",
+            "access_flags": [
+                "public"
+            ]
+        }
+    ]
+}

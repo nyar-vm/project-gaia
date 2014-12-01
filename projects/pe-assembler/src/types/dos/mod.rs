@@ -1,4 +1,4 @@
-use byteorder::{ LittleEndian, ReadBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt};
 use gaia_types::GaiaError;
 use serde::{Deserialize, Serialize};
 use std::io::Read;

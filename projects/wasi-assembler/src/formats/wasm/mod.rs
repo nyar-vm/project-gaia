@@ -7,4 +7,3 @@ pub mod writer;
 pub struct WasmReadConfig {
     pub check_magic_head: bool,
 }
-

@@ -1,11 +1,9 @@
 use crate::{
-    helpers::{CoffReader, read_coff_header, read_section_headers, read_coff_object},
+    helpers::{read_coff_header, read_coff_object, read_section_headers, CoffReader},
     types::coff::{CoffHeader, CoffInfo, CoffObject, SectionHeader},
 };
 use gaia_types::{GaiaDiagnostics, GaiaError};
-use std::{
-    io::{Read, Seek},
-};
+use std::io::{Read, Seek};
 
 /// COFF 对象文件 (.obj) 结构，惰性读取器
 #[derive(Debug)]
@@ -21,14 +19,7 @@ pub struct ObjReader<R> {
 
 impl<R> ObjReader<R> {
     pub fn new(reader: R) -> Self {
-        Self {
-            reader,
-            lazy_header: None,
-            lazy_section_headers: None,
-            lazy_object: None,
-            lazy_info: None,
-            diagnostics: vec![],
-        }
+        Self { reader, lazy_header: None, lazy_section_headers: None, lazy_object: None, lazy_info: None, diagnostics: vec![] }
     }
 }
 
@@ -107,4 +98,3 @@ impl<W: Read + Seek> ObjReader<W> {
         Ok(self.get_coff_info()?.clone())
     }
 }
-

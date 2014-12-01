@@ -7,7 +7,7 @@
 use crate::{formats::exe::writer::ExeWriter, helpers::PeWriter, types::PeProgram};
 use gaia_types::{
     helpers::{create_file, Url},
-     Result,
+    Result,
 };
 use std::path::Path;
 

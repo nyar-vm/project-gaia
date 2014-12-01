@@ -1,0 +1,35 @@
+{
+    "class_name": "LoopTest",
+    "class_version": {
+        "major": 65,
+        "minor": 0
+    },
+    "access_flags": [
+        "public",
+        "super"
+    ],
+    "super_class": "java/lang/Object",
+    "interfaces": [],
+    "method_count": 2,
+    "field_count": 0,
+    "source_file": null,
+    "constant_pool_count": 28,
+    "fields": [],
+    "methods": [
+        {
+            "name": "<init>",
+            "descriptor": "()V",
+            "access_flags": [
+                "public"
+            ]
+        },
+        {
+            "name": "main",
+            "descriptor": "([Ljava/lang/String;)V",
+            "access_flags": [
+                "public",
+                "static"
+            ]
+        }
+    ]
+}

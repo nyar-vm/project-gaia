@@ -1,4 +1,4 @@
-mod class_reader;
+mod read_java_class;
 mod class_writer;
 mod jasm_reader;
 mod jasm_writer;

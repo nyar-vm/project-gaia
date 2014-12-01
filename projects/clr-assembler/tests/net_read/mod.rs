@@ -1,5 +1,5 @@
 use crate::test_tools::test_path;
-use clr_assembler::formats::dll::{DllReadConfig, read_dotnet_assembly};
+use clr_assembler::formats::dll::{read_dotnet_assembly, DllReadConfig};
 use gaia_types::helpers::save_json;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -39,10 +39,7 @@ impl Default for NetDllAnalysis {
 }
 
 /// 分析单个.NET DLL文件
-pub fn analyze_net_dll_file(
-    dll_path: &str,
-    options: &DllReadConfig,
-) -> Result<NetDllAnalysis, Box<dyn std::error::Error>> {
+pub fn analyze_net_dll_file(dll_path: &str, options: &DllReadConfig) -> Result<NetDllAnalysis, Box<dyn std::error::Error>> {
     let mut analysis = NetDllAnalysis::default();
     analysis.dll_name = Path::new(dll_path).file_name().and_then(|n| n.to_str()).unwrap_or("unknown").to_string();
 

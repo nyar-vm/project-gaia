@@ -11,9 +11,7 @@ use pe_assembler::{
     helpers::PeReader,
     types::{PeHeader, PeProgram, SectionHeader},
 };
-use std::{
-    io::{ Read, Seek, SeekFrom},
-};
+use std::io::{Read, Seek, SeekFrom};
 use url::Url;
 
 #[derive(Debug)]
@@ -347,7 +345,8 @@ where
         let assembly_row_size = 4 + 2 + 2 + 2 + 2 + 4 + blob_idx_sz + str_idx_sz + str_idx_sz;
 
         // 数据区起始位置
-        let tables_data_start = cur.stream_position().map_err(|e| GaiaError::io_error(e, Url::parse("memory://tables_data").unwrap()))? as u32;
+        let tables_data_start =
+            cur.stream_position().map_err(|e| GaiaError::io_error(e, Url::parse("memory://tables_data").unwrap()))? as u32;
         // 表起始偏移映射
         let mut table_start: [Option<u32>; 64] = [None; 64];
         let mut table_row_size: [u32; 64] = [0; 64];
@@ -515,7 +514,8 @@ where
         let _ = guid_idx_sz; // 目前未用，避免警告
 
         // 数据区起始位置（当前游标处）
-        let tables_data_start = cur.stream_position().map_err(|e| GaiaError::io_error(e, Url::parse("memory://tables_data").unwrap()))? as u32;
+        let tables_data_start =
+            cur.stream_position().map_err(|e| GaiaError::io_error(e, Url::parse("memory://tables_data").unwrap()))? as u32;
 
         // 计算简单索引大小（到指定表）
         let mut simple_index_size = |table_id: u8| -> u32 {
@@ -1032,7 +1032,9 @@ where
                 let name = String::from_utf8_lossy(&name_bytes).to_string();
 
                 // 对齐到 4 字节边界
-                let current_pos = cursor.stream_position().map_err(|e| GaiaError::io_error(e, Url::parse("memory://stream_headers").unwrap()))?;
+                let current_pos = cursor
+                    .stream_position()
+                    .map_err(|e| GaiaError::io_error(e, Url::parse("memory://stream_headers").unwrap()))?;
                 let aligned_pos = (current_pos + 3) & !3;
                 cursor
                     .seek(SeekFrom::Start(aligned_pos))
@@ -1051,12 +1053,10 @@ where
         reader
             .seek(SeekFrom::Start(strings_start as u64))
             .map_err(|e| GaiaError::io_error(e, Url::parse("memory://strings_heap").unwrap()))?;
-        
+
         let mut buffer = vec![0u8; strings_size as usize];
-        reader
-            .read_exact(&mut buffer)
-            .map_err(|e| GaiaError::io_error(e, Url::parse("memory://strings_heap").unwrap()))?;
-        
+        reader.read_exact(&mut buffer).map_err(|e| GaiaError::io_error(e, Url::parse("memory://strings_heap").unwrap()))?;
+
         Ok(buffer)
     }
 
@@ -1149,7 +1149,8 @@ fn read_type_def_or_ref_index<R: Read>(cursor: &mut R, idx_size: u32) -> Result<
             .read_u16::<LittleEndian>()
             .map(|v| v as u32)
             .map_err(|e| GaiaError::io_error(e, Url::parse("memory://type_def_or_ref_index").unwrap()))
-    } else {
+    }
+    else {
         cursor
             .read_u32::<LittleEndian>()
             .map_err(|e| GaiaError::io_error(e, Url::parse("memory://type_def_or_ref_index").unwrap()))

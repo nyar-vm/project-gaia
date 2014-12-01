@@ -35,7 +35,7 @@ impl<W: Write> ClassWriter<W> {
     }
 
     /// 写入 Class 文件
-    fn write_class_file(&mut self, program: &JvmProgram) -> Result<()> {
+    fn write_class_file(&mut self, _program: &JvmProgram) -> Result<()> {
         todo!()
     }
 }

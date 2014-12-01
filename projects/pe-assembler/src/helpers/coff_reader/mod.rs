@@ -233,11 +233,11 @@ pub(crate) fn read_section_from_header<R: Read + Seek>(
 pub(crate) fn read_symbols<R: Read + Seek>(reader: &mut impl CoffReader<R>) -> Result<Vec<CoffSymbol>, GaiaError> {
     let header = reader.get_coff_header()?.clone();
     let original_pos = reader.get_position()?;
-    
+
     // 计算符号表偏移
     let symbol_table_offset = header.pointer_to_symbol_table as u64;
     reader.set_position(symbol_table_offset)?;
-    
+
     let mut symbols = Vec::new();
     for _ in 0..header.number_of_symbols {
         let symbol = CoffSymbol::read(reader.get_viewer())?;

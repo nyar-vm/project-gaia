@@ -1,12 +1,14 @@
 use crate::test_tools::test_path;
-use gaia_types::{helpers::save_json, GaiaError};
+use gaia_types::{
+    helpers::{open_file, save_json},
+    GaiaError,
+};
 use pe_assembler::formats::obj::reader::ObjReader;
 use serde::{Deserialize, Serialize};
 use std::{
     path::Path,
     time::{SystemTime, UNIX_EPOCH},
 };
-use gaia_types::helpers::open_file;
 
 /// Windows OBJ 文件分析结果
 #[derive(Debug, Serialize, Deserialize)]
@@ -63,37 +65,30 @@ fn analyze_obj_file<P: AsRef<Path>>(path: P) -> WindowsObjAnalysis {
     // 尝试读取 OBJ 文件
     let (file, _url) = match open_file(&path_ref) {
         Ok(result) => result,
-        Err(_) => return WindowsObjAnalysis {
-            analysis_success: false,
-            error_details: Some(GaiaError::invalid_data("无法打开文件")),
-            file_size,
-            machine_type: None,
-            number_of_sections: 0,
-            number_of_symbols: 0,
-            timestamp: UNIX_EPOCH,
-            characteristics: 0,
-            section_names: vec![],
-            symbol_names: vec![],
-        },
+        Err(_) => {
+            return WindowsObjAnalysis {
+                analysis_success: false,
+                error_details: Some(GaiaError::invalid_data("无法打开文件")),
+                file_size,
+                machine_type: None,
+                number_of_sections: 0,
+                number_of_symbols: 0,
+                timestamp: UNIX_EPOCH,
+                characteristics: 0,
+                section_names: vec![],
+                symbol_names: vec![],
+            }
+        }
     };
-    
+
     match ObjReader::new(file).read_object().result {
         Ok(coff_object) => {
             // 收集节名称
-            let section_names: Vec<String> = coff_object
-                .sections
-                .iter()
-                .map(|section| {
-                    section.header.get_name().to_string()
-                })
-                .collect();
+            let section_names: Vec<String> =
+                coff_object.sections.iter().map(|section| section.header.get_name().to_string()).collect();
 
             // 收集符号名称
-            let symbol_names: Vec<String> = coff_object
-                .symbols
-                .iter()
-                .map(|symbol| symbol.name.clone())
-                .collect();
+            let symbol_names: Vec<String> = coff_object.symbols.iter().map(|symbol| symbol.name.clone()).collect();
 
             WindowsObjAnalysis {
                 analysis_success: true,

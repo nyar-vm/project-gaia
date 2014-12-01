@@ -19,10 +19,13 @@ name = "jvm_assembler"
 [dependencies]
 byteorder = "1.5.0"
 gaia-types = { workspace = true }
+serde = { version = "1.0.228", features = ["derive"] }
 
 [build-dependencies]
 
 [dev-dependencies]
+walkdir = { version = "2.3.3" }
+serde_json = { version = "1.0.0" }
 gaia-types = { workspace = true, features = ["serde_json"] }
 
 

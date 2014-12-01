@@ -1,0 +1,41 @@
+{
+    "class_name": "ClassWithMethods",
+    "class_version": {
+        "major": 65,
+        "minor": 0
+    },
+    "access_flags": [
+        "public",
+        "super"
+    ],
+    "super_class": "java/lang/Object",
+    "interfaces": [],
+    "method_count": 3,
+    "field_count": 0,
+    "source_file": null,
+    "constant_pool_count": 30,
+    "fields": [],
+    "methods": [
+        {
+            "name": "<init>",
+            "descriptor": "()V",
+            "access_flags": [
+                "public"
+            ]
+        },
+        {
+            "name": "sayHello",
+            "descriptor": "()V",
+            "access_flags": [
+                "public"
+            ]
+        },
+        {
+            "name": "add",
+            "descriptor": "(II)I",
+            "access_flags": [
+                "public"
+            ]
+        }
+    ]
+}
