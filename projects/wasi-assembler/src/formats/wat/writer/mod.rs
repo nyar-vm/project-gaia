@@ -41,30 +41,56 @@ impl<W: Write> WatWriter<W> {
     /// 写入 WAT AST 到文本
     pub fn write_ast(&mut self, ast: &WatRoot) -> Result<()> {
         for item in &ast.items {
-            // match item {
-            //     WatItem::CoreModule(module) => self.write_core_module(module)?,
-            //     WatItem::Component(component) => self.write_component(component)?,
-            //     WatItem::Module(module) => self.write_core_module(module)?,
-            //     WatItem::CustomSection(custom_section) => self.write_custom_section(custom_section)?,
-            // }
+            match item {
+                WatItem::CoreModule(module) => self.write_core_module(module)?,
+                WatItem::Component(component) => self.write_component(component)?,
+                WatItem::Module(module) => self.write_module(module)?,
+                WatItem::CustomSection(custom_section) => self.write_custom_section(custom_section)?,
+            }
         }
+        Ok(())
+    }
+
+    fn write_module(&mut self, module: &WatModule) -> Result<()> {
+        self.start_module(module.name.as_deref())?;
+        
+        for item in &module.items {
+            match item {
+                WatCoreModuleItem::Func(func) => self.write_core_func(func)?,
+                WatCoreModuleItem::Export(export) => self.write_core_export(export)?,
+                WatCoreModuleItem::Import(import) => self.write_core_import(import)?,
+                WatCoreModuleItem::Memory(memory) => {
+                    // 处理内存定义
+                }
+                WatCoreModuleItem::Table(table) => {
+                    // 处理表定义
+                }
+                WatCoreModuleItem::Global(global) => {
+                    // 处理全局变量定义
+                }
+                WatCoreModuleItem::Data(data) => self.write_data(data)?,
+                WatCoreModuleItem::Elem(elem) => self.write_elem(elem)?,
+                WatCoreModuleItem::Start(start) => {
+                    self.emit_start(start)?;
+                }
+            }
+        }
+        
+        self.end_module()?;
         Ok(())
     }
 
     fn write_core_module(&mut self, module: &WatCoreModule) -> Result<()> {
         self.start_block(&format!("module {}", module.name.clone().unwrap_or_default()))?;
         for item in &module.items {
-            // match item {
-            //     WatCoreModuleItem::Func(func) => self.write_core_func(func)?,
-            //     WatCoreModuleItem::Export(export) => self.write_core_export(export)?,
-            //     WatCoreModuleItem::Import(import) => self.write_core_import(import)?,
-            //     WatCoreModuleItem::Memory(memory) => self.write_memory(memory)?,
-            //     WatCoreModuleItem::Table(table) => self.write_table(table)?,
-            //     WatCoreModuleItem::Global(global) => self.write_global(global)?,
-            //     WatCoreModuleItem::Start(start) => self.emit_start(start)?,
-            //     WatCoreModuleItem::Data(data) => self.emit_data(data)?,
-            //     WatCoreModuleItem::Elem(elem) => self.write_elem(elem)?,
-            // }
+            match item {
+                WatCoreModuleItem::Func(func) => self.write_core_func(func)?,
+                WatCoreModuleItem::Export(export) => self.write_core_export(export)?,
+                WatCoreModuleItem::Import(import) => self.write_core_import(import)?,
+                _ => {
+                    // 处理其他项目
+                }
+            }
         }
         for custom_section in &module.custom_sections {
             self.write_custom_section(custom_section)?;
@@ -114,7 +140,12 @@ impl<W: Write> WatWriter<W> {
     }
 
     fn write_core_func(&mut self, func: &WatCoreFunc) -> Result<()> {
-        self.start_block(&format!("func {}", func.name.clone().unwrap_or_default()))?;
+        let name_part = if let Some(name) = &func.name {
+            format!(" {}", Self::fmt_name(name))
+        } else {
+            String::new()
+        };
+        self.start_block(&format!("func{}", name_part))?;
         self.write_func_type_signature(&func.func_type)?;
         if let Some(body) = &func.body {
             for instruction in body {
@@ -139,17 +170,21 @@ impl<W: Write> WatWriter<W> {
 
     fn write_instruction(&mut self, instruction: &WatInstruction) -> Result<()> {
         let operands_str = instruction.operands.iter().map(|op| op.to_string()).collect::<Vec<String>>().join(" ");
-        self.write_line(&format!("{} {}", instruction.opcode, operands_str))?;
+        if operands_str.is_empty() {
+            self.write_line(&instruction.opcode)?;
+        } else {
+            self.write_line(&format!("{} {}", instruction.opcode, operands_str))?;
+        }
         Ok(())
     }
 
     fn write_core_export(&mut self, export: &WatCoreExport) -> Result<()> {
-        self.start_block(&format!("export \"{}\"", export.name))?;
-        match &export.export_item {
-            WatCoreExportItem::Func(func_name) => self.write_line(&format!("(func {})", func_name))?,
-            _ => unimplemented!("Core export item conversion not yet implemented for {:?}", export.export_item),
-        }
-        self.end_block()?;
+        self.emit_paren(&format!("export \"{}\" (func {})", export.name, 
+            match &export.export_item {
+                WatCoreExportItem::Func(func_name) => func_name.clone(),
+                _ => unimplemented!("Core export item conversion not yet implemented for {:?}", export.export_item),
+            }
+        ))?;
         Ok(())
     }
 
@@ -239,13 +274,14 @@ impl<W: Write> WatWriter<W> {
     /// 开始一个通用的括号块，例如：`(module`、`(func $main ...)`
     pub fn start_block(&mut self, head: &str) -> Result<()> {
         self.writer.write_line(&format!("({}", head))?;
-        self.writer.indent(")")?;
+        self.writer.indent("")?;
         Ok(())
     }
 
     /// 结束最近的块，写入右括号 `)`
     pub fn end_block(&mut self) -> Result<()> {
-        self.writer.dedent(")")?;
+        self.writer.dedent("")?;
+        self.writer.write_line(")")?;
         Ok(())
     }
 

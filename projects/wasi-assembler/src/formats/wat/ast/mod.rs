@@ -685,6 +685,20 @@ pub enum WatValueType {
     Externref,
 }
 
+impl From<crate::program::WasmValueType> for WatValueType {
+    fn from(value: crate::program::WasmValueType) -> Self {
+        match value {
+            crate::program::WasmValueType::I32 => WatValueType::I32,
+            crate::program::WasmValueType::I64 => WatValueType::I64,
+            crate::program::WasmValueType::F32 => WatValueType::F32,
+            crate::program::WasmValueType::F64 => WatValueType::F64,
+            crate::program::WasmValueType::V128 => WatValueType::V128,
+            crate::program::WasmValueType::Funcref => WatValueType::Funcref,
+            crate::program::WasmValueType::Externref => WatValueType::Externref,
+        }
+    }
+}
+
 impl fmt::Display for WatValueType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -832,6 +846,58 @@ pub struct WatInstruction {
     pub operands: Vec<WatOperand>,
     /// 源代码位置信息
     pub location: SourceLocation,
+}
+
+impl From<crate::program::WasiInstruction> for WatInstruction {
+    fn from(value: crate::program::WasiInstruction) -> Self {
+        match value {
+            crate::program::WasiInstruction::Nop => WatInstruction { opcode: "nop".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::Unreachable => WatInstruction { opcode: "unreachable".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::Block { block_type } => WatInstruction { opcode: "block".to_string(), operands: block_type.map(|t| WatOperand::Identifier(t.to_string())).into_iter().collect(), location: SourceLocation::default() },
+            crate::program::WasiInstruction::Loop { block_type } => WatInstruction { opcode: "loop".to_string(), operands: block_type.map(|t| WatOperand::Identifier(t.to_string())).into_iter().collect(), location: SourceLocation::default() },
+            crate::program::WasiInstruction::If { block_type } => WatInstruction { opcode: "if".to_string(), operands: block_type.map(|t| WatOperand::Identifier(t.to_string())).into_iter().collect(), location: SourceLocation::default() },
+            crate::program::WasiInstruction::Else => WatInstruction { opcode: "else".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::End => WatInstruction { opcode: "end".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::Br { label_index } => WatInstruction { opcode: "br".to_string(), operands: vec![WatOperand::Integer(label_index as i64)], location: SourceLocation::default() },
+            crate::program::WasiInstruction::BrIf { label_index } => WatInstruction { opcode: "br_if".to_string(), operands: vec![WatOperand::Integer(label_index as i64)], location: SourceLocation::default() },
+            crate::program::WasiInstruction::Return => WatInstruction { opcode: "return".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::Call { function_index } => WatInstruction { opcode: "call".to_string(), operands: vec![WatOperand::Integer(function_index as i64)], location: SourceLocation::default() },
+            crate::program::WasiInstruction::Drop => WatInstruction { opcode: "drop".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::Select => WatInstruction { opcode: "select".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::LocalGet { local_index } => WatInstruction { opcode: "local.get".to_string(), operands: vec![WatOperand::Integer(local_index as i64)], location: SourceLocation::default() },
+            crate::program::WasiInstruction::LocalSet { local_index } => WatInstruction { opcode: "local.set".to_string(), operands: vec![WatOperand::Integer(local_index as i64)], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32Const { value } => WatInstruction { opcode: "i32.const".to_string(), operands: vec![WatOperand::Integer(value as i64)], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I64Const { value } => WatInstruction { opcode: "i64.const".to_string(), operands: vec![WatOperand::Integer(value as i64)], location: SourceLocation::default() },
+            crate::program::WasiInstruction::F32Const { value } => WatInstruction { opcode: "f32.const".to_string(), operands: vec![WatOperand::Float(value as f64)], location: SourceLocation::default() },
+            crate::program::WasiInstruction::F64Const { value } => WatInstruction { opcode: "f64.const".to_string(), operands: vec![WatOperand::Float(value)], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32Add => WatInstruction { opcode: "i32.add".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32Sub => WatInstruction { opcode: "i32.sub".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32Mul => WatInstruction { opcode: "i32.mul".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32DivS => WatInstruction { opcode: "i32.div_s".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32DivU => WatInstruction { opcode: "i32.div_u".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32RemS => WatInstruction { opcode: "i32.rem_s".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32RemU => WatInstruction { opcode: "i32.rem_u".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32And => WatInstruction { opcode: "i32.and".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32Or => WatInstruction { opcode: "i32.or".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32Xor => WatInstruction { opcode: "i32.xor".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32Shl => WatInstruction { opcode: "i32.shl".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32ShrS => WatInstruction { opcode: "i32.shr_s".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32ShrU => WatInstruction { opcode: "i32.shr_u".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32Rotl => WatInstruction { opcode: "i32.rotl".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32Rotr => WatInstruction { opcode: "i32.rotr".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32Eqz => WatInstruction { opcode: "i32.eqz".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32Eq => WatInstruction { opcode: "i32.eq".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32Ne => WatInstruction { opcode: "i32.ne".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32LtS => WatInstruction { opcode: "i32.lt_s".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32LtU => WatInstruction { opcode: "i32.lt_u".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32GtS => WatInstruction { opcode: "i32.gt_s".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32GtU => WatInstruction { opcode: "i32.gt_u".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32LeS => WatInstruction { opcode: "i32.le_s".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32LeU => WatInstruction { opcode: "i32.le_u".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32GeS => WatInstruction { opcode: "i32.ge_s".to_string(), operands: vec![], location: SourceLocation::default() },
+            crate::program::WasiInstruction::I32GeU => WatInstruction { opcode: "i32.ge_u".to_string(), operands: vec![], location: SourceLocation::default() },
+        }
+    }
 }
 
 use std::fmt;

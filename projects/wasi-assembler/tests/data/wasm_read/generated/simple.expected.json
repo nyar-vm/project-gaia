@@ -1,0 +1,26 @@
+{
+    "magic_head": [
+        0,
+        97,
+        115,
+        109
+    ],
+    "program_type": "CoreModule",
+    "function_type_count": 1,
+    "function_count": 1,
+    "export_count": 1,
+    "import_count": 0,
+    "memory_count": 0,
+    "table_count": 0,
+    "global_count": 0,
+    "custom_section_count": 0,
+    "start_function": null,
+    "exports": [
+        {
+            "name": "add",
+            "export_type": "Function",
+            "index": 0
+        }
+    ],
+    "imports": []
+}

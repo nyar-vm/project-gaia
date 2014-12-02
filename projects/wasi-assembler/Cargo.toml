@@ -15,9 +15,10 @@ exclude = ["package.json", "tests/**"]
 
 [dependencies]
 byteorder = "1.5.0"
-gaia-types = { workspace = true }
+gaia-types = { workspace = true, features = ["serde_json"] }
 # LEB128 编码支持
 leb128 = "0.2.5"
+tracing = "0.1.41"
 
 [build-dependencies]
 
@@ -27,7 +28,10 @@ wasmparser = "0.240.0"
 anyhow = "1.0.100"
 wasmtime = "37.0.2"
 wasmtime-wasi = "37.0.2"
-tempfile = "3.23.0"
+tempfile = "3.0.0"
+serde_json = "1.0.0"
+serde = { version = "1.0.0", features = ["derive"] }
+walkdir = "2.0.0"
 
 
 [features]

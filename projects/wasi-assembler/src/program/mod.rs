@@ -2,6 +2,7 @@
 
 use gaia_types::{GaiaError, Result};
 use std::collections::HashMap;
+use std::fmt;
 
 /// WASI 程序的高层次表示
 ///
@@ -414,6 +415,37 @@ pub enum WasmValueType {
     Externref,
 }
 
+impl TryFrom<u8> for WasmValueType {
+    type Error = GaiaError;
+
+    fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
+        match value {
+            0x7F => Ok(WasmValueType::I32),
+            0x7E => Ok(WasmValueType::I64),
+            0x7D => Ok(WasmValueType::F32),
+            0x7C => Ok(WasmValueType::F64),
+            0x7B => Ok(WasmValueType::V128),
+            0x70 => Ok(WasmValueType::Funcref),
+            0x6F => Ok(WasmValueType::Externref),
+            _ => Err(GaiaError::invalid_data(&format!("Unknown value type: 0x{:02X}", value))),
+        }
+    }
+}
+
+impl fmt::Display for WasmValueType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            WasmValueType::I32 => write!(f, "i32"),
+            WasmValueType::I64 => write!(f, "i64"),
+            WasmValueType::F32 => write!(f, "f32"),
+            WasmValueType::F64 => write!(f, "f64"),
+            WasmValueType::V128 => write!(f, "v128"),
+            WasmValueType::Funcref => write!(f, "funcref"),
+            WasmValueType::Externref => write!(f, "externref"),
+        }
+    }
+}
+
 /// WASM 函数定义
 #[derive(Debug, Clone)]
 pub struct WasiFunction {
@@ -542,6 +574,15 @@ pub enum WasmExportType {
     Table { table_index: u32 },
     Memory { memory_index: u32 },
     Global { global_index: u32 },
+}
+
+impl WasmExportType {
+    pub fn function_index(&self) -> Option<u32> {
+        match self {
+            WasmExportType::Function { function_index } => Some(*function_index),
+            _ => None,
+        }
+    }
 }
 
 /// WASM 导入
