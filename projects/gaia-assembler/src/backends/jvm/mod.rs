@@ -1,18 +1,23 @@
 //! JVM (Java Virtual Machine) backend compiler
 
-use super::{Backend, FunctionMapper, GeneratedFiles};
-use crate::config::GaiaConfig;
+use crate::{
+    backends::{Backend, GeneratedFiles},
+    config::GaiaConfig,
+    instruction::GaiaInstruction,
+    program::{GaiaFunction, GaiaProgram},
+    types::GaiaType,
+};
+use crate::adapters::FunctionMapper;
 use gaia_types::{
     helpers::{AbiCompatible, ApiCompatible, Architecture, CompilationTarget},
-    *,
+    GaiaError, Result,
+};
+use jvm_assembler::{
+    formats::{class::writer::ClassWriter, jasm::ast::to_jasm::JvmToJasmConverter},
+    program::{JvmAccessFlags, JvmField, JvmInstruction, JvmMethod, JvmProgram, JvmVersion},
 };
 use std::collections::HashMap;
-
-/// JVM assembler context (placeholder)
-pub struct JVMContext {
-    // TODO: Replace with actual jvm-assembler context
-    pub bytecode: Vec<u8>,
-}
+use crate::program::{GaiaConstant, GaiaGlobal};
 
 /// JVM Backend implementation
 #[derive(Default)]
@@ -40,16 +45,33 @@ impl Backend for JvmBackend {
         }
     }
 
-    fn generate(&self, program: &GaiaProgram, _config: &GaiaConfig) -> Result<GeneratedFiles> {
+    fn generate(&self, program: &GaiaProgram, config: &GaiaConfig) -> Result<GeneratedFiles> {
         let mut files = HashMap::new();
-        match _config.target.host {
+
+        // 将 GaiaProgram 转换为 JvmProgram（带配置与函数映射）
+        let jvm_program = convert_gaia_to_jvm(program, config)?;
+
+        match config.target.host {
             AbiCompatible::Unknown => {
-                files.insert("main.class".to_string(), compile(program)?);
+                // 生成 .class 字节码文件
+                let buffer = Vec::new();
+                let mut class_writer = ClassWriter::new(buffer);
+                let class_bytes = class_writer.write(&jvm_program).result?;
+                files.insert("main.class".to_string(), class_bytes);
             }
             AbiCompatible::JavaAssembly => {
-                files.insert("main.jasm".to_string(), compile(program)?);
+                // 生成 .jasm 汇编文件
+                let mut converter = JvmToJasmConverter::new();
+                let jasm_result = converter.convert(jvm_program);
+                match jasm_result.result {
+                    Ok(jasm_root) => {
+                        let jasm_string = format!("{:#?}", jasm_root);
+                        files.insert("main.jasm".to_string(), jasm_string.into_bytes());
+                    }
+                    Err(error) => return Err(error),
+                }
             }
-            _ => Err(GaiaError::invalid_data("Unsupported host ABI for JVM backend"))?,
+            _ => return Err(GaiaError::custom_error(&format!("Unsupported host ABI: {:?}", config.target.host))),
         }
 
         Ok(GeneratedFiles { files, diagnostics: vec![] })
@@ -57,421 +79,219 @@ impl Backend for JvmBackend {
 }
 
 impl JvmBackend {
-    /// Generate JVM bytecode from Gaia program
-    pub fn generate(program: &GaiaProgram) -> Result<Vec<u8>> {
-        let mut context = create_jvm_context()?;
-        compile_program(&mut context, program)?;
-        generate_jvm_bytecode(&context)
+    /// Generate JVM program from Gaia program
+    pub fn generate_program(program: &GaiaProgram) -> Result<JvmProgram> {
+        // 使用默认配置生成（保持向后兼容）
+        let default_config = GaiaConfig::default();
+        convert_gaia_to_jvm(program, &default_config)
     }
 }
 
-/// Compile Gaia program to JVM bytecode
-pub fn compile(program: &GaiaProgram) -> Result<Vec<u8>> {
-    JvmBackend::generate(program)
+/// JVM 编译上下文，携带函数映射与目标信息
+struct JvmContext {
+    function_mapper: FunctionMapper,
 }
 
-/// Create JVM assembler context
-fn create_jvm_context() -> Result<JVMContext> {
-    // TODO: Use jvm-assembler to create context
-    // This needs to be implemented according to jvm-assembler's actual API
-    Ok(JVMContext { bytecode: Vec::new() })
-}
+/// Convert GaiaProgram to JvmProgram
+fn convert_gaia_to_jvm(program: &GaiaProgram, config: &GaiaConfig) -> Result<JvmProgram> {
+    let mut jvm_program = JvmProgram::new(program.name.clone());
 
-/// Compile entire program
-fn compile_program(context: &mut JVMContext, program: &GaiaProgram) -> Result<()> {
-    // Compile all functions
+    // Set version information
+    jvm_program.version = JvmVersion { major: 52, minor: 0 }; // Java 8
+
+    // Set access flags
+    jvm_program.access_flags = JvmAccessFlags::PUBLIC;
+
+    // 构建上下文（从配置初始化函数映射）
+    let ctx = JvmContext {
+        function_mapper: FunctionMapper::from_config(&config.setting)?,
+    };
+
+    // Convert functions（带上下文）
     for function in &program.functions {
-        compile_function(context, function)?;
+        let jvm_method = convert_gaia_function_to_jvm(function, &ctx)?;
+        jvm_program.add_method(jvm_method);
     }
 
-    Ok(())
+    // Convert global variables to fields
+    if let Some(globals) = &program.globals {
+        for global in globals {
+            let jvm_field = convert_gaia_global_to_jvm_field(global)?;
+            jvm_program.add_field(jvm_field);
+        }
+    }
+
+    Ok(jvm_program)
 }
 
-/// Compile single function
-fn compile_function(context: &mut JVMContext, function: &GaiaFunction) -> Result<()> {
-    // Start function definition
-    begin_function(context, &function.name, &function.parameters, &function.return_type)?;
+/// Convert GaiaFunction to JvmMethod
+fn convert_gaia_function_to_jvm(function: &GaiaFunction, ctx: &JvmContext) -> Result<JvmMethod> {
+    // 构建方法描述符
+    let descriptor = build_method_descriptor(&function.parameters, &function.return_type);
 
-    // Compile instructions
+    let mut method = JvmMethod::new(function.name.clone(), descriptor);
+
+    // 设置访问标志
+    method = method.with_public().with_static();
+
+    // 转换指令（可能产生多条 JVM 指令）
     for instruction in &function.instructions {
-        compile_instruction(context, instruction)?;
+        let jvm_instructions = convert_gaia_instruction_to_jvm(instruction, ctx)?;
+        for ji in jvm_instructions {
+            method = method.with_instruction(ji);
+        }
     }
 
-    // End function definition
-    end_function(context)?;
+    // 设置栈和局部变量大小（简化处理）
+    method = method.with_max_stack(10).with_max_locals(10);
 
-    Ok(())
+    Ok(method)
 }
 
-/// Compile single instruction
-fn compile_instruction(context: &mut JVMContext, instruction: &GaiaInstruction) -> Result<()> {
+/// Convert GaiaGlobal to JvmField
+fn convert_gaia_global_to_jvm_field(global: &GaiaGlobal) -> Result<JvmField> {
+    let descriptor = convert_gaia_type_to_jvm_descriptor(&global.var_type);
+    let field = JvmField::new(global.name.clone(), descriptor).with_public().with_static();
+
+    Ok(field)
+}
+
+/// Convert GaiaInstruction to JvmInstruction
+fn convert_gaia_instruction_to_jvm(instruction: &GaiaInstruction, ctx: &JvmContext) -> Result<Vec<JvmInstruction>> {
     match instruction {
-        GaiaInstruction::LoadConstant(constant) => compile_load_constant(context, constant),
-        GaiaInstruction::LoadLocal(index) => compile_load_local(context, *index),
-        GaiaInstruction::StoreLocal(index) => compile_store_local(context, *index),
-        GaiaInstruction::LoadArgument(index) => compile_load_argument(context, *index),
-        GaiaInstruction::StoreArgument(index) => compile_store_argument(context, *index),
-        GaiaInstruction::Add => compile_add(context),
-        GaiaInstruction::Subtract => compile_subtract(context),
-        GaiaInstruction::Multiply => compile_multiply(context),
-        GaiaInstruction::Divide => compile_divide(context),
-        GaiaInstruction::Remainder => compile_remainder(context),
-        GaiaInstruction::BitwiseAnd => compile_bitwise_and(context),
-        GaiaInstruction::BitwiseOr => compile_bitwise_or(context),
-        GaiaInstruction::BitwiseXor => compile_bitwise_xor(context),
-        GaiaInstruction::BitwiseNot => compile_bitwise_not(context),
-        GaiaInstruction::ShiftLeft => compile_left_shift(context),
-        GaiaInstruction::ShiftRight => compile_right_shift(context),
-        GaiaInstruction::Negate => compile_negate(context),
-        GaiaInstruction::CompareEqual => compile_equal(context),
-        GaiaInstruction::CompareNotEqual => compile_not_equal(context),
-        GaiaInstruction::CompareLessThan => compile_less_than(context),
-        GaiaInstruction::CompareGreaterThan => compile_greater_than(context),
-        GaiaInstruction::CompareGreaterEqual => compile_greater_than_or_equal(context),
-        GaiaInstruction::CompareLessEqual => compile_less_than_or_equal(context),
-        GaiaInstruction::Branch(label) => compile_branch(context, label),
-        GaiaInstruction::BranchIfTrue(label) => compile_branch_if_true(context, label),
-        GaiaInstruction::BranchIfFalse(label) => compile_branch_if_false(context, label),
-        GaiaInstruction::Call(function_name) => compile_call(context, function_name),
-        GaiaInstruction::Return => compile_return(context),
-        GaiaInstruction::Label(name) => compile_label(context, name),
-        GaiaInstruction::Duplicate => compile_duplicate(context),
-        GaiaInstruction::Pop => compile_pop(context),
-        GaiaInstruction::LoadField(field_name) => compile_load_field(context, field_name),
-        GaiaInstruction::StoreField(field_name) => compile_store_field(context, field_name),
-        GaiaInstruction::NewObject(type_name) => compile_new_object(context, type_name),
-        GaiaInstruction::Convert(from_type, to_type) => compile_convert(context, from_type, to_type),
-        GaiaInstruction::StringConstant(value) => compile_string_constant(context, value),
-        GaiaInstruction::Comment(_) => Ok(()), // Comments are ignored in compilation
-        GaiaInstruction::LoadAddress(index) => compile_load_address(context, *index),
-        GaiaInstruction::LoadIndirect(gaia_type) => compile_load_indirect(context, gaia_type),
-        GaiaInstruction::StoreIndirect(gaia_type) => compile_store_indirect(context, gaia_type),
-        GaiaInstruction::Box(gaia_type) => compile_box(context, gaia_type),
-        GaiaInstruction::Unbox(gaia_type) => compile_unbox(context, gaia_type),
+        GaiaInstruction::LoadConstant(constant) => match constant {
+            GaiaConstant::Integer64(value) => match *value {
+                0 => Ok(vec![JvmInstruction::Iconst0]),
+                1 => Ok(vec![JvmInstruction::Iconst1]),
+                2 => Ok(vec![JvmInstruction::Iconst2]),
+                3 => Ok(vec![JvmInstruction::Iconst3]),
+                4 => Ok(vec![JvmInstruction::Iconst4]),
+                5 => Ok(vec![JvmInstruction::Iconst5]),
+                -1 => Ok(vec![JvmInstruction::IconstM1]),
+                _ if *value >= -128 && *value <= 127 => Ok(vec![JvmInstruction::Bipush { value: *value as i8 }]),
+                _ if *value >= -32768 && *value <= 32767 => Ok(vec![JvmInstruction::Sipush { value: *value as i16 }]),
+                _ => Ok(vec![JvmInstruction::Ldc { symbol: value.to_string() }]),
+            },
+            GaiaConstant::Float64(value) => match *value {
+                0.0 => Ok(vec![JvmInstruction::Fconst0]),
+                1.0 => Ok(vec![JvmInstruction::Fconst1]),
+                2.0 => Ok(vec![JvmInstruction::Fconst2]),
+                _ => Ok(vec![JvmInstruction::Ldc { symbol: value.to_string() }]),
+            },
+            GaiaConstant::String(value) => Ok(vec![JvmInstruction::Ldc { symbol: value.clone() }]),
+            _ => Err(GaiaError::custom_error("Unsupported constant type for JVM")),
+        },
+        GaiaInstruction::LoadLocal(index) => match *index {
+            0 => Ok(vec![JvmInstruction::Iload0]),
+            1 => Ok(vec![JvmInstruction::Iload1]),
+            2 => Ok(vec![JvmInstruction::Iload2]),
+            3 => Ok(vec![JvmInstruction::Iload3]),
+            _ => Ok(vec![JvmInstruction::Iload { index: *index as u16 }]),
+        },
+        GaiaInstruction::StoreLocal(index) => match *index {
+            0 => Ok(vec![JvmInstruction::Istore0]),
+            1 => Ok(vec![JvmInstruction::Istore1]),
+            2 => Ok(vec![JvmInstruction::Istore2]),
+            3 => Ok(vec![JvmInstruction::Istore3]),
+            _ => Ok(vec![JvmInstruction::Istore { index: *index as u16 }]),
+        },
+        // 当前 GaiaInstruction 无独立 LoadArgument 变体；参数作为局部变量处理
+        GaiaInstruction::Add => Ok(vec![JvmInstruction::Iadd]),
+        GaiaInstruction::Subtract => Ok(vec![JvmInstruction::Isub]),
+        GaiaInstruction::Multiply => Ok(vec![JvmInstruction::Imul]),
+        GaiaInstruction::Divide => Ok(vec![JvmInstruction::Idiv]),
+        GaiaInstruction::Remainder => Ok(vec![JvmInstruction::Irem]),
+        GaiaInstruction::BitwiseAnd => Ok(vec![JvmInstruction::Iand]),
+        GaiaInstruction::BitwiseOr => Ok(vec![JvmInstruction::Ior]),
+        GaiaInstruction::BitwiseXor => Ok(vec![JvmInstruction::Ixor]),
+        GaiaInstruction::BitwiseNot => {
+            // JVM 没有直接的按位取反指令，使用 -1 异或实现
+            Err(GaiaError::custom_error("BitwiseNot not directly supported in JVM"))
+        }
+        GaiaInstruction::ShiftLeft => Ok(vec![JvmInstruction::Ishl]),
+        GaiaInstruction::ShiftRight => Ok(vec![JvmInstruction::Ishr]),
+        GaiaInstruction::Equal => {
+            // JVM 需要使用条件跳转指令实现比较
+            Err(GaiaError::custom_error("Equal comparison requires conditional branching in JVM"))
+        }
+        GaiaInstruction::NotEqual => Err(GaiaError::custom_error("NotEqual comparison requires conditional branching in JVM")),
+        GaiaInstruction::LessThan => Err(GaiaError::custom_error("LessThan comparison requires conditional branching in JVM")),
+        GaiaInstruction::GreaterThan => {
+            Err(GaiaError::custom_error("GreaterThan comparison requires conditional branching in JVM"))
+        }
+        GaiaInstruction::LessThanOrEqual => {
+            Err(GaiaError::custom_error("LessThanOrEqual comparison requires conditional branching in JVM"))
+        }
+        GaiaInstruction::GreaterThanOrEqual => {
+            Err(GaiaError::custom_error("GreaterThanOrEqual comparison requires conditional branching in JVM"))
+        }
+        GaiaInstruction::Jump(label) => Ok(vec![JvmInstruction::Goto { target: label.clone() }]),
+        GaiaInstruction::JumpIfTrue(label) => Ok(vec![JvmInstruction::Ifne { target: label.clone() }]),
+        GaiaInstruction::JumpIfFalse(label) => Ok(vec![JvmInstruction::Ifeq { target: label.clone() }]),
+        GaiaInstruction::Call(function_name, _arg_count) => {
+            // 使用 FunctionMapper 进行统一函数名解析
+            let jvm_target = CompilationTarget { build: Architecture::JVM, host: AbiCompatible::JavaAssembly, target: ApiCompatible::JvmRuntime(8) };
+            let mapped = ctx
+                .function_mapper
+                .map_function(&jvm_target, function_name)
+                .unwrap_or(function_name.as_str())
+                .to_string();
+
+            // 特判常见的 println 映射：System.out.println
+            if mapped == "java.lang.System.out.println" {
+                return Ok(vec![
+                    JvmInstruction::Getstatic { class_name: "java/lang/System".to_string(), field_name: "out".to_string(), descriptor: "Ljava/io/PrintStream;".to_string() },
+                    JvmInstruction::Invokevirtual { class_name: "java/io/PrintStream".to_string(), method_name: "println".to_string(), descriptor: "()V".to_string() },
+                ]);
+            }
+
+            // 其他情况保留原先的静态方法调用约定（假定由前端或运行时提供）
+            Ok(vec![JvmInstruction::Invokestatic {
+                class_name: "Main".to_string(),
+                method_name: function_name.clone(),
+                descriptor: "()V".to_string(),
+            }])
+        }
+        GaiaInstruction::Return => Ok(vec![JvmInstruction::Return]),
+        GaiaInstruction::Label(_name) => {
+            // JVM 指令中标签不是独立的指令，需要在汇编时处理
+            Err(GaiaError::custom_error("Labels are handled during assembly, not as instructions"))
+        }
+        GaiaInstruction::Duplicate => Ok(vec![JvmInstruction::Dup]),
+        GaiaInstruction::Pop => Ok(vec![JvmInstruction::Pop]),
+        _ => Err(GaiaError::custom_error(&format!("Unsupported instruction for JVM: {:?}", instruction))),
     }
 }
 
-// Specific compilation implementations for each instruction
-// These functions need to be implemented according to jvm-assembler's actual API
+/// Build JVM method descriptor from parameters and return type
+fn build_method_descriptor(parameters: &[GaiaType], return_type: &Option<GaiaType>) -> String {
+    let mut descriptor = String::from("(");
 
-fn compile_load_constant(context: &mut JVMContext, constant: &GaiaConstant) -> Result<()> {
-    match constant {
-        GaiaConstant::Integer8(value) => {
-            context.bytecode.extend_from_slice(format!("    bipush {}\n", value).as_bytes());
-        }
-        GaiaConstant::Integer16(value) => {
-            context.bytecode.extend_from_slice(format!("    sipush {}\n", value).as_bytes());
-        }
-        GaiaConstant::Integer32(value) => {
-            context.bytecode.extend_from_slice(format!("    ldc {}\n", value).as_bytes());
-        }
-        GaiaConstant::Integer64(value) => {
-            context.bytecode.extend_from_slice(format!("    ldc2_w {}\n", value).as_bytes());
-        }
-        GaiaConstant::Float32(value) => {
-            context.bytecode.extend_from_slice(format!("    ldc {}\n", value).as_bytes());
-        }
-        GaiaConstant::Float64(value) => {
-            context.bytecode.extend_from_slice(format!("    ldc2_w {}\n", value).as_bytes());
-        }
-        GaiaConstant::String(value) => {
-            context.bytecode.extend_from_slice(format!("    ldc \"{}\"\n", value).as_bytes());
-        }
-        GaiaConstant::Boolean(value) => {
-            let int_val = if *value { 1 } else { 0 };
-            context.bytecode.extend_from_slice(format!("    iconst_{}\n", int_val).as_bytes());
-        }
-        GaiaConstant::Null => {
-            context.bytecode.extend_from_slice(b"    aconst_null\n");
-        }
+    // 添加参数类型
+    for param in parameters {
+        descriptor.push_str(&convert_gaia_type_to_jvm_descriptor(param));
     }
-    Ok(())
-}
 
-fn compile_load_local(_context: &mut JVMContext, _index: u32) -> Result<()> {
-    // TODO: Generate iload instruction
-    Err(GaiaError::not_implemented("load local compilation"))
-}
+    descriptor.push(')');
 
-fn compile_store_local(_context: &mut JVMContext, _index: u32) -> Result<()> {
-    // TODO: Generate istore instruction
-    Err(GaiaError::not_implemented("store local compilation"))
-}
-
-fn compile_load_argument(_context: &mut JVMContext, _index: u32) -> Result<()> {
-    // TODO: Generate aload/iload/fload/dload instructions (for parameter access)
-    Err(GaiaError::not_implemented("load argument compilation"))
-}
-
-fn compile_add(_context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate iadd instruction
-    Err(GaiaError::not_implemented("add compilation"))
-}
-
-fn compile_subtract(_context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate isub instruction
-    Err(GaiaError::not_implemented("subtract compilation"))
-}
-
-fn compile_multiply(_context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate imul instruction
-    Err(GaiaError::not_implemented("multiply compilation"))
-}
-
-fn compile_divide(_context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate idiv instruction
-    Err(GaiaError::not_implemented("divide compilation"))
-}
-
-fn compile_equal(_context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate comparison instruction
-    Err(GaiaError::not_implemented("equal compilation"))
-}
-
-fn compile_not_equal(_context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate comparison instruction
-    Err(GaiaError::not_implemented("not equal compilation"))
-}
-
-fn compile_less_than(_context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate comparison instruction
-    Err(GaiaError::not_implemented("less than compilation"))
-}
-
-fn compile_greater_than(_context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate comparison instruction
-    Err(GaiaError::not_implemented("greater than compilation"))
-}
-
-fn compile_branch(_context: &mut JVMContext, _label: &str) -> Result<()> {
-    // TODO: Generate goto instruction
-    Err(GaiaError::not_implemented("branch compilation"))
-}
-
-fn compile_branch_if_true(_context: &mut JVMContext, _label: &str) -> Result<()> {
-    // TODO: Generate conditional branch instruction
-    Err(GaiaError::not_implemented("branch if true compilation"))
-}
-
-fn compile_branch_if_false(_context: &mut JVMContext, _label: &str) -> Result<()> {
-    // TODO: Generate conditional branch instruction
-    Err(GaiaError::not_implemented("branch if false compilation"))
-}
-
-fn compile_call(_context: &mut JVMContext, function_name: &str) -> Result<()> {
-    let mapper = FunctionMapper::new();
-    let jvm_target =
-        CompilationTarget { build: Architecture::Unknown, host: AbiCompatible::Unknown, target: ApiCompatible::Unknown };
-    let _mapped_name = mapper.map_function(&jvm_target, function_name);
-    // TODO: Generate call instruction
-    Err(GaiaError::not_implemented("call compilation"))
-}
-
-fn compile_return(context: &mut JVMContext) -> Result<()> {
-    context.bytecode.extend_from_slice(b"    ireturn\n");
-    Ok(())
-}
-
-fn compile_label(_context: &mut JVMContext, _name: &str) -> Result<()> {
-    // TODO: Generate label definition
-    Err(GaiaError::not_implemented("label compilation"))
-}
-
-fn compile_duplicate(_context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate dup instruction
-    Err(GaiaError::not_implemented("duplicate compilation"))
-}
-
-fn compile_pop(_context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate pop instruction
-    Err(GaiaError::not_implemented("pop compilation"))
-}
-
-fn compile_load_field(_context: &mut JVMContext, _field_name: &str) -> Result<()> {
-    // TODO: Generate getfield instruction
-    Err(GaiaError::not_implemented("load field compilation"))
-}
-
-fn compile_store_field(_context: &mut JVMContext, _field_name: &str) -> Result<()> {
-    // TODO: Generate JVM field store instruction
-    Err(GaiaError::not_implemented("store field compilation"))
-}
-
-fn compile_new_object(_context: &mut JVMContext, _type_name: &str) -> Result<()> {
-    // TODO: Generate new instruction
-    Err(GaiaError::not_implemented("new object compilation"))
-}
-
-fn compile_convert(_context: &mut JVMContext, _from_type: &GaiaType, _to_type: &GaiaType) -> Result<()> {
-    match (_from_type, _to_type) {
-        (_, GaiaType::Integer32) => {
-            // TODO: Generate JVM type conversion instruction to int
-            Err(GaiaError::not_implemented("convert to int32 compilation"))
-        }
-        (_, GaiaType::Integer64) => {
-            // TODO: Generate JVM type conversion instruction to long
-            Err(GaiaError::not_implemented("convert to int64 compilation"))
-        }
-        (_, GaiaType::Float32) => {
-            // TODO: Generate JVM type conversion instruction to float
-            Err(GaiaError::not_implemented("convert to float32 compilation"))
-        }
-        (_, GaiaType::Float64) => {
-            // TODO: Generate JVM type conversion instruction to double
-            Err(GaiaError::not_implemented("convert to float64 compilation"))
-        }
-        _ => Err(GaiaError::not_implemented(&format!("conversion from {:?} to {:?}", _from_type, _to_type))),
+    // 添加返回类型
+    match return_type {
+        Some(ret_type) => descriptor.push_str(&convert_gaia_type_to_jvm_descriptor(ret_type)),
+        None => descriptor.push('V'), // void
     }
-}
 
-// New instruction compilation functions
-fn compile_store_argument(_context: &mut JVMContext, _index: u32) -> Result<()> {
-    // TODO: Generate JVM store argument instruction
-    Err(GaiaError::not_implemented("store argument compilation"))
-}
-
-fn compile_remainder(_context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate JVM remainder instruction (irem/lrem)
-    Err(GaiaError::not_implemented("remainder compilation"))
-}
-
-fn compile_bitwise_and(_context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate JVM bitwise and instruction (iand/land)
-    Err(GaiaError::not_implemented("bitwise and compilation"))
-}
-
-fn compile_bitwise_or(_context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate JVM bitwise or instruction (ior/lor)
-    Err(GaiaError::not_implemented("bitwise or compilation"))
-}
-
-fn compile_bitwise_xor(_context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate JVM bitwise xor instruction (ixor/lxor)
-    Err(GaiaError::not_implemented("bitwise xor compilation"))
-}
-
-fn compile_bitwise_not(_context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate JVM bitwise not instruction (iconst_m1 ixor)
-    Err(GaiaError::not_implemented("bitwise not compilation"))
-}
-
-fn compile_left_shift(_context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate JVM left shift instruction (ishl/lshl)
-    Err(GaiaError::not_implemented("left shift compilation"))
-}
-
-fn compile_right_shift(_context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate JVM right shift instruction (ishr/lshr)
-    Err(GaiaError::not_implemented("right shift compilation"))
-}
-
-fn compile_negate(_context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate JVM negate instruction (ineg/lneg)
-    Err(GaiaError::not_implemented("negate compilation"))
-}
-
-fn compile_greater_than_or_equal(_context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate JVM greater than or equal comparison
-    Err(GaiaError::not_implemented("greater than or equal compilation"))
-}
-
-fn compile_less_than_or_equal(_context: &mut JVMContext) -> Result<()> {
-    // TODO: Generate JVM less than or equal comparison
-    Err(GaiaError::not_implemented("less than or equal compilation"))
-}
-
-fn compile_string_constant(_context: &mut JVMContext, _value: &str) -> Result<()> {
-    // TODO: Generate JVM string constant instruction (ldc)
-    Err(GaiaError::not_implemented("string constant compilation"))
-}
-
-/// Start function definition
-fn begin_function(context: &mut JVMContext, name: &str, parameters: &[GaiaType], return_type: &Option<GaiaType>) -> Result<()> {
-    // For simplicity, we'll generate a basic method signature
-    // In a real implementation, this would generate proper JVM class file format
-
-    // Store method information for later use
-    let method_signature = format!(
-        "{}({}){}",
-        name,
-        parameters.iter().map(|p| type_to_jvm_descriptor(p)).collect::<String>(),
-        return_type.as_ref().map(|t| type_to_jvm_descriptor(t)).unwrap_or_else(|| "V".to_string())
-    );
-
-    // Add method start marker to bytecode
-    context.bytecode.extend_from_slice(b"METHOD_START:");
-    context.bytecode.extend_from_slice(method_signature.as_bytes());
-    context.bytecode.push(b'\n');
-
-    Ok(())
-}
-
-fn end_function(context: &mut JVMContext) -> Result<()> {
-    // Add method end marker to bytecode
-    context.bytecode.extend_from_slice(b"METHOD_END\n");
-    Ok(())
-}
-
-/// Generate JVM bytecode
-fn generate_jvm_bytecode(context: &JVMContext) -> Result<Vec<u8>> {
-    // For now, we'll generate a simple text-based representation
-    // In a real implementation, this would generate proper JVM class file format
-
-    let mut result = Vec::new();
-
-    // Add class file header (simplified)
-    result.extend_from_slice(b"// Generated JVM bytecode\n");
-    result.extend_from_slice(b"public class Output {\n");
-
-    // Add the compiled bytecode
-    result.extend_from_slice(&context.bytecode);
-
-    // Add class footer
-    result.extend_from_slice(b"}\n");
-
-    Ok(result)
-}
-
-// Additional compilation functions for missing instructions
-fn compile_load_address(_context: &mut JVMContext, _index: u32) -> Result<()> {
-    // Load address of local variable or parameter
-    Err(GaiaError::not_implemented("JVM load address"))
-}
-
-fn compile_load_indirect(_context: &mut JVMContext, _gaia_type: &GaiaType) -> Result<()> {
-    // Load value from memory address on stack
-    Err(GaiaError::not_implemented("JVM load indirect"))
-}
-
-fn compile_store_indirect(_context: &mut JVMContext, _gaia_type: &GaiaType) -> Result<()> {
-    // Store value to memory address on stack
-    Err(GaiaError::not_implemented("JVM store indirect"))
-}
-
-fn compile_box(_context: &mut JVMContext, _gaia_type: &GaiaType) -> Result<()> {
-    // Box a value type into a reference type
-    Err(GaiaError::not_implemented("JVM box operation"))
-}
-
-fn compile_unbox(_context: &mut JVMContext, _gaia_type: &GaiaType) -> Result<()> {
-    // Unbox a reference type to a value type
-    Err(GaiaError::not_implemented("JVM unbox operation"))
+    descriptor
 }
 
 /// Convert GaiaType to JVM type descriptor
-fn type_to_jvm_descriptor(gaia_type: &GaiaType) -> String {
+fn convert_gaia_type_to_jvm_descriptor(gaia_type: &GaiaType) -> String {
     match gaia_type {
-        GaiaType::Integer8 => "B".to_string(),
-        GaiaType::Integer16 => "S".to_string(),
-        GaiaType::Integer32 => "I".to_string(),
-        GaiaType::Integer64 => "J".to_string(),
-        GaiaType::Float32 => "F".to_string(),
-        GaiaType::Float64 => "D".to_string(),
+        GaiaType::Integer => "I".to_string(),
+        GaiaType::Float => "F".to_string(),
+        GaiaType::Double => "D".to_string(),
         GaiaType::Boolean => "Z".to_string(),
         GaiaType::String => "Ljava/lang/String;".to_string(),
-        GaiaType::Object => "Ljava/lang/Object;".to_string(),
-        GaiaType::Pointer => "Ljava/lang/Object;".to_string(),
-        GaiaType::Array(_) => "[Ljava/lang/Object;".to_string(),
-        GaiaType::Custom(_) => "Ljava/lang/Object;".to_string(),
+        GaiaType::Void => "V".to_string(),
+        _ => "Ljava/lang/Object;".to_string(), // 默认为 Object
     }
 }

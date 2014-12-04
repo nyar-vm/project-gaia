@@ -1,12 +1,18 @@
 //! WASI (WebAssembly System Interface) backend compiler
 
-use super::{Backend, FunctionMapper, GeneratedFiles};
-use crate::config::GaiaConfig;
+use super::{Backend, GeneratedFiles};
+use crate::{
+    config::GaiaConfig,
+    instruction::GaiaInstruction,
+    program::{GaiaConstant, GaiaFunction, GaiaProgram},
+    types::GaiaType,
+};
 use gaia_types::{
     helpers::{AbiCompatible, ApiCompatible, Architecture, CompilationTarget},
     *,
 };
 use std::collections::HashMap;
+use crate::adapters::FunctionMapper;
 
 /// WASI Backend implementation
 #[derive(Default)]
@@ -96,10 +102,11 @@ fn compile_function(context: &mut WasiContext, function: &GaiaFunction) -> Resul
 fn compile_instruction(context: &mut WasiContext, instruction: &GaiaInstruction) -> Result<()> {
     match instruction {
         GaiaInstruction::LoadConstant(constant) => compile_load_constant(context, constant),
-        GaiaInstruction::LoadLocal(index) => compile_load_local(context, *index),
-        GaiaInstruction::StoreLocal(index) => compile_store_local(context, *index),
-        GaiaInstruction::LoadArgument(index) => compile_load_argument(context, *index),
-        GaiaInstruction::StoreArgument(index) => compile_store_argument(context, *index),
+        GaiaInstruction::LoadLocal(index) => compile_load_local(context, (*index).try_into().unwrap()),
+        GaiaInstruction::StoreLocal(index) => compile_store_local(context, (*index).try_into().unwrap()),
+        GaiaInstruction::LoadGlobal(name) => compile_load_global(context, name),
+        GaiaInstruction::StoreGlobal(name) => compile_store_global(context, name),
+        GaiaInstruction::LoadArgument(index) => compile_load_argument(context, (*index).try_into().unwrap()),
         GaiaInstruction::Add => compile_add(context),
         GaiaInstruction::Subtract => compile_subtract(context),
         GaiaInstruction::Multiply => compile_multiply(context),
@@ -109,34 +116,38 @@ fn compile_instruction(context: &mut WasiContext, instruction: &GaiaInstruction)
         GaiaInstruction::BitwiseOr => compile_bitwise_or(context),
         GaiaInstruction::BitwiseXor => compile_bitwise_xor(context),
         GaiaInstruction::BitwiseNot => compile_bitwise_not(context),
+        GaiaInstruction::LogicalAnd => compile_logical_and(context),
+        GaiaInstruction::LogicalOr => compile_logical_or(context),
+        GaiaInstruction::LogicalNot => compile_logical_not(context),
         GaiaInstruction::ShiftLeft => compile_left_shift(context),
         GaiaInstruction::ShiftRight => compile_right_shift(context),
         GaiaInstruction::Negate => compile_negate(context),
-        GaiaInstruction::CompareEqual => compile_equal(context),
-        GaiaInstruction::CompareNotEqual => compile_not_equal(context),
-        GaiaInstruction::CompareLessThan => compile_less_than(context),
-        GaiaInstruction::CompareGreaterThan => compile_greater_than(context),
-        GaiaInstruction::CompareGreaterEqual => compile_greater_than_or_equal(context),
-        GaiaInstruction::CompareLessEqual => compile_less_than_or_equal(context),
-        GaiaInstruction::Branch(label) => compile_branch(context, label),
-        GaiaInstruction::BranchIfTrue(label) => compile_branch_if_true(context, label),
-        GaiaInstruction::BranchIfFalse(label) => compile_branch_if_false(context, label),
-        GaiaInstruction::Call(function_name) => compile_call(context, function_name),
+        GaiaInstruction::Equal => compile_equal(context),
+        GaiaInstruction::NotEqual => compile_not_equal(context),
+        GaiaInstruction::LessThan => compile_less_than(context),
+        GaiaInstruction::GreaterThan => compile_greater_than(context),
+        GaiaInstruction::GreaterThanOrEqual => compile_greater_than_or_equal(context),
+        GaiaInstruction::LessThanOrEqual => compile_less_than_or_equal(context),
+        GaiaInstruction::Jump(label) => compile_branch(context, label),
+        GaiaInstruction::JumpIfTrue(label) => compile_branch_if_true(context, label),
+        GaiaInstruction::JumpIfFalse(label) => compile_branch_if_false(context, label),
+        GaiaInstruction::Call(function_name, _arg_count) => compile_call(context, function_name),
         GaiaInstruction::Return => compile_return(context),
         GaiaInstruction::Label(name) => compile_label(context, name),
         GaiaInstruction::Duplicate => compile_duplicate(context),
         GaiaInstruction::Pop => compile_pop(context),
-        GaiaInstruction::LoadField(field_name) => compile_load_field(context, field_name),
-        GaiaInstruction::StoreField(field_name) => compile_store_field(context, field_name),
-        GaiaInstruction::NewObject(type_name) => compile_new_object(context, type_name),
+        // 已移除的对象/字段相关指令：LoadField/StoreField/NewObject
         GaiaInstruction::Convert(from_type, to_type) => compile_convert(context, from_type, to_type),
-        GaiaInstruction::StringConstant(value) => compile_string_constant(context, value),
-        GaiaInstruction::LoadAddress(index) => compile_load_address(context, *index),
+        // 已移除的指令：StringConstant、LoadAddress
         GaiaInstruction::LoadIndirect(gaia_type) => compile_load_indirect(context, gaia_type),
         GaiaInstruction::StoreIndirect(gaia_type) => compile_store_indirect(context, gaia_type),
         GaiaInstruction::Box(gaia_type) => compile_box(context, gaia_type),
         GaiaInstruction::Unbox(gaia_type) => compile_unbox(context, gaia_type),
-        GaiaInstruction::Comment(_) => Ok(()), // Comments are ignored in compilation
+        GaiaInstruction::NewArray(elem_type, size) => compile_new_array(context, elem_type, *size),
+        GaiaInstruction::LoadElement(elem_type) => compile_load_element(context, elem_type),
+        GaiaInstruction::StoreElement(elem_type) => compile_store_element(context, elem_type),
+        GaiaInstruction::ArrayLength => compile_array_length(context),
+        _ => Ok(())
     }
 }
 
@@ -254,7 +265,7 @@ fn compile_branch_if_false(context: &mut WasiContext, label: &str) -> Result<()>
     context.emit_if_not_br(label)
 }
 
-fn compile_call(_context: &mut WasiContext, function_name: &str) -> Result<()> {
+fn compile_call(context: &mut WasiContext, function_name: &str) -> Result<()> {
     // Use FunctionMapper to map function names to WASI-specific implementations
     let mapper = FunctionMapper::new();
     let wasi_target = CompilationTarget {
@@ -262,10 +273,12 @@ fn compile_call(_context: &mut WasiContext, function_name: &str) -> Result<()> {
         host: AbiCompatible::WebAssemblyTextFormat,
         target: ApiCompatible::WASI,
     };
-    let _mapped_name = mapper.map_function(&wasi_target, function_name);
+    let mapped_name = mapper
+        .map_function(&wasi_target, function_name)
+        .unwrap_or(function_name);
 
     // WASM: call mapped_name
-    todo!()
+    context.emit_call(mapped_name)
 }
 
 fn compile_return(context: &mut WasiContext) -> Result<()> {
@@ -355,6 +368,22 @@ fn compile_bitwise_not(context: &mut WasiContext) -> Result<()> {
     context.emit_i32_xor()
 }
 
+fn compile_logical_and(context: &mut WasiContext) -> Result<()> {
+    // 对布尔值，逻辑与等价于位与
+    compile_bitwise_and(context)
+}
+
+fn compile_logical_or(context: &mut WasiContext) -> Result<()> {
+    // 对布尔值，逻辑或等价于位或
+    compile_bitwise_or(context)
+}
+
+fn compile_logical_not(context: &mut WasiContext) -> Result<()> {
+    // 对布尔值 0/1，按位异或 1 等价于逻辑非
+    context.emit_i32_const(1)?;
+    context.emit_i32_xor()
+}
+
 fn compile_left_shift(context: &mut WasiContext) -> Result<()> {
     // WASM: i32.shl
     context.emit_i32_shl()
@@ -385,6 +414,16 @@ fn compile_less_than_or_equal(context: &mut WasiContext) -> Result<()> {
 fn compile_string_constant(context: &mut WasiContext, value: &str) -> Result<()> {
     // WASM: Load string constant
     context.emit_string_const(value)
+}
+
+fn compile_load_global(_context: &mut WasiContext, _name: &str) -> Result<()> {
+    // TODO: 使用 global.get 或内存模型加载全局变量
+    Err(GaiaError::not_implemented("WASI load global"))
+}
+
+fn compile_store_global(_context: &mut WasiContext, _name: &str) -> Result<()> {
+    // TODO: 使用 global.set 或内存模型存储全局变量
+    Err(GaiaError::not_implemented("WASI store global"))
 }
 
 /// Start function definition
@@ -655,4 +694,24 @@ fn compile_box(_context: &mut WasiContext, _gaia_type: &GaiaType) -> Result<()> 
 fn compile_unbox(_context: &mut WasiContext, _gaia_type: &GaiaType) -> Result<()> {
     // Unbox a reference type to a value type
     Err(GaiaError::not_implemented("WASI unbox operation"))
+}
+
+fn compile_new_array(_context: &mut WasiContext, _elem_type: &GaiaType, _size: usize) -> Result<()> {
+    // TODO: 在 WASM 中分配并初始化数组
+    Err(GaiaError::not_implemented("WASI new array"))
+}
+
+fn compile_load_element(_context: &mut WasiContext, _elem_type: &GaiaType) -> Result<()> {
+    // TODO: 在 WASM 中按元素类型从内存加载
+    Err(GaiaError::not_implemented("WASI load element"))
+}
+
+fn compile_store_element(_context: &mut WasiContext, _elem_type: &GaiaType) -> Result<()> {
+    // TODO: 在 WASM 中按元素类型存储到内存
+    Err(GaiaError::not_implemented("WASI store element"))
+}
+
+fn compile_array_length(_context: &mut WasiContext) -> Result<()> {
+    // TODO: 返回数组长度（需要运行时或约定）
+    Err(GaiaError::not_implemented("WASI array length"))
 }

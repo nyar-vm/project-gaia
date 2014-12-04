@@ -3,13 +3,13 @@
 //! 本模块定义了导入和导出适配器的统一接口，以及相关的配置和管理结构。
 //! 这些接口旨在抽象不同平台之间的差异，提供一致的API。
 
-use gaia_types::{
-    helpers::CompilationTarget,
-    instruction::{GaiaInstruction, GaiaProgram},
-    GaiaError, Result,
-};
+use crate::instruction::GaiaInstruction;
+use gaia_types::{helpers::CompilationTarget, GaiaError, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use gaia_types::helpers::{AbiCompatible, ApiCompatible, Architecture};
+use crate::config::GaiaSettings;
+use crate::program::GaiaProgram;
 
 /// 适配器配置信息
 ///
@@ -42,6 +42,141 @@ pub struct AdapterMetadata {
     /// 支持的指令集
     pub supported_instructions: Vec<String>,
 }
+
+/// 函数映射器
+#[derive(Debug)]
+pub struct FunctionMapper {
+    /// 函数映射表 (平台 -> 源函数 -> 目标函数)
+    mappings: HashMap<CompilationTarget, HashMap<String, String>>,
+}
+
+impl FunctionMapper {
+    /// Create a new function mapper with default mappings
+    pub fn new() -> Self {
+        // 使用默认 GaiaSettings 统一初始化，避免硬编码重复
+        // 默认映射包含 __builtin_print / malloc / free 等通用函数
+        Self::from_settings(&GaiaSettings::default())
+    }
+
+    /// 从配置创建函数映射器
+    pub fn from_config(config: &GaiaSettings) -> Result<Self> {
+        Ok(Self::from_settings(config))
+    }
+
+    /// 基于 GaiaSettings 生成统一的函数映射（覆盖默认值）
+    fn from_settings(settings: &GaiaSettings) -> Self {
+        let mut mapper = Self { mappings: HashMap::new() };
+
+        // 预定义的平台目标（统一键：IL/JVM/PE/WASI）
+        let il_target = CompilationTarget {
+            build: Architecture::CLR,
+            host: AbiCompatible::MicrosoftIntermediateLanguage,
+            target: ApiCompatible::ClrRuntime(4),
+        };
+        let jvm_target = CompilationTarget {
+            build: Architecture::JVM,
+            host: AbiCompatible::JavaAssembly,
+            target: ApiCompatible::JvmRuntime(8),
+        };
+        let pe_target = CompilationTarget {
+            build: Architecture::X86_64,
+            host: AbiCompatible::PE,
+            target: ApiCompatible::MicrosoftVisualC,
+        };
+        let wasi_target = CompilationTarget {
+            build: Architecture::WASM32,
+            host: AbiCompatible::WebAssemblyTextFormat,
+            target: ApiCompatible::WASI,
+        };
+
+        let mut platform_index: HashMap<String, CompilationTarget> = HashMap::new();
+        platform_index.insert("IL".to_string(), il_target.clone());
+        platform_index.insert("JVM".to_string(), jvm_target.clone());
+        platform_index.insert("PE".to_string(), pe_target.clone());
+        platform_index.insert("WASI".to_string(), wasi_target.clone());
+
+        // 1) 基线：提供合理的默认别名，避免因设置缺失导致不可用
+        // IL 默认：带签名的 WriteLine，适配当前 MsilWriter 的 call 语法
+        mapper.add_mapping(&il_target, "console.log", "void [mscorlib]System.Console::WriteLine(string)");
+        mapper.add_mapping(&il_target, "console.write", "void [mscorlib]System.Console::WriteLine(string)");
+        mapper.add_mapping(&il_target, "conosole.read", "string [mscorlib]System.Console::ReadLine()");
+        mapper.add_mapping(&il_target, "malloc", "System.Runtime.InteropServices.Marshal.AllocHGlobal");
+        mapper.add_mapping(&il_target, "free", "System.Runtime.InteropServices.Marshal.FreeHGlobal");
+        mapper.add_mapping(&il_target, "print", "void [mscorlib]System.Console::WriteLine(string)");
+        mapper.add_mapping(&il_target, "println", "void [mscorlib]System.Console::WriteLine(string)");
+
+        // JVM 默认
+        mapper.add_mapping(&jvm_target, "console.log", "java.lang.System.out.println");
+        mapper.add_mapping(&jvm_target, "console.write", "java.lang.System.out.println");
+        mapper.add_mapping(&jvm_target, "console.read", "java.util.Scanner.nextLine");
+        mapper.add_mapping(&jvm_target, "malloc", "java.nio.ByteBuffer.allocateDirect");
+        mapper.add_mapping(&jvm_target, "free", "System.gc");
+        mapper.add_mapping(&jvm_target, "print", "java.lang.System.out.println");
+        mapper.add_mapping(&jvm_target, "println", "java.lang.System.out.println");
+
+        // PE 默认
+        mapper.add_mapping(&pe_target, "console.log", "puts");
+        mapper.add_mapping(&pe_target, "console.write", "printf");
+        mapper.add_mapping(&pe_target, "console.read", "gets_s");
+        mapper.add_mapping(&pe_target, "malloc", "HeapAlloc");
+        mapper.add_mapping(&pe_target, "free", "HeapFree");
+        mapper.add_mapping(&pe_target, "print", "puts");
+        mapper.add_mapping(&pe_target, "println", "puts");
+
+        // WASI 默认
+        mapper.add_mapping(&wasi_target, "console.log", "wasi_println");
+        mapper.add_mapping(&wasi_target, "console.write", "wasi_print");
+        mapper.add_mapping(&wasi_target, "console.read", "wasi_read");
+        mapper.add_mapping(&wasi_target, "malloc", "malloc");
+        mapper.add_mapping(&wasi_target, "free", "free");
+        mapper.add_mapping(&wasi_target, "print", "wasi_println");
+        mapper.add_mapping(&wasi_target, "println", "wasi_println");
+
+        // 2) 覆盖：使用 settings.function_mappings 覆盖/扩展默认映射
+        for fm in &settings.function_mappings {
+            for (platform_name, target_func) in &fm.platform_mappings {
+                let key = platform_name.to_ascii_uppercase();
+                if let Some(platform_target) = platform_index.get(&key) {
+                    // 直接映射通用名
+                    mapper.add_mapping(platform_target, &fm.common_name, target_func);
+
+                    // 为常见别名提供联动（减少前端重复工作）
+                    if fm.common_name == "__builtin_print" {
+                        let is_il = matches!(platform_target.host, AbiCompatible::MicrosoftIntermediateLanguage);
+                        // IL 平台保留带签名的默认 print 映射，避免生成不完整的 MSIL 调用操作数
+                        if !is_il {
+                            mapper.add_mapping(platform_target, "print", target_func);
+                        }
+                        mapper.add_mapping(platform_target, "console.log", target_func);
+                        mapper.add_mapping(platform_target, "console.write", target_func);
+                    }
+                }
+            }
+        }
+
+        mapper
+    }
+
+    /// 添加函数映射
+    pub fn add_mapping(&mut self, target: &CompilationTarget, source_func: &str, target_func: &str) {
+        self.mappings
+            .entry(target.clone())
+            .or_insert_with(HashMap::new)
+            .insert(source_func.to_string(), target_func.to_string());
+    }
+
+    /// 映射函数名
+    pub fn map_function(&self, target: &CompilationTarget, function_name: &str) -> Option<&str> {
+        self.mappings.get(target).and_then(|platform_mappings| platform_mappings.get(function_name)).map(|s| s.as_str())
+    }
+}
+
+impl Default for FunctionMapper {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 
 /// 统一的导出适配器接口
 ///

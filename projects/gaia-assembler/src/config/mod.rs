@@ -72,7 +72,7 @@ pub struct GlobalConfig {
 
 impl Default for GlobalConfig {
     fn default() -> Self {
-        Self { default_output_dir: "./output".to_string(), debug_mode: false, parameters: HashMap::new() }
+        Self { default_output_dir: "./target".to_string(), debug_mode: false, parameters: HashMap::new() }
     }
 }
 

@@ -8,6 +8,7 @@ use gaia_types::{
     *,
 };
 use std::collections::HashMap;
+use crate::program::GaiaProgram;
 
 /// PE Backend implementation
 #[derive(Default)]
@@ -15,7 +16,7 @@ pub struct PeBackend {}
 
 impl Backend for PeBackend {
     fn name(&self) -> &'static str {
-        "PE"
+        "Windows PE Assembly"
     }
 
     fn primary_target(&self) -> CompilationTarget {
@@ -37,18 +38,20 @@ impl Backend for PeBackend {
 
     fn generate(&self, program: &GaiaProgram, _config: &GaiaConfig) -> Result<GeneratedFiles> {
         let mut files = HashMap::new();
-        files.insert("main.dll".to_string(), compile(program)?);
+        // 如果存在 main 函数，则输出可执行文件；否则输出 DLL
+        let has_main = program.functions.iter().any(|f| f.name == "main");
+        let filename = if has_main { "main.exe" } else { "main.dll" };
+        // 使用 CLR 后端按统一设置生成 IL，再打包为 PE
+        let il_code = ClrBackend::generate_with_settings(program, &_config.setting)?;
+        files.insert(filename.to_string(), generate_dotnet_pe_file(&il_code, &program.name)?);
         Ok(GeneratedFiles { files, diagnostics: vec![] })
     }
 }
 
 /// Compile Gaia program to .NET PE executable file
 pub fn compile(program: &GaiaProgram) -> Result<Vec<u8>> {
-    // Generate IL code using the IL backend
+    // 兼容旧接口：使用默认设置生成 IL 并打包
     let il_code = ClrBackend::generate(program)?;
-
-    // Convert IL code to .NET PE format
-    // For now, we'll create a simple .NET PE wrapper around the IL code
     generate_dotnet_pe_file(&il_code, &program.name)
 }
 

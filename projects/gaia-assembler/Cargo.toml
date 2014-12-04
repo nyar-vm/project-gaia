@@ -3,30 +3,39 @@ name = "gaia-assembler"
 version = "0.0.0"
 authors = ["Aster <192607617@qq.com>"]
 description = "Universal assembler that compiles to multiple platforms (IL, JVM, PE, WASI)"
-repository = "https://github.com/oovm/project-gaia"
+repository = "https://github.com/nyar-vm/project-gaia"
 documentation = "https://docs.rs/gaia-assembler"
 readme = "readme.md"
 license = "MPL-2.0"
-edition = "2021"
+edition = "2024"
 exclude = ["package.json", "tests/**"]
 
 [dependencies]
-gaia-types = { path = "../gaia-types" }
-clr-assembler = { path = "../clr-assembler" }
-jasm-assembler = { path = "../jvm-assembler" }
-pe-assembler = { path = "../pe-assembler" }
-wasi-assembler = { path = "../wasi-assembler" }
+# wasi-assembler = { path = "../wasi-assembler" }
+gaia-types = { workspace = true }
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.9"
 num = "0.4.3"
 byteorder = "1.5.0"
 ordered-float = "5.1.0"
 
+[dependencies.jasm-assembler]
+version = "0.0.0"
+path = "../jvm-assembler"
+
+[dependencies.pe-assembler]
+version = "0.0.3"
+path = "../pe-assembler"
+
+[dependencies.clr-assembler]
+version = "0.0.1"
+path = "../clr-assembler"
+
 [dev-dependencies]
 
 [features]
 default = []
-easy-test = ["clr-assembler/easy-test"]
+easy-test = []
 
 [package.metadata.docs.rs]
 all-features = true

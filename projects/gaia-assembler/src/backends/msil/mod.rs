@@ -1,11 +1,17 @@
 //! IL (Intermediate Language) backend compiler
 
-use super::{Backend, FunctionMapper, GeneratedFiles};
-use crate::config::GaiaConfig;
-use clr_msil::writer::MsilWriter;
+use crate::{
+    adapters::FunctionMapper,
+    config::{GaiaConfig, GaiaSettings},
+    instruction::GaiaInstruction,
+    program::{GaiaConstant, GaiaFunction, GaiaProgram},
+    types::GaiaType,
+    Backend, GeneratedFiles,
+};
+use clr_assembler::formats::msil::writer::MsilWriter;
 use gaia_types::{
     helpers::{AbiCompatible, ApiCompatible, Architecture, CompilationTarget},
-    *,
+    GaiaError, Result,
 };
 use std::collections::HashMap;
 
@@ -43,10 +49,10 @@ impl Backend for ClrBackend {
         let mut files = HashMap::new();
         match _config.target.host {
             AbiCompatible::Unknown => {
-                files.insert("main.dll".to_string(), compile(program)?);
+                files.insert("main.dll".to_string(), compile_with_settings(program, Some(&_config.setting))?);
             }
             AbiCompatible::MicrosoftIntermediateLanguage => {
-                files.insert("main.il".to_string(), compile(program)?);
+                files.insert("main.il".to_string(), compile_with_settings(program, Some(&_config.setting))?);
             }
             _ => Err(GaiaError::invalid_data("Unsupported host ABI for CLR backend"))?,
         }
@@ -58,7 +64,15 @@ impl Backend for ClrBackend {
 impl ClrBackend {
     /// Generate IL bytecode from Gaia program
     pub fn generate(program: &GaiaProgram) -> Result<Vec<u8>> {
-        let mut context = create_il_context()?;
+        // 使用默认设置构建上下文，保证直接调用兼容
+        let mut context = create_il_context_with_settings(None)?;
+        compile_program(&mut context, program)?;
+        generate_il_bytecode(context)
+    }
+
+    /// Generate IL bytecode with given GaiaSettings
+    pub fn generate_with_settings(program: &GaiaProgram, settings: &GaiaSettings) -> Result<Vec<u8>> {
+        let mut context = create_il_context_with_settings(Some(settings))?;
         compile_program(&mut context, program)?;
         generate_il_bytecode(context)
     }
@@ -69,9 +83,21 @@ pub fn compile(program: &GaiaProgram) -> Result<Vec<u8>> {
     ClrBackend::generate(program)
 }
 
+/// Compile with optional GaiaSettings for function mapping
+fn compile_with_settings(program: &GaiaProgram, settings: Option<&GaiaSettings>) -> Result<Vec<u8>> {
+    let mut context = create_il_context_with_settings(settings)?;
+    compile_program(&mut context, program)?;
+    generate_il_bytecode(context)
+}
+
 /// Create IL assembler context
-fn create_il_context() -> Result<IlContext> {
-    Ok(IlContext::new())
+fn create_il_context_with_settings(settings: Option<&GaiaSettings>) -> Result<IlContext> {
+    let mut ctx = IlContext::new();
+    if let Some(s) = settings {
+        // 使用配置覆盖默认函数映射
+        ctx.function_mapper = FunctionMapper::from_config(s).unwrap_or_default();
+    }
+    Ok(ctx)
 }
 
 /// Compile entire program
@@ -122,26 +148,27 @@ fn compile_function(context: &mut IlContext, function: &GaiaFunction) -> Result<
 fn compile_instruction(context: &mut IlContext, instruction: &GaiaInstruction) -> Result<()> {
     match instruction {
         GaiaInstruction::LoadConstant(constant) => compile_load_constant(context, constant),
-        GaiaInstruction::LoadLocal(index) => compile_load_local(context, *index),
-        GaiaInstruction::StoreLocal(index) => compile_store_local(context, *index),
-        GaiaInstruction::LoadArgument(index) => compile_load_argument(context, *index),
+        GaiaInstruction::LoadLocal(index) => compile_load_local(context, (*index).try_into().unwrap()),
+        GaiaInstruction::StoreLocal(index) => compile_store_local(context, (*index).try_into().unwrap()),
+        GaiaInstruction::LoadArgument(index) => compile_load_argument(context, (*index).try_into().unwrap()),
+        // 当前枚举无独立 LoadArgument；参数按局部变量处理（如有需要在前置阶段映射）
         GaiaInstruction::Add => compile_add(context),
         GaiaInstruction::Subtract => compile_subtract(context),
         GaiaInstruction::Multiply => compile_multiply(context),
         GaiaInstruction::Divide => compile_divide(context),
-        GaiaInstruction::CompareEqual => compile_equal(context),
-        GaiaInstruction::CompareNotEqual => compile_not_equal(context),
-        GaiaInstruction::CompareLessThan => compile_less_than(context),
-        GaiaInstruction::CompareGreaterThan => compile_greater_than(context),
-        GaiaInstruction::Branch(label) => compile_branch(context, label),
-        GaiaInstruction::BranchIfTrue(label) => compile_branch_if_true(context, label),
-        GaiaInstruction::BranchIfFalse(label) => compile_branch_if_false(context, label),
-        GaiaInstruction::Call(function_name) => compile_call(context, function_name),
+        GaiaInstruction::Equal => compile_equal(context),
+        GaiaInstruction::NotEqual => compile_not_equal(context),
+        GaiaInstruction::LessThan => compile_less_than(context),
+        GaiaInstruction::GreaterThan => compile_greater_than(context),
+        GaiaInstruction::Jump(label) => compile_branch(context, label),
+        GaiaInstruction::JumpIfTrue(label) => compile_branch_if_true(context, label),
+        GaiaInstruction::JumpIfFalse(label) => compile_branch_if_false(context, label),
+        GaiaInstruction::Call(function_name, _arg_count) => compile_call(context, function_name),
         GaiaInstruction::Return => compile_return(context),
         GaiaInstruction::Label(name) => compile_label(context, name),
         GaiaInstruction::Duplicate => compile_duplicate(context),
         GaiaInstruction::Pop => compile_pop(context),
-        GaiaInstruction::LoadAddress(addr) => compile_load_address(context, *addr),
+        // 已移除的指令：LoadAddress（如需地址应由前端生成 LoadIndirect 所需的指针）
         GaiaInstruction::LoadIndirect(gaia_type) => compile_load_indirect(context, gaia_type),
         GaiaInstruction::StoreIndirect(gaia_type) => compile_store_indirect(context, gaia_type),
         GaiaInstruction::Convert(from_type, to_type) => compile_convert(context, from_type, to_type),
@@ -224,14 +251,8 @@ fn compile_branch_if_false(context: &mut IlContext, label: &str) -> Result<()> {
 }
 
 fn compile_call(context: &mut IlContext, function_name: &str) -> Result<()> {
-    let mapper = FunctionMapper::new();
-    let il_target = CompilationTarget {
-        build: Architecture::CLR,
-        host: AbiCompatible::MicrosoftIntermediateLanguage,
-        target: ApiCompatible::ClrRuntime(4),
-    };
-    let mapped_name = mapper.map_function(&il_target, function_name);
-    context.emit_call(&mapped_name.unwrap_or(function_name))
+    let mapped_name = context.map_function(function_name);
+    context.emit_call(&mapped_name)
 }
 
 fn compile_return(context: &mut IlContext) -> Result<()> {
@@ -307,6 +328,27 @@ fn end_function(context: &mut IlContext) -> Result<()> {
     context.end_method()
 }
 
+/// 将 GaiaType 映射为 MSIL 类型名称
+fn gaia_type_to_msil_name(gaia_type: &GaiaType) -> &'static str {
+    match gaia_type {
+        GaiaType::Integer8 => "int8",
+        GaiaType::Integer16 => "int16",
+        GaiaType::Integer32 => "int32",
+        GaiaType::Integer64 => "int64",
+        GaiaType::Float32 => "float32",
+        GaiaType::Float64 => "float64",
+        GaiaType::Boolean => "bool",
+        GaiaType::String => "string",
+        GaiaType::Object => "object",
+        GaiaType::Array(_) => "object",
+        GaiaType::Pointer(_) => "native int",
+        GaiaType::Void => "void",
+        GaiaType::Integer => "int32",
+        GaiaType::Float => "float32",
+        GaiaType::Double => "float64",
+    }
+}
+
 /// Generate IL bytecode
 fn generate_il_bytecode(context: IlContext) -> Result<Vec<u8>> {
     context.generate_bytecode()
@@ -315,11 +357,12 @@ fn generate_il_bytecode(context: IlContext) -> Result<Vec<u8>> {
 /// IL Context for code generation
 struct IlContext {
     writer: MsilWriter<String>,
+    function_mapper: FunctionMapper,
 }
 
 impl IlContext {
     fn new() -> Self {
-        Self { writer: MsilWriter::new(String::new()) }
+        Self { writer: MsilWriter::new(String::new()), function_mapper: FunctionMapper::new() }
     }
 
     fn emit_assembly_declaration(&mut self, name: &str) -> Result<()> {
@@ -327,7 +370,9 @@ impl IlContext {
     }
 
     fn start_method(&mut self, name: &str, parameters: &[GaiaType], return_type: &Option<GaiaType>) -> Result<()> {
-        self.writer.start_method(name, parameters, return_type)
+        let param_names: Vec<&str> = parameters.iter().map(|t| gaia_type_to_msil_name(t)).collect();
+        let ret_name: Option<&str> = return_type.as_ref().map(|t| gaia_type_to_msil_name(t));
+        self.writer.start_method(name, &param_names, ret_name)
     }
 
     fn end_method(&mut self) -> Result<()> {
@@ -336,6 +381,19 @@ impl IlContext {
 
     fn generate_bytecode(self) -> Result<Vec<u8>> {
         Ok(self.writer.finish().into_bytes())
+    }
+
+    /// 根据当前上下文映射函数名（IL 目标）
+    fn map_function(&self, raw_name: &str) -> String {
+        let il_target = CompilationTarget {
+            build: Architecture::CLR,
+            host: AbiCompatible::MicrosoftIntermediateLanguage,
+            target: ApiCompatible::ClrRuntime(4),
+        };
+        self.function_mapper
+            .map_function(&il_target, raw_name)
+            .unwrap_or(raw_name)
+            .to_string()
     }
 
     fn emit_ldc_i4(&mut self, value: i32) -> Result<()> {

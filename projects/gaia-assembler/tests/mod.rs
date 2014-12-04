@@ -4,7 +4,7 @@ mod adapter_tests;
 mod backend_tests;
 mod compiler_tests;
 mod config_tests;
-mod integration_tests;
+mod runnable;
 
 #[test]
 fn test_compiler_creation() {

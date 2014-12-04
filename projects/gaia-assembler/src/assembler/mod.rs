@@ -2,7 +2,7 @@
 //!
 //! 提供统一的编译接口，支持编译到多个目标平台
 
-use crate::backends::*;
+use crate::{backends::*, program::GaiaProgram};
 use gaia_types::{helpers::CompilationTarget, GaiaErrorKind, *};
 
 /// Gaia 编译器
@@ -21,26 +21,39 @@ impl GaiaAssembler {
 
     /// 编译 Gaia 程序到指定目标
     pub fn compile(&self, program: &GaiaProgram, target: &CompilationTarget) -> Result<GeneratedFiles> {
-        // 计算每个后端的匹配度并找到最佳匹配
+        // 优先按 host 精确选择后端，避免匹配度导致的误选
         let mut best_backend: Option<&Box<dyn Backend>> = None;
         let mut best_score = 0.0;
 
-        for backend in &self.backends {
-            let score = backend.match_score(target);
-            if score > best_score {
-                best_score = score;
-                best_backend = Some(backend);
+        // 先尝试以 backend 的 primary_target 与传入 target 的 host 精确匹配
+        if let Some(candidate) = self.backends.iter().find(|b| {
+            let pt = b.primary_target();
+            pt.host == target.host
+        }) {
+            best_backend = Some(candidate);
+            best_score = 100.0; // 精确匹配优先
+        }
+
+        // 若未找到精确匹配，则退回评分机制
+        if best_backend.is_none() {
+            for backend in &self.backends {
+                let score = backend.match_score(target);
+                if score > best_score {
+                    best_score = score;
+                    best_backend = Some(backend);
+                }
             }
         }
 
-        if best_score == 0.0 || best_backend.is_none() {
+        if best_backend.is_none() || best_score <= 0.0 {
             return Err(GaiaErrorKind::UnsupportedTarget { target: target.clone() }.into());
         }
 
-        // 创建默认配置
-        let config = crate::config::GaiaConfig::default();
+        // 创建配置并传递目标，以便后端依据 host/target 输出正确的文件类型
+        let mut config = crate::config::GaiaConfig::default();
+        config.target = target.clone();
 
-        // 使用最佳匹配的后端进行编译
+        // 使用选定的后端进行编译
         best_backend.unwrap().generate(program, &config)
     }
 
