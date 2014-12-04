@@ -65,22 +65,122 @@ impl JvmToJasmConverter {
 
     fn convert_instruction(&mut self, instruction: JvmInstruction) -> Result<JasmInstruction> {
         match instruction {
-            JvmInstruction::Simple { opcode } => Ok(JasmInstruction::Simple(opcode.to_string())),
-            JvmInstruction::WithImmediate { opcode, value } => {
-                Ok(JasmInstruction::WithArgument { instruction: opcode.to_string(), argument: value.to_string() })
-            }
-            JvmInstruction::WithConstantPool { opcode, symbol } => {
-                let resolved_argument = self.resolve_constant_pool_symbol(&symbol)?;
-                Ok(JasmInstruction::WithArgument { instruction: opcode.to_string(), argument: resolved_argument })
-            }
-            JvmInstruction::MethodCall { opcode, class_name, method_name, descriptor } => {
-                let method_ref = format!("{}.\"{}\":\"{}\"", class_name, method_name, descriptor);
-                Ok(JasmInstruction::MethodCall { instruction: opcode.to_string(), method_ref })
-            }
-            JvmInstruction::FieldAccess { opcode, class_name, field_name, descriptor } => {
+            // 常量加载指令
+            JvmInstruction::Nop => Ok(JasmInstruction::Simple("nop".to_string())),
+            JvmInstruction::AconstNull => Ok(JasmInstruction::Simple("aconst_null".to_string())),
+            JvmInstruction::IconstM1 => Ok(JasmInstruction::Simple("iconst_m1".to_string())),
+            JvmInstruction::Iconst0 => Ok(JasmInstruction::Simple("iconst_0".to_string())),
+            JvmInstruction::Iconst1 => Ok(JasmInstruction::Simple("iconst_1".to_string())),
+            JvmInstruction::Iconst2 => Ok(JasmInstruction::Simple("iconst_2".to_string())),
+            JvmInstruction::Iconst3 => Ok(JasmInstruction::Simple("iconst_3".to_string())),
+            JvmInstruction::Iconst4 => Ok(JasmInstruction::Simple("iconst_4".to_string())),
+            JvmInstruction::Iconst5 => Ok(JasmInstruction::Simple("iconst_5".to_string())),
+            JvmInstruction::Lconst0 => Ok(JasmInstruction::Simple("lconst_0".to_string())),
+            JvmInstruction::Lconst1 => Ok(JasmInstruction::Simple("lconst_1".to_string())),
+            JvmInstruction::Fconst0 => Ok(JasmInstruction::Simple("fconst_0".to_string())),
+            JvmInstruction::Fconst1 => Ok(JasmInstruction::Simple("fconst_1".to_string())),
+            JvmInstruction::Fconst2 => Ok(JasmInstruction::Simple("fconst_2".to_string())),
+            JvmInstruction::Dconst0 => Ok(JasmInstruction::Simple("dconst_0".to_string())),
+            JvmInstruction::Dconst1 => Ok(JasmInstruction::Simple("dconst_1".to_string())),
+            JvmInstruction::Bipush { value } => Ok(JasmInstruction::WithArgument { instruction: "bipush".to_string(), argument: value.to_string() }),
+            JvmInstruction::Sipush { value } => Ok(JasmInstruction::WithArgument { instruction: "sipush".to_string(), argument: value.to_string() }),
+            JvmInstruction::Ldc { symbol } => Ok(JasmInstruction::WithArgument { instruction: "ldc".to_string(), argument: format!("String \"{}\"", symbol) }),
+            
+            // 局部变量操作
+            JvmInstruction::Iload0 => Ok(JasmInstruction::Simple("iload_0".to_string())),
+            JvmInstruction::Iload1 => Ok(JasmInstruction::Simple("iload_1".to_string())),
+            JvmInstruction::Iload2 => Ok(JasmInstruction::Simple("iload_2".to_string())),
+            JvmInstruction::Iload3 => Ok(JasmInstruction::Simple("iload_3".to_string())),
+            JvmInstruction::Iload { index } => Ok(JasmInstruction::WithArgument { instruction: "iload".to_string(), argument: index.to_string() }),
+            JvmInstruction::Aload0 => Ok(JasmInstruction::Simple("aload_0".to_string())),
+            JvmInstruction::Aload1 => Ok(JasmInstruction::Simple("aload_1".to_string())),
+            JvmInstruction::Aload2 => Ok(JasmInstruction::Simple("aload_2".to_string())),
+            JvmInstruction::Aload3 => Ok(JasmInstruction::Simple("aload_3".to_string())),
+            JvmInstruction::Aload { index } => Ok(JasmInstruction::WithArgument { instruction: "aload".to_string(), argument: index.to_string() }),
+            JvmInstruction::Istore0 => Ok(JasmInstruction::Simple("istore_0".to_string())),
+            JvmInstruction::Istore1 => Ok(JasmInstruction::Simple("istore_1".to_string())),
+            JvmInstruction::Istore2 => Ok(JasmInstruction::Simple("istore_2".to_string())),
+            JvmInstruction::Istore3 => Ok(JasmInstruction::Simple("istore_3".to_string())),
+            JvmInstruction::Istore { index } => Ok(JasmInstruction::WithArgument { instruction: "istore".to_string(), argument: index.to_string() }),
+            JvmInstruction::Astore0 => Ok(JasmInstruction::Simple("astore_0".to_string())),
+            JvmInstruction::Astore1 => Ok(JasmInstruction::Simple("astore_1".to_string())),
+            JvmInstruction::Astore2 => Ok(JasmInstruction::Simple("astore_2".to_string())),
+            JvmInstruction::Astore3 => Ok(JasmInstruction::Simple("astore_3".to_string())),
+            JvmInstruction::Astore { index } => Ok(JasmInstruction::WithArgument { instruction: "astore".to_string(), argument: index.to_string() }),
+            
+            // 算术运算
+            JvmInstruction::Iadd => Ok(JasmInstruction::Simple("iadd".to_string())),
+            JvmInstruction::Isub => Ok(JasmInstruction::Simple("isub".to_string())),
+            JvmInstruction::Imul => Ok(JasmInstruction::Simple("imul".to_string())),
+            JvmInstruction::Idiv => Ok(JasmInstruction::Simple("idiv".to_string())),
+            JvmInstruction::Irem => Ok(JasmInstruction::Simple("irem".to_string())),
+            JvmInstruction::Ineg => Ok(JasmInstruction::Simple("ineg".to_string())),
+            
+            // 栈操作
+            JvmInstruction::Pop => Ok(JasmInstruction::Simple("pop".to_string())),
+            JvmInstruction::Pop2 => Ok(JasmInstruction::Simple("pop2".to_string())),
+            JvmInstruction::Dup => Ok(JasmInstruction::Simple("dup".to_string())),
+            JvmInstruction::Swap => Ok(JasmInstruction::Simple("swap".to_string())),
+            
+            // 返回指令
+            JvmInstruction::Ireturn => Ok(JasmInstruction::Simple("ireturn".to_string())),
+            JvmInstruction::Lreturn => Ok(JasmInstruction::Simple("lreturn".to_string())),
+            JvmInstruction::Freturn => Ok(JasmInstruction::Simple("freturn".to_string())),
+            JvmInstruction::Dreturn => Ok(JasmInstruction::Simple("dreturn".to_string())),
+            JvmInstruction::Areturn => Ok(JasmInstruction::Simple("areturn".to_string())),
+            JvmInstruction::Return => Ok(JasmInstruction::Simple("return".to_string())),
+            
+            // 对象操作
+            JvmInstruction::New { class_name } => Ok(JasmInstruction::WithArgument { instruction: "new".to_string(), argument: class_name }),
+            JvmInstruction::Newarray { atype } => Ok(JasmInstruction::WithArgument { instruction: "newarray".to_string(), argument: atype.to_string() }),
+            JvmInstruction::Anewarray { class_name } => Ok(JasmInstruction::WithArgument { instruction: "anewarray".to_string(), argument: class_name }),
+            JvmInstruction::Arraylength => Ok(JasmInstruction::Simple("arraylength".to_string())),
+            JvmInstruction::Athrow => Ok(JasmInstruction::Simple("athrow".to_string())),
+            JvmInstruction::Checkcast { class_name } => Ok(JasmInstruction::WithArgument { instruction: "checkcast".to_string(), argument: class_name }),
+            JvmInstruction::Instanceof { class_name } => Ok(JasmInstruction::WithArgument { instruction: "instanceof".to_string(), argument: class_name }),
+            JvmInstruction::Monitorenter => Ok(JasmInstruction::Simple("monitorenter".to_string())),
+            JvmInstruction::Monitorexit => Ok(JasmInstruction::Simple("monitorexit".to_string())),
+            
+            // 字段访问
+            JvmInstruction::Getstatic { class_name, field_name, descriptor } => {
                 let field_ref = format!("{}.{}:\"{}\"", class_name, field_name, descriptor);
-                Ok(JasmInstruction::FieldAccess { instruction: opcode.to_string(), field_ref })
+                Ok(JasmInstruction::FieldAccess { instruction: "getstatic".to_string(), field_ref })
             }
+            JvmInstruction::Putstatic { class_name, field_name, descriptor } => {
+                let field_ref = format!("{}.{}:\"{}\"", class_name, field_name, descriptor);
+                Ok(JasmInstruction::FieldAccess { instruction: "putstatic".to_string(), field_ref })
+            }
+            JvmInstruction::Getfield { class_name, field_name, descriptor } => {
+                let field_ref = format!("{}.{}:\"{}\"", class_name, field_name, descriptor);
+                Ok(JasmInstruction::FieldAccess { instruction: "getfield".to_string(), field_ref })
+            }
+            JvmInstruction::Putfield { class_name, field_name, descriptor } => {
+                let field_ref = format!("{}.{}:\"{}\"", class_name, field_name, descriptor);
+                Ok(JasmInstruction::FieldAccess { instruction: "putfield".to_string(), field_ref })
+            }
+            
+            // 方法调用
+            JvmInstruction::Invokevirtual { class_name, method_name, descriptor } => {
+                let method_ref = format!("{}.\"{}\":\"{}\"", class_name, method_name, descriptor);
+                Ok(JasmInstruction::MethodCall { instruction: "invokevirtual".to_string(), method_ref })
+            }
+            JvmInstruction::Invokespecial { class_name, method_name, descriptor } => {
+                let method_ref = format!("{}.\"{}\":\"{}\"", class_name, method_name, descriptor);
+                Ok(JasmInstruction::MethodCall { instruction: "invokespecial".to_string(), method_ref })
+            }
+            JvmInstruction::Invokestatic { class_name, method_name, descriptor } => {
+                let method_ref = format!("{}.\"{}\":\"{}\"", class_name, method_name, descriptor);
+                Ok(JasmInstruction::MethodCall { instruction: "invokestatic".to_string(), method_ref })
+            }
+            JvmInstruction::Invokeinterface { class_name, method_name, descriptor } => {
+                let method_ref = format!("{}.\"{}\":\"{}\"", class_name, method_name, descriptor);
+                Ok(JasmInstruction::MethodCall { instruction: "invokeinterface".to_string(), method_ref })
+            }
+            JvmInstruction::Invokedynamic { class_name, method_name, descriptor } => {
+                let method_ref = format!("{}.\"{}\":\"{}\"", class_name, method_name, descriptor);
+                Ok(JasmInstruction::MethodCall { instruction: "invokedynamic".to_string(), method_ref })
+            }
+            
             _ => Err(GaiaError::custom_error(format!("Unsupported JVM instruction for JASM conversion: {:?}", instruction))),
         }
     }

@@ -1,17 +1,12 @@
-use crate::{
-    formats::class::{view::ClassInfo, ClassReadConfig},
-    program::JvmProgram,
-};
+#![doc = include_str!("readme.md")]
+use crate::{formats::class::{view::ClassInfo, ClassReadConfig}, program::JvmProgram};
 use byteorder::BigEndian;
 use gaia_types::{BinaryReader, GaiaDiagnostics, GaiaError};
-use std::{
-    cell::{OnceCell, RefCell},
-    io::{Read, Seek},
-};
+use std::{cell::{OnceCell, RefCell}, io::{Read, Seek}};
 
-/// jvm class lazy reader
+/// JVM Class 文件读取器
 ///
-/// 可以只读取必要的部分
+/// 提供了按需读取 Class 文件内容的能力，支持延迟加载。
 pub struct ClassReader<'config, R: Read + Seek> {
     _config: &'config ClassReadConfig,
     reader: RefCell<BinaryReader<R, BigEndian>>,
@@ -22,25 +17,31 @@ pub struct ClassReader<'config, R: Read + Seek> {
 }
 
 impl ClassReadConfig {
+    /// 创建一个 ClassReader 实例
     pub fn as_reader<R: Read + Seek>(&self, reader: R) -> ClassReader<'_, R> {
         ClassReader::new(reader, self)
     }
 }
 
 impl<'config, R: Read + Seek> ClassReader<'config, R> {
+    /// 创建一个新的 ClassReader 实例
     pub fn new(reader: R, config: &'config ClassReadConfig) -> Self {
         Self { _config: config, reader: RefCell::new(BinaryReader::new(reader)), program: Default::default(), info: Default::default() }
     }
 
+    /// 获取解析后的 JvmProgram
     pub fn get_program(&self) -> Result<&JvmProgram, GaiaError> {
         self.program.get_or_try_init(|| self.read_program())
     }
+
+    /// 获取解析后的 ClassInfo
     pub fn get_info(&self) -> Result<&ClassInfo, GaiaError> {
         self.info.get_or_try_init(|| self.read_view())
     }
 }
 
 impl<'config, R: Read + Seek> ClassReader<'config, R> {
+    /// 读取整个 Class 文件并返回 JvmProgram
     pub fn read(mut self) -> GaiaDiagnostics<JvmProgram> {
         match self.get_program() {
             Ok(_) => {

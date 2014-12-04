@@ -1,3 +1,4 @@
+#![doc = include_str!("readme.md")]
 use gaia_types::{writer::TextWriter, Result};
 use std::fmt::Write;
 

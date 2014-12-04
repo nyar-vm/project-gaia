@@ -25,36 +25,40 @@
 ### 🔧 使用示例
 
 #### 基本汇编
-```rust
+```ignore
 use jvm_assembler::formats::jasm::converter::convert_jasm_to_jvm;
 use jvm_assembler::formats::class::writer::ClassWriter;
+use gaia_types::{Result, GaiaError};
 
-let jasm_code = r#"
-    .class public HelloWorld
-    .super java/lang/Object
-    
-    .method public static main([Ljava/lang/String;)V
-        .limit stack 2
-        getstatic java/lang/System/out Ljava/io/PrintStream;
-        ldc "Hello, World!"
-        invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V
-        return
-    .end method
-"#;
+fn main() -> Result<(), GaiaError> {
+    let jasm_code = r#"
+        .class public HelloWorld
+        .super java/lang/Object
+        
+        .method public static main([Ljava/lang/String;)V
+            .limit stack 2
+            getstatic java/lang/System/out Ljava/io/PrintStream;
+            ldc "Hello, World!"
+            invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V
+            return
+        .end method
+    "#;
 
-let program = convert_jasm_to_jvm(jasm_code)?;
-let buffer = Vec::new();
-let writer = ClassWriter::new(buffer);
-let class_bytes = writer.write(program)?;
-std::fs::write("HelloWorld.class", class_bytes)?;
-Ok(())
+    let program = convert_jasm_to_jvm(jasm_code)?;
+    let buffer = Vec::new();
+    let writer = ClassWriter::new(buffer);
+    let class_bytes = writer.write(program)?;
+    std::fs::write("HelloWorld.class", class_bytes)?;
+    Ok(())
+}
 
 #### 高级用法
-```rust
+```ignore
 use jvm_assembler::formats::class::writer::ClassWriter;
 use jvm_assembler::program::{JvmProgram, JvmMethod, JvmField};
+use gaia_types::{Result, GaiaError};
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), GaiaError> {
     // 创建新的 JVM 程序
     let mut program = JvmProgram::new("Example".to_string());
     
@@ -81,34 +85,40 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 #### 基本用法
 
 #### 汇编代码生成类文件
-```rust
+```ignore
 use jvm_assembler::formats::jasm::converter::convert_jasm_to_jvm;
+use jvm_assembler::formats::class::writer::ClassWriter;
+use gaia_types::{Result, GaiaError};
 
-let jasm_code = r#"
-    .class public HelloWorld
-    .super java/lang/Object
-    
-    .method public static main([Ljava/lang/String;)V
-        .limit stack 2
-        getstatic java/lang/System/out Ljava/io/PrintStream;
-        ldc "Hello, World!"
-        invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V
-        return
-    .end method
-"#;
+fn main() -> Result<(), GaiaError> {
+    let jasm_code = r#"
+        .class public HelloWorld
+        .super java/lang/Object
+        
+        .method public static main([Ljava/lang/String;)V
+            .limit stack 2
+            getstatic java/lang/System/out Ljava/io/PrintStream;
+            ldc "Hello, World!"
+            invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V
+            return
+        .end method
+    "#;
 
-let program = convert_jasm_to_jvm(jasm_code)?;
-// 这里需要将 program 转换为类文件字节码
-// let class_bytes = /* 转换逻辑 */;
-// std::fs::write("HelloWorld.class", class_bytes)?;
-```
+    let program = convert_jasm_to_jvm(jasm_code)?;
+    let buffer = Vec::new();
+    let writer = ClassWriter::new(buffer);
+    let class_bytes = writer.write(program)?;
+    std::fs::write("HelloWorld.class", class_bytes)?;
+    Ok(())
+}```
 
 #### 读取和修改类文件
-```rust
+```ignore
 use jvm_assembler::formats::class::writer::ClassWriter;
 use jvm_assembler::program::{JvmProgram, JvmMethod, JvmField};
+use gaia_types::{Result, GaiaError};
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), GaiaError> {
     // 创建新的 JVM 程序
     let mut program = JvmProgram::new("Example".to_string());
     
@@ -137,14 +147,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ```rust
 use jvm_assembler::formats::jasm::converter::convert_jasm_to_jvm;
+use gaia_types::GaiaError;
 
-let jasm_code = "invalid jasm code";
-match convert_jasm_to_jvm(jasm_code) {
-    Ok(program) => {
-        println!("转换成功");
+fn main() -> Result<(), GaiaError> {
+    let jasm_code = "invalid jasm code";
+    match convert_jasm_to_jvm(jasm_code) {
+        Ok(program) => {
+            println!("转换成功");
+        }
+        Err(e) => {
+            eprintln!("转换失败: {}", e);
+        }
     }
-    Err(e) => {
-        eprintln!("转换失败: {}", e);
-    }
+    Ok(())
 }
-```

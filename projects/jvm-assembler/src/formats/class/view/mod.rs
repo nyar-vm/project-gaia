@@ -1,3 +1,5 @@
+#![doc = include_str!("readme.md")]
+
 use crate::program::{JvmAccessFlags, JvmVersion};
 
 #[derive(Clone, Debug)]

@@ -1,3 +1,4 @@
+#![doc = include_str!("readme.md")]
 pub mod to_jasm;
 pub mod to_program;
 
@@ -48,7 +49,7 @@ pub enum JasmInstruction {
     Simple(String),
     /// 带参数的指令（如 ldc "Hello World"）
     WithArgument { instruction: String, argument: String },
-    /// 方法调用指令（如 invokespecial Method java/lang/Object."<init>":"()V"）
+    /// 方法调用指令（如 invokespecial Method java/lang/Object.`<init>`:"()V"）
     MethodCall { instruction: String, method_ref: String },
     /// 字段访问指令（如 getstatic Field java/lang/System.out:"Ljava/io/PrintStream;"）
     FieldAccess { instruction: String, field_ref: String },

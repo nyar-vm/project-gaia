@@ -16,26 +16,7 @@ Class 文件格式是 Java 虚拟机执行的标准二进制格式。该模块�
 
 Java 类文件遵循严格的二进制格式：
 
-```
-ClassFile {
-    u4             magic;                    // 魔数: 0xCAFEBABE
-    u2             minor_version;            // 次版本号
-    u2             major_version;            // 主版本号
-    u2             constant_pool_count;      // 常量池计数
-    cp_info        constant_pool[constant_pool_count-1];  // 常量池
-    u2             access_flags;               // 访问标志
-    u2             this_class;                // 当前类索引
-    u2             super_class;               // 超类索引
-    u2             interfaces_count;          // 接口计数
-    u2             interfaces[interfaces_count];          // 接口数组
-    u2             fields_count;              // 字段计数
-    field_info     fields[fields_count];      // 字段数组
-    u2             methods_count;             // 方法计数
-    method_info    methods[methods_count];     // 方法数组
-    u2             attributes_count;          // 属性计数
-    attribute_info attributes[attributes_count];          // 属性数组
-}
-```
+
 
 ## 支持的版本
 
@@ -111,68 +92,11 @@ ClassFile {
 
 ### 读取类文件
 
-```rust
-use jvm_assembler::formats::class::reader::ClassReader;
-use std::fs;
-use std::io::Cursor;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // 读取类文件
-    let bytes = fs::read("Example.class")?;
-    
-    // 解析类文件
-    let cursor = Cursor::new(bytes);
-    let mut reader = ClassReader::new(cursor);
-    let result = reader.read();
-    
-    match result {
-        Ok(program) => {
-            // 访问类信息
-            println!("Class name: {}", program.name);
-            println!("Super class: {:?}", program.super_class);
-            println!("Methods: {}", program.methods.len());
-        }
-        Err(error) => {
-            return Err(error.into());
-        }
-    }
-    
-    Ok(())
-}
-```
 
 ### 写入类文件
 
-```rust
-use jvm_assembler::formats::class::writer::ClassWriter;
-use jvm_assembler::program::{JvmProgram, JvmMethod, JvmField};
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // 创建 JVM 程序
-    let mut program = JvmProgram::new("Example".to_string());
-    
-    // 添加方法和字段
-    program.add_method(JvmMethod::new("main".to_string(), "([Ljava/lang/String;)V".to_string()));
-    program.add_field(JvmField::new("count".to_string(), "I".to_string()));
-    
-    // 写入类文件
-    let buffer = Vec::new();
-    let writer = ClassWriter::new(buffer);
-    let result = writer.write(program);
-    
-    match result {
-        Ok(buffer) => {
-            // 保存到文件
-            std::fs::write("Example.class", buffer)?;
-        }
-        Err(error) => {
-            return Err(error.into());
-        }
-    }
-    
-    Ok(())
-}
-```
 
 ## 错误处理
 

@@ -1,12 +1,7 @@
-//! JVM 程序高层次抽象
-//!
-//! 这个模块定义了 JVM 程序的高层次表示，用于在 JASM AST 和二进制 Class 文件之间提供中间抽象层。
-//! 支持 JVM 字节码指令、常量池、方法、字段等核心概念。
-
 #![doc = include_str!("readme.md")]
-
 use gaia_types::{GaiaError, Result};
 use serde::{Deserialize, Serialize};
+
 use std::collections::HashMap;
 
 /// JVM 程序的高层次表示
@@ -68,6 +63,161 @@ pub struct JvmAccessFlags {
     pub is_private: bool,
     /// 是否为 protected
     pub is_protected: bool,
+    /// 是否为 volatile
+    pub is_volatile: bool,
+    /// 是否为 transient
+    pub is_transient: bool,
+}
+
+impl JvmAccessFlags {
+    /// 访问标志常量
+    pub const PUBLIC: JvmAccessFlags = JvmAccessFlags {
+        is_public: true,
+        is_final: false,
+        is_super: false,
+        is_interface: false,
+        is_abstract: false,
+        is_synthetic: false,
+        is_annotation: false,
+        is_enum: false,
+        is_static: false,
+        is_private: false,
+        is_protected: false,
+        is_volatile: false,
+        is_transient: false,
+    };
+
+    pub const PRIVATE: JvmAccessFlags = JvmAccessFlags {
+        is_public: false,
+        is_final: false,
+        is_super: false,
+        is_interface: false,
+        is_abstract: false,
+        is_synthetic: false,
+        is_annotation: false,
+        is_enum: false,
+        is_static: false,
+        is_private: true,
+        is_protected: false,
+        is_volatile: false,
+        is_transient: false,
+    };
+
+    pub const PROTECTED: JvmAccessFlags = JvmAccessFlags {
+        is_public: false,
+        is_final: false,
+        is_super: false,
+        is_interface: false,
+        is_abstract: false,
+        is_synthetic: false,
+        is_annotation: false,
+        is_enum: false,
+        is_static: false,
+        is_private: false,
+        is_protected: true,
+        is_volatile: false,
+        is_transient: false,
+    };
+
+    pub const STATIC: JvmAccessFlags = JvmAccessFlags {
+        is_public: false,
+        is_final: false,
+        is_super: false,
+        is_interface: false,
+        is_abstract: false,
+        is_synthetic: false,
+        is_annotation: false,
+        is_enum: false,
+        is_static: true,
+        is_private: false,
+        is_protected: false,
+        is_volatile: false,
+        is_transient: false,
+    };
+
+    pub const FINAL: JvmAccessFlags = JvmAccessFlags {
+        is_public: false,
+        is_final: true,
+        is_super: false,
+        is_interface: false,
+        is_abstract: false,
+        is_synthetic: false,
+        is_annotation: false,
+        is_enum: false,
+        is_static: false,
+        is_private: false,
+        is_protected: false,
+        is_volatile: false,
+        is_transient: false,
+    };
+
+    pub const ABSTRACT: JvmAccessFlags = JvmAccessFlags {
+        is_public: false,
+        is_final: false,
+        is_super: false,
+        is_interface: false,
+        is_abstract: true,
+        is_synthetic: false,
+        is_annotation: false,
+        is_enum: false,
+        is_static: false,
+        is_private: false,
+        is_protected: false,
+        is_volatile: false,
+        is_transient: false,
+    };
+
+    pub const VOLATILE: JvmAccessFlags = JvmAccessFlags {
+        is_public: false,
+        is_final: false,
+        is_super: false,
+        is_interface: false,
+        is_abstract: false,
+        is_synthetic: false,
+        is_annotation: false,
+        is_enum: false,
+        is_static: false,
+        is_private: false,
+        is_protected: false,
+        is_volatile: true,
+        is_transient: false,
+    };
+
+    pub const TRANSIENT: JvmAccessFlags = JvmAccessFlags {
+        is_public: false,
+        is_final: false,
+        is_super: false,
+        is_interface: false,
+        is_abstract: false,
+        is_synthetic: false,
+        is_annotation: false,
+        is_enum: false,
+        is_static: false,
+        is_private: false,
+        is_protected: false,
+        is_volatile: false,
+        is_transient: true,
+    };
+}
+
+use std::ops::BitOrAssign;
+
+impl BitOrAssign for JvmAccessFlags {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.is_public |= rhs.is_public;
+        self.is_final |= rhs.is_final;
+        self.is_super |= rhs.is_super;
+        self.is_interface |= rhs.is_interface;
+        self.is_abstract |= rhs.is_abstract;
+        self.is_synthetic |= rhs.is_synthetic;
+        self.is_annotation |= rhs.is_annotation;
+        self.is_enum |= rhs.is_enum;
+        self.is_static |= rhs.is_static;
+        self.is_private |= rhs.is_private;
+        self.is_protected |= rhs.is_protected;
+        self.is_volatile |= rhs.is_volatile;
+        self.is_transient |= rhs.is_transient;
+    }
 }
 
 /// JVM 常量池（高层表示）
@@ -174,29 +324,6 @@ pub struct JvmField {
 /// JVM 指令（高层表示）
 #[derive(Debug, Clone, PartialEq)]
 pub enum JvmInstruction {
-    /// 空操作
-    Nop,
-    /// 无操作数指令
-    Simple { opcode: JvmOpcode },
-    /// 带立即数的指令
-    WithImmediate { opcode: JvmOpcode, value: i32 },
-    /// 带局部变量索引的指令
-    WithLocalVar { opcode: JvmOpcode, index: u16 },
-    /// 带常量池引用的指令
-    WithConstantPool { opcode: JvmOpcode, symbol: String },
-    /// 方法调用指令
-    MethodCall { opcode: JvmOpcode, class_name: String, method_name: String, descriptor: String },
-    /// 字段访问指令
-    FieldAccess { opcode: JvmOpcode, class_name: String, field_name: String, descriptor: String },
-    /// 跳转指令
-    Branch { opcode: JvmOpcode, target: String },
-    /// 类型转换指令
-    TypeCast { opcode: JvmOpcode, target_type: String },
-}
-
-/// JVM 操作码枚举
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum JvmOpcode {
     // 常量加载指令
     Nop,
     AconstNull,
@@ -214,18 +341,22 @@ pub enum JvmOpcode {
     Fconst2,
     Dconst0,
     Dconst1,
-    Bipush,
-    Sipush,
-    Ldc,
-    LdcW,
-    Ldc2W,
+    
+    // 带立即数的指令
+    Bipush { value: i8 },
+    Sipush { value: i16 },
+    
+    // 常量池引用指令
+    Ldc { symbol: String },
+    LdcW { symbol: String },
+    Ldc2W { symbol: String },
 
     // 局部变量加载指令
-    Iload,
-    Lload,
-    Fload,
-    Dload,
-    Aload,
+    Iload { index: u16 },
+    Lload { index: u16 },
+    Fload { index: u16 },
+    Dload { index: u16 },
+    Aload { index: u16 },
     Iload0,
     Iload1,
     Iload2,
@@ -248,11 +379,11 @@ pub enum JvmOpcode {
     Aload3,
 
     // 局部变量存储指令
-    Istore,
-    Lstore,
-    Fstore,
-    Dstore,
-    Astore,
+    Istore { index: u16 },
+    Lstore { index: u16 },
+    Fstore { index: u16 },
+    Dstore { index: u16 },
+    Astore { index: u16 },
     Istore0,
     Istore1,
     Istore2,
@@ -333,23 +464,23 @@ pub enum JvmOpcode {
     Dcmpg,
 
     // 条件跳转指令
-    Ifeq,
-    Ifne,
-    Iflt,
-    Ifge,
-    Ifgt,
-    Ifle,
-    IfIcmpeq,
-    IfIcmpne,
-    IfIcmplt,
-    IfIcmpge,
-    IfIcmpgt,
-    IfIcmple,
-    IfAcmpeq,
-    IfAcmpne,
-    Goto,
-    Jsr,
-    Ret,
+    Ifeq { target: String },
+    Ifne { target: String },
+    Iflt { target: String },
+    Ifge { target: String },
+    Ifgt { target: String },
+    Ifle { target: String },
+    IfIcmpeq { target: String },
+    IfIcmpne { target: String },
+    IfIcmplt { target: String },
+    IfIcmpge { target: String },
+    IfIcmpgt { target: String },
+    IfIcmple { target: String },
+    IfAcmpeq { target: String },
+    IfAcmpne { target: String },
+    Goto { target: String },
+    Jsr { target: String },
+    Ret { index: u16 },
 
     // 返回指令
     Ireturn,
@@ -360,37 +491,214 @@ pub enum JvmOpcode {
     Return,
 
     // 字段访问指令
-    Getstatic,
-    Putstatic,
-    Getfield,
-    Putfield,
+    Getstatic { class_name: String, field_name: String, descriptor: String },
+    Putstatic { class_name: String, field_name: String, descriptor: String },
+    Getfield { class_name: String, field_name: String, descriptor: String },
+    Putfield { class_name: String, field_name: String, descriptor: String },
 
     // 方法调用指令
-    Invokevirtual,
-    Invokespecial,
-    Invokestatic,
-    Invokeinterface,
-    Invokedynamic,
+    Invokevirtual { class_name: String, method_name: String, descriptor: String },
+    Invokespecial { class_name: String, method_name: String, descriptor: String },
+    Invokestatic { class_name: String, method_name: String, descriptor: String },
+    Invokeinterface { class_name: String, method_name: String, descriptor: String },
+    Invokedynamic { class_name: String, method_name: String, descriptor: String },
 
     // 对象操作指令
-    New,
-    Newarray,
-    Anewarray,
+    New { class_name: String },
+    Newarray { atype: u8 },
+    Anewarray { class_name: String },
     Arraylength,
     Athrow,
-    Checkcast,
-    Instanceof,
+    Checkcast { class_name: String },
+    Instanceof { class_name: String },
     Monitorenter,
     Monitorexit,
 
     // 其他指令
     Wide,
-    Multianewarray,
-    Ifnull,
-    Ifnonnull,
-    GotoW,
-    JsrW,
+    Multianewarray { class_name: String, dimensions: u8 },
+    Ifnull { target: String },
+    Ifnonnull { target: String },
+    GotoW { target: String },
+    JsrW { target: String },
 }
+
+impl JvmInstruction {
+    /// 获取指令的字节码值
+    pub fn to_byte(&self) -> u8 {
+        match self {
+            JvmInstruction::Nop => 0x00,
+            JvmInstruction::AconstNull => 0x01,
+            JvmInstruction::IconstM1 => 0x02,
+            JvmInstruction::Iconst0 => 0x03,
+            JvmInstruction::Iconst1 => 0x04,
+            JvmInstruction::Iconst2 => 0x05,
+            JvmInstruction::Iconst3 => 0x06,
+            JvmInstruction::Iconst4 => 0x07,
+            JvmInstruction::Iconst5 => 0x08,
+            JvmInstruction::Lconst0 => 0x09,
+            JvmInstruction::Lconst1 => 0x0A,
+            JvmInstruction::Fconst0 => 0x0B,
+            JvmInstruction::Fconst1 => 0x0C,
+            JvmInstruction::Fconst2 => 0x0D,
+            JvmInstruction::Dconst0 => 0x0E,
+            JvmInstruction::Dconst1 => 0x0F,
+            JvmInstruction::Bipush { .. } => 0x10,
+            JvmInstruction::Sipush { .. } => 0x11,
+            JvmInstruction::Ldc { .. } => 0x12,
+            JvmInstruction::LdcW { .. } => 0x13,
+            JvmInstruction::Ldc2W { .. } => 0x14,
+            JvmInstruction::Iload { .. } => 0x15,
+            JvmInstruction::Lload { .. } => 0x16,
+            JvmInstruction::Fload { .. } => 0x17,
+            JvmInstruction::Dload { .. } => 0x18,
+            JvmInstruction::Aload { .. } => 0x19,
+            JvmInstruction::Iload0 => 0x1A,
+            JvmInstruction::Iload1 => 0x1B,
+            JvmInstruction::Iload2 => 0x1C,
+            JvmInstruction::Iload3 => 0x1D,
+            JvmInstruction::Lload0 => 0x1E,
+            JvmInstruction::Lload1 => 0x1F,
+            JvmInstruction::Lload2 => 0x20,
+            JvmInstruction::Lload3 => 0x21,
+            JvmInstruction::Fload0 => 0x22,
+            JvmInstruction::Fload1 => 0x23,
+            JvmInstruction::Fload2 => 0x24,
+            JvmInstruction::Fload3 => 0x25,
+            JvmInstruction::Dload0 => 0x26,
+            JvmInstruction::Dload1 => 0x27,
+            JvmInstruction::Dload2 => 0x28,
+            JvmInstruction::Dload3 => 0x29,
+            JvmInstruction::Aload0 => 0x2A,
+            JvmInstruction::Aload1 => 0x2B,
+            JvmInstruction::Aload2 => 0x2C,
+            JvmInstruction::Aload3 => 0x2D,
+            JvmInstruction::Istore { .. } => 0x36,
+            JvmInstruction::Lstore { .. } => 0x37,
+            JvmInstruction::Fstore { .. } => 0x38,
+            JvmInstruction::Dstore { .. } => 0x39,
+            JvmInstruction::Astore { .. } => 0x3A,
+            JvmInstruction::Istore0 => 0x3B,
+            JvmInstruction::Istore1 => 0x3C,
+            JvmInstruction::Istore2 => 0x3D,
+            JvmInstruction::Istore3 => 0x3E,
+            JvmInstruction::Lstore0 => 0x3F,
+            JvmInstruction::Lstore1 => 0x40,
+            JvmInstruction::Lstore2 => 0x41,
+            JvmInstruction::Lstore3 => 0x42,
+            JvmInstruction::Fstore0 => 0x43,
+            JvmInstruction::Fstore1 => 0x44,
+            JvmInstruction::Fstore2 => 0x45,
+            JvmInstruction::Fstore3 => 0x46,
+            JvmInstruction::Dstore0 => 0x47,
+            JvmInstruction::Dstore1 => 0x48,
+            JvmInstruction::Dstore2 => 0x49,
+            JvmInstruction::Dstore3 => 0x4A,
+            JvmInstruction::Astore0 => 0x4B,
+            JvmInstruction::Astore1 => 0x4C,
+            JvmInstruction::Astore2 => 0x4D,
+            JvmInstruction::Astore3 => 0x4E,
+            JvmInstruction::Pop => 0x57,
+            JvmInstruction::Pop2 => 0x58,
+            JvmInstruction::Dup => 0x59,
+            JvmInstruction::DupX1 => 0x5A,
+            JvmInstruction::DupX2 => 0x5B,
+            JvmInstruction::Dup2 => 0x5C,
+            JvmInstruction::Dup2X1 => 0x5D,
+            JvmInstruction::Dup2X2 => 0x5E,
+            JvmInstruction::Swap => 0x5F,
+            JvmInstruction::Iadd => 0x60,
+            JvmInstruction::Ladd => 0x61,
+            JvmInstruction::Fadd => 0x62,
+            JvmInstruction::Dadd => 0x63,
+            JvmInstruction::Isub => 0x64,
+            JvmInstruction::Lsub => 0x65,
+            JvmInstruction::Fsub => 0x66,
+            JvmInstruction::Dsub => 0x67,
+            JvmInstruction::Imul => 0x68,
+            JvmInstruction::Lmul => 0x69,
+            JvmInstruction::Fmul => 0x6A,
+            JvmInstruction::Dmul => 0x6B,
+            JvmInstruction::Idiv => 0x6C,
+            JvmInstruction::Ldiv => 0x6D,
+            JvmInstruction::Fdiv => 0x6E,
+            JvmInstruction::Ddiv => 0x6F,
+            JvmInstruction::Irem => 0x70,
+            JvmInstruction::Lrem => 0x71,
+            JvmInstruction::Frem => 0x72,
+            JvmInstruction::Drem => 0x73,
+            JvmInstruction::Ineg => 0x74,
+            JvmInstruction::Lneg => 0x75,
+            JvmInstruction::Fneg => 0x76,
+            JvmInstruction::Dneg => 0x77,
+            JvmInstruction::Ishl => 0x78,
+            JvmInstruction::Lshl => 0x79,
+            JvmInstruction::Ishr => 0x7A,
+            JvmInstruction::Lshr => 0x7B,
+            JvmInstruction::Iushr => 0x7C,
+            JvmInstruction::Lushr => 0x7D,
+            JvmInstruction::Iand => 0x7E,
+            JvmInstruction::Land => 0x7F,
+            JvmInstruction::Ior => 0x80,
+            JvmInstruction::Lor => 0x81,
+            JvmInstruction::Ixor => 0x82,
+            JvmInstruction::Lxor => 0x83,
+            JvmInstruction::Lcmp => 0x94,
+            JvmInstruction::Fcmpl => 0x95,
+            JvmInstruction::Fcmpg => 0x96,
+            JvmInstruction::Dcmpl => 0x97,
+            JvmInstruction::Dcmpg => 0x98,
+            JvmInstruction::Ifeq { .. } => 0x99,
+            JvmInstruction::Ifne { .. } => 0x9A,
+            JvmInstruction::Iflt { .. } => 0x9B,
+            JvmInstruction::Ifge { .. } => 0x9C,
+            JvmInstruction::Ifgt { .. } => 0x9D,
+            JvmInstruction::Ifle { .. } => 0x9E,
+            JvmInstruction::IfIcmpeq { .. } => 0x9F,
+            JvmInstruction::IfIcmpne { .. } => 0xA0,
+            JvmInstruction::IfIcmplt { .. } => 0xA1,
+            JvmInstruction::IfIcmpge { .. } => 0xA2,
+            JvmInstruction::IfIcmpgt { .. } => 0xA3,
+            JvmInstruction::IfIcmple { .. } => 0xA4,
+            JvmInstruction::IfAcmpeq { .. } => 0xA5,
+            JvmInstruction::IfAcmpne { .. } => 0xA6,
+            JvmInstruction::Goto { .. } => 0xA7,
+            JvmInstruction::Jsr { .. } => 0xA8,
+            JvmInstruction::Ret { .. } => 0xA9,
+            JvmInstruction::Ireturn => 0xAC,
+            JvmInstruction::Lreturn => 0xAD,
+            JvmInstruction::Freturn => 0xAE,
+            JvmInstruction::Dreturn => 0xAF,
+            JvmInstruction::Areturn => 0xB0,
+            JvmInstruction::Return => 0xB1,
+            JvmInstruction::Getstatic { .. } => 0xB2,
+            JvmInstruction::Putstatic { .. } => 0xB3,
+            JvmInstruction::Getfield { .. } => 0xB4,
+            JvmInstruction::Putfield { .. } => 0xB5,
+            JvmInstruction::Invokevirtual { .. } => 0xB6,
+            JvmInstruction::Invokespecial { .. } => 0xB7,
+            JvmInstruction::Invokestatic { .. } => 0xB8,
+            JvmInstruction::Invokeinterface { .. } => 0xB9,
+            JvmInstruction::Invokedynamic { .. } => 0xBA,
+            JvmInstruction::New { .. } => 0xBB,
+            JvmInstruction::Newarray { .. } => 0xBC,
+            JvmInstruction::Anewarray { .. } => 0xBD,
+            JvmInstruction::Arraylength => 0xBE,
+            JvmInstruction::Athrow => 0xBF,
+            JvmInstruction::Checkcast { .. } => 0xC0,
+            JvmInstruction::Instanceof { .. } => 0xC1,
+            JvmInstruction::Monitorenter => 0xC2,
+            JvmInstruction::Monitorexit => 0xC3,
+            JvmInstruction::Wide => 0xC4,
+            JvmInstruction::Multianewarray { .. } => 0xC5,
+            JvmInstruction::Ifnull { .. } => 0xC6,
+            JvmInstruction::Ifnonnull { .. } => 0xC7,
+            JvmInstruction::GotoW { .. } => 0xC8,
+            JvmInstruction::JsrW { .. } => 0xC9,
+        }
+    }
+}
+
 
 /// JVM 异常处理器
 #[derive(Debug, Clone)]
@@ -547,6 +855,90 @@ impl JvmMethod {
         }
     }
 
+    /// 设置访问标志
+    pub fn with_access_flags(mut self, access_flags: JvmAccessFlags) -> Self {
+        self.access_flags = access_flags;
+        self
+    }
+
+    /// 添加 public 访问修饰符
+    pub fn with_public(mut self) -> Self {
+        self.access_flags |= JvmAccessFlags::PUBLIC;
+        self
+    }
+
+    /// 添加 private 访问修饰符
+    pub fn with_private(mut self) -> Self {
+        self.access_flags |= JvmAccessFlags::PRIVATE;
+        self
+    }
+
+    /// 添加 protected 访问修饰符
+    pub fn with_protected(mut self) -> Self {
+        self.access_flags |= JvmAccessFlags::PROTECTED;
+        self
+    }
+
+    /// 添加 static 修饰符
+    pub fn with_static(mut self) -> Self {
+        self.access_flags |= JvmAccessFlags::STATIC;
+        self
+    }
+
+    /// 添加 final 修饰符
+    pub fn with_final(mut self) -> Self {
+        self.access_flags |= JvmAccessFlags::FINAL;
+        self
+    }
+
+    /// 添加 abstract 修饰符
+    pub fn with_abstract(mut self) -> Self {
+        self.access_flags |= JvmAccessFlags::ABSTRACT;
+        self
+    }
+
+    /// 设置最大栈深度
+    pub fn with_max_stack(mut self, max_stack: u16) -> Self {
+        self.max_stack = max_stack;
+        self
+    }
+
+    /// 设置最大局部变量数
+    pub fn with_max_locals(mut self, max_locals: u16) -> Self {
+        self.max_locals = max_locals;
+        self
+    }
+
+    /// 添加指令
+    pub fn with_instruction(mut self, instruction: JvmInstruction) -> Self {
+        self.instructions.push(instruction);
+        self
+    }
+
+    /// 添加多个指令
+    pub fn with_instructions(mut self, instructions: Vec<JvmInstruction>) -> Self {
+        self.instructions.extend(instructions);
+        self
+    }
+
+    /// 添加异常处理器
+    pub fn with_exception_handler(mut self, handler: JvmExceptionHandler) -> Self {
+        self.exception_table.push(handler);
+        self
+    }
+
+    /// 添加属性
+    pub fn with_attribute(mut self, attribute: JvmAttribute) -> Self {
+        self.attributes.push(attribute);
+        self
+    }
+
+    /// 添加多个属性
+    pub fn with_attributes(mut self, attributes: Vec<JvmAttribute>) -> Self {
+        self.attributes.extend(attributes);
+        self
+    }
+
     /// 添加指令
     pub fn add_instruction(&mut self, instruction: JvmInstruction) {
         self.instructions.push(instruction);
@@ -568,6 +960,72 @@ impl JvmField {
     /// 创建新的字段
     pub fn new(name: String, descriptor: String) -> Self {
         Self { name, descriptor, access_flags: JvmAccessFlags::default(), constant_value: None, attributes: Vec::new() }
+    }
+
+    /// 设置访问标志
+    pub fn with_access_flags(mut self, access_flags: JvmAccessFlags) -> Self {
+        self.access_flags = access_flags;
+        self
+    }
+
+    /// 添加 public 访问修饰符
+    pub fn with_public(mut self) -> Self {
+        self.access_flags |= JvmAccessFlags::PUBLIC;
+        self
+    }
+
+    /// 添加 private 访问修饰符
+    pub fn with_private(mut self) -> Self {
+        self.access_flags |= JvmAccessFlags::PRIVATE;
+        self
+    }
+
+    /// 添加 protected 访问修饰符
+    pub fn with_protected(mut self) -> Self {
+        self.access_flags |= JvmAccessFlags::PROTECTED;
+        self
+    }
+
+    /// 添加 static 修饰符
+    pub fn with_static(mut self) -> Self {
+        self.access_flags |= JvmAccessFlags::STATIC;
+        self
+    }
+
+    /// 添加 final 修饰符
+    pub fn with_final(mut self) -> Self {
+        self.access_flags |= JvmAccessFlags::FINAL;
+        self
+    }
+
+    /// 添加 volatile 修饰符
+    pub fn with_volatile(mut self) -> Self {
+        self.access_flags |= JvmAccessFlags::VOLATILE;
+        self
+    }
+
+    /// 添加 transient 修饰符
+    pub fn with_transient(mut self) -> Self {
+        self.access_flags |= JvmAccessFlags::TRANSIENT;
+        self
+    }
+
+    /// 设置常量值
+    pub fn with_constant_value(mut self, value: JvmConstantPoolEntry) -> Self {
+        self.constant_value = Some(value);
+        self
+    }
+
+    /// 添加属性
+    pub fn with_attribute(mut self, attribute: JvmAttribute) -> Self {
+        self.attributes.push(attribute);
+        self
+    }
+
+    /// 添加多个属性
+    pub fn with_attributes(mut self, attributes: Vec<JvmAttribute>) -> Self {
+        self.attributes.extend(attributes);
+        self
     }
 
     /// 验证字段的完整性
@@ -596,6 +1054,8 @@ impl Default for JvmAccessFlags {
             is_static: false,
             is_private: false,
             is_protected: false,
+            is_volatile: false,
+            is_transient: false,
         }
     }
 }
@@ -618,6 +1078,8 @@ impl JvmAccessFlags {
                 "synthetic" => flags.is_synthetic = true,
                 "annotation" => flags.is_annotation = true,
                 "enum" => flags.is_enum = true,
+                "volatile" => flags.is_volatile = true,
+                "transient" => flags.is_transient = true,
                 _ => {} // 忽略未知修饰符
             }
         }
@@ -634,6 +1096,8 @@ impl JvmAccessFlags {
             is_static: (flags & 0x0008) != 0,
             is_final: (flags & 0x0010) != 0,
             is_super: (flags & 0x0020) != 0,
+            is_volatile: (flags & 0x0040) != 0,
+            is_transient: (flags & 0x0080) != 0,
             is_interface: (flags & 0x0200) != 0,
             is_abstract: (flags & 0x0400) != 0,
             is_synthetic: (flags & 0x1000) != 0,
@@ -678,6 +1142,12 @@ impl JvmAccessFlags {
         if self.is_enum {
             modifiers.push("enum".to_string());
         }
+        if self.is_volatile {
+            modifiers.push("volatile".to_string());
+        }
+        if self.is_transient {
+            modifiers.push("transient".to_string());
+        }
         modifiers
     }
 
@@ -703,6 +1173,12 @@ impl JvmAccessFlags {
         if self.is_super {
             flags |= 0x0020;
         }
+        if self.is_volatile {
+            flags |= 0x0040;
+        }
+        if self.is_transient {
+            flags |= 0x0080;
+        }
         if self.is_interface {
             flags |= 0x0200;
         }
@@ -723,268 +1199,7 @@ impl JvmAccessFlags {
     }
 }
 
-impl std::fmt::Display for JvmOpcode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
 
-impl JvmOpcode {
-    /// 转换为字节码值
-    pub fn to_byte(&self) -> u8 {
-        match self {
-            JvmOpcode::Nop => 0x00,
-            JvmOpcode::AconstNull => 0x01,
-            JvmOpcode::IconstM1 => 0x02,
-            JvmOpcode::Iconst0 => 0x03,
-            JvmOpcode::Iconst1 => 0x04,
-            JvmOpcode::Iconst2 => 0x05,
-            JvmOpcode::Iconst3 => 0x06,
-            JvmOpcode::Iconst4 => 0x07,
-            JvmOpcode::Iconst5 => 0x08,
-            JvmOpcode::Lconst0 => 0x09,
-            JvmOpcode::Lconst1 => 0x0A,
-            JvmOpcode::Fconst0 => 0x0B,
-            JvmOpcode::Fconst1 => 0x0C,
-            JvmOpcode::Fconst2 => 0x0D,
-            JvmOpcode::Dconst0 => 0x0E,
-            JvmOpcode::Dconst1 => 0x0F,
-            JvmOpcode::Bipush => 0x10,
-            JvmOpcode::Sipush => 0x11,
-            JvmOpcode::Ldc => 0x12,
-            JvmOpcode::LdcW => 0x13,
-            JvmOpcode::Ldc2W => 0x14,
-            JvmOpcode::Iload => 0x15,
-            JvmOpcode::Lload => 0x16,
-            JvmOpcode::Fload => 0x17,
-            JvmOpcode::Dload => 0x18,
-            JvmOpcode::Aload => 0x19,
-            JvmOpcode::Iload0 => 0x1A,
-            JvmOpcode::Iload1 => 0x1B,
-            JvmOpcode::Iload2 => 0x1C,
-            JvmOpcode::Iload3 => 0x1D,
-            JvmOpcode::Lload0 => 0x1E,
-            JvmOpcode::Lload1 => 0x1F,
-            JvmOpcode::Lload2 => 0x20,
-            JvmOpcode::Lload3 => 0x21,
-            JvmOpcode::Fload0 => 0x22,
-            JvmOpcode::Fload1 => 0x23,
-            JvmOpcode::Fload2 => 0x24,
-            JvmOpcode::Fload3 => 0x25,
-            JvmOpcode::Dload0 => 0x26,
-            JvmOpcode::Dload1 => 0x27,
-            JvmOpcode::Dload2 => 0x28,
-            JvmOpcode::Dload3 => 0x29,
-            JvmOpcode::Aload0 => 0x2A,
-            JvmOpcode::Aload1 => 0x2B,
-            JvmOpcode::Aload2 => 0x2C,
-            JvmOpcode::Aload3 => 0x2D,
-            JvmOpcode::Istore => 0x36,
-            JvmOpcode::Lstore => 0x37,
-            JvmOpcode::Fstore => 0x38,
-            JvmOpcode::Dstore => 0x39,
-            JvmOpcode::Astore => 0x3A,
-            JvmOpcode::Istore0 => 0x3B,
-            JvmOpcode::Istore1 => 0x3C,
-            JvmOpcode::Istore2 => 0x3D,
-            JvmOpcode::Istore3 => 0x3E,
-            JvmOpcode::Lstore0 => 0x3F,
-            JvmOpcode::Lstore1 => 0x40,
-            JvmOpcode::Lstore2 => 0x41,
-            JvmOpcode::Lstore3 => 0x42,
-            JvmOpcode::Fstore0 => 0x43,
-            JvmOpcode::Fstore1 => 0x44,
-            JvmOpcode::Fstore2 => 0x45,
-            JvmOpcode::Fstore3 => 0x46,
-            JvmOpcode::Dstore0 => 0x47,
-            JvmOpcode::Dstore1 => 0x48,
-            JvmOpcode::Dstore2 => 0x49,
-            JvmOpcode::Dstore3 => 0x4A,
-            JvmOpcode::Astore0 => 0x4B,
-            JvmOpcode::Astore1 => 0x4C,
-            JvmOpcode::Astore2 => 0x4D,
-            JvmOpcode::Astore3 => 0x4E,
-            JvmOpcode::Pop => 0x57,
-            JvmOpcode::Pop2 => 0x58,
-            JvmOpcode::Dup => 0x59,
-            JvmOpcode::DupX1 => 0x5A,
-            JvmOpcode::DupX2 => 0x5B,
-            JvmOpcode::Dup2 => 0x5C,
-            JvmOpcode::Dup2X1 => 0x5D,
-            JvmOpcode::Dup2X2 => 0x5E,
-            JvmOpcode::Swap => 0x5F,
-            JvmOpcode::Iadd => 0x60,
-            JvmOpcode::Ladd => 0x61,
-            JvmOpcode::Fadd => 0x62,
-            JvmOpcode::Dadd => 0x63,
-            JvmOpcode::Isub => 0x64,
-            JvmOpcode::Lsub => 0x65,
-            JvmOpcode::Fsub => 0x66,
-            JvmOpcode::Dsub => 0x67,
-            JvmOpcode::Imul => 0x68,
-            JvmOpcode::Lmul => 0x69,
-            JvmOpcode::Fmul => 0x6A,
-            JvmOpcode::Dmul => 0x6B,
-            JvmOpcode::Idiv => 0x6C,
-            JvmOpcode::Ldiv => 0x6D,
-            JvmOpcode::Fdiv => 0x6E,
-            JvmOpcode::Ddiv => 0x6F,
-            JvmOpcode::Irem => 0x70,
-            JvmOpcode::Lrem => 0x71,
-            JvmOpcode::Frem => 0x72,
-            JvmOpcode::Drem => 0x73,
-            JvmOpcode::Ineg => 0x74,
-            JvmOpcode::Lneg => 0x75,
-            JvmOpcode::Fneg => 0x76,
-            JvmOpcode::Dneg => 0x77,
-            JvmOpcode::Ishl => 0x78,
-            JvmOpcode::Lshl => 0x79,
-            JvmOpcode::Ishr => 0x7A,
-            JvmOpcode::Lshr => 0x7B,
-            JvmOpcode::Iushr => 0x7C,
-            JvmOpcode::Lushr => 0x7D,
-            JvmOpcode::Iand => 0x7E,
-            JvmOpcode::Land => 0x7F,
-            JvmOpcode::Ior => 0x80,
-            JvmOpcode::Lor => 0x81,
-            JvmOpcode::Ixor => 0x82,
-            JvmOpcode::Lxor => 0x83,
-            JvmOpcode::Lcmp => 0x94,
-            JvmOpcode::Fcmpl => 0x95,
-            JvmOpcode::Fcmpg => 0x96,
-            JvmOpcode::Dcmpl => 0x97,
-            JvmOpcode::Dcmpg => 0x98,
-            JvmOpcode::Ifeq => 0x99,
-            JvmOpcode::Ifne => 0x9A,
-            JvmOpcode::Iflt => 0x9B,
-            JvmOpcode::Ifge => 0x9C,
-            JvmOpcode::Ifgt => 0x9D,
-            JvmOpcode::Ifle => 0x9E,
-            JvmOpcode::IfIcmpeq => 0x9F,
-            JvmOpcode::IfIcmpne => 0xA0,
-            JvmOpcode::IfIcmplt => 0xA1,
-            JvmOpcode::IfIcmpge => 0xA2,
-            JvmOpcode::IfIcmpgt => 0xA3,
-            JvmOpcode::IfIcmple => 0xA4,
-            JvmOpcode::IfAcmpeq => 0xA5,
-            JvmOpcode::IfAcmpne => 0xA6,
-            JvmOpcode::Goto => 0xA7,
-            JvmOpcode::Jsr => 0xA8,
-            JvmOpcode::Ret => 0xA9,
-            JvmOpcode::Ireturn => 0xAC,
-            JvmOpcode::Lreturn => 0xAD,
-            JvmOpcode::Freturn => 0xAE,
-            JvmOpcode::Dreturn => 0xAF,
-            JvmOpcode::Areturn => 0xB0,
-            JvmOpcode::Return => 0xB1,
-            JvmOpcode::Getstatic => 0xB2,
-            JvmOpcode::Putstatic => 0xB3,
-            JvmOpcode::Getfield => 0xB4,
-            JvmOpcode::Putfield => 0xB5,
-            JvmOpcode::Invokevirtual => 0xB6,
-            JvmOpcode::Invokespecial => 0xB7,
-            JvmOpcode::Invokestatic => 0xB8,
-            JvmOpcode::Invokeinterface => 0xB9,
-            JvmOpcode::Invokedynamic => 0xBA,
-            JvmOpcode::New => 0xBB,
-            JvmOpcode::Newarray => 0xBC,
-            JvmOpcode::Anewarray => 0xBD,
-            JvmOpcode::Arraylength => 0xBE,
-            JvmOpcode::Athrow => 0xBF,
-            JvmOpcode::Checkcast => 0xC0,
-            JvmOpcode::Instanceof => 0xC1,
-            JvmOpcode::Monitorenter => 0xC2,
-            JvmOpcode::Monitorexit => 0xC3,
-            JvmOpcode::Wide => 0xC4,
-            JvmOpcode::Multianewarray => 0xC5,
-            JvmOpcode::Ifnull => 0xC6,
-            JvmOpcode::Ifnonnull => 0xC7,
-            JvmOpcode::GotoW => 0xC8,
-            JvmOpcode::JsrW => 0xC9,
-        }
-    }
-
-    /// 从字符串解析操作码
-    pub fn from_str(s: &str) -> Option<Self> {
-        match s.to_lowercase().as_str() {
-            "nop" => Some(JvmOpcode::Nop),
-            "aconst_null" => Some(JvmOpcode::AconstNull),
-            "iconst_m1" => Some(JvmOpcode::IconstM1),
-            "iconst_0" => Some(JvmOpcode::Iconst0),
-            "iconst_1" => Some(JvmOpcode::Iconst1),
-            "iconst_2" => Some(JvmOpcode::Iconst2),
-            "iconst_3" => Some(JvmOpcode::Iconst3),
-            "iconst_4" => Some(JvmOpcode::Iconst4),
-            "iconst_5" => Some(JvmOpcode::Iconst5),
-            "lconst_0" => Some(JvmOpcode::Lconst0),
-            "lconst_1" => Some(JvmOpcode::Lconst1),
-            "fconst_0" => Some(JvmOpcode::Fconst0),
-            "fconst_1" => Some(JvmOpcode::Fconst1),
-            "fconst_2" => Some(JvmOpcode::Fconst2),
-            "dconst_0" => Some(JvmOpcode::Dconst0),
-            "dconst_1" => Some(JvmOpcode::Dconst1),
-            "bipush" => Some(JvmOpcode::Bipush),
-            "sipush" => Some(JvmOpcode::Sipush),
-            "ldc" => Some(JvmOpcode::Ldc),
-            "ldc_w" => Some(JvmOpcode::LdcW),
-            "ldc2_w" => Some(JvmOpcode::Ldc2W),
-            "iload" => Some(JvmOpcode::Iload),
-            "lload" => Some(JvmOpcode::Lload),
-            "fload" => Some(JvmOpcode::Fload),
-            "dload" => Some(JvmOpcode::Dload),
-            "aload" => Some(JvmOpcode::Aload),
-            "iload_0" => Some(JvmOpcode::Iload0),
-            "iload_1" => Some(JvmOpcode::Iload1),
-            "iload_2" => Some(JvmOpcode::Iload2),
-            "iload_3" => Some(JvmOpcode::Iload3),
-            "aload_0" => Some(JvmOpcode::Aload0),
-            "aload_1" => Some(JvmOpcode::Aload1),
-            "aload_2" => Some(JvmOpcode::Aload2),
-            "aload_3" => Some(JvmOpcode::Aload3),
-            "istore" => Some(JvmOpcode::Istore),
-            "astore" => Some(JvmOpcode::Astore),
-            "istore_0" => Some(JvmOpcode::Istore0),
-            "istore_1" => Some(JvmOpcode::Istore1),
-            "istore_2" => Some(JvmOpcode::Istore2),
-            "istore_3" => Some(JvmOpcode::Istore3),
-            "astore_0" => Some(JvmOpcode::Astore0),
-            "astore_1" => Some(JvmOpcode::Astore1),
-            "astore_2" => Some(JvmOpcode::Astore2),
-            "astore_3" => Some(JvmOpcode::Astore3),
-            "pop" => Some(JvmOpcode::Pop),
-            "dup" => Some(JvmOpcode::Dup),
-            "iadd" => Some(JvmOpcode::Iadd),
-            "isub" => Some(JvmOpcode::Isub),
-            "imul" => Some(JvmOpcode::Imul),
-            "idiv" => Some(JvmOpcode::Idiv),
-            "irem" => Some(JvmOpcode::Irem),
-            "ineg" => Some(JvmOpcode::Ineg),
-            "ireturn" => Some(JvmOpcode::Ireturn),
-            "lreturn" => Some(JvmOpcode::Lreturn),
-            "freturn" => Some(JvmOpcode::Freturn),
-            "dreturn" => Some(JvmOpcode::Dreturn),
-            "areturn" => Some(JvmOpcode::Areturn),
-            "return" => Some(JvmOpcode::Return),
-            "getstatic" => Some(JvmOpcode::Getstatic),
-            "putstatic" => Some(JvmOpcode::Putstatic),
-            "getfield" => Some(JvmOpcode::Getfield),
-            "putfield" => Some(JvmOpcode::Putfield),
-            "invokevirtual" => Some(JvmOpcode::Invokevirtual),
-            "invokespecial" => Some(JvmOpcode::Invokespecial),
-            "invokestatic" => Some(JvmOpcode::Invokestatic),
-            "invokeinterface" => Some(JvmOpcode::Invokeinterface),
-            "invokedynamic" => Some(JvmOpcode::Invokedynamic),
-            "new" => Some(JvmOpcode::New),
-            "newarray" => Some(JvmOpcode::Newarray),
-            "anewarray" => Some(JvmOpcode::Anewarray),
-            "arraylength" => Some(JvmOpcode::Arraylength),
-            "athrow" => Some(JvmOpcode::Athrow),
-            "checkcast" => Some(JvmOpcode::Checkcast),
-            "instanceof" => Some(JvmOpcode::Instanceof),
-            _ => None,
-        }
-    }
-}
 
 // 为了兼容性，保留原有的类型定义
 pub use JvmConstantPoolEntry as ConstantPoolEntry;

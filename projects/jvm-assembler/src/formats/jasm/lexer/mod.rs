@@ -1,3 +1,4 @@
+#![doc = include_str!("readme.md")]
 pub use self::token_type::JasmTokenType;
 use gaia_types::{lexer::LexerState, reader::TokenStream, GaiaDiagnostics};
 
@@ -9,11 +10,12 @@ mod token_type;
 ///
 /// # 示例
 ///
-/// ```rust
+/// ```ignore
 /// use jvm_assembler::formats::jasm::lexer::JasmLexer;
 ///
 /// let lexer = JasmLexer::new();
 /// let result = lexer.tokenize("public class HelloJava");
+/// assert_eq!(result.result.unwrap().tokens.len(), 4);
 /// ```
 #[derive(Clone, Debug)]
 pub struct JasmLexer;
@@ -21,8 +23,7 @@ pub struct JasmLexer;
 impl Default for JasmLexer {
     fn default() -> Self {
         Self::new()
-    }
-}
+    }}
 
 impl JasmLexer {
     /// 创建一个新的 JASM 词法分析器实例
@@ -47,10 +48,6 @@ impl JasmLexer {
     ///
     /// let lexer = JasmLexer::new();
     /// let result = lexer.tokenize("public class HelloJava");
-    ///
-    /// if let Ok(token_stream) = result.into_result() {
-    ///     // 处理 token 流
-    /// }
     /// ```
     pub fn tokenize<'input>(&self, input: &'input str) -> GaiaDiagnostics<TokenStream<'input, JasmTokenType>> {
         let mut state = LexerState::new(input, None);

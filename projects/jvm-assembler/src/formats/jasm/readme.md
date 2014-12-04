@@ -16,38 +16,15 @@ JASM 格式提供了一种直观的方式来编写和阅读 JVM 字节码，它�
 
 ### 基本类结构
 
-```jasm
-.class public MyClass
-.super java/lang/Object
 
-.method public "<init>":"()V"
-    .limit stack 1
-    .limit locals 1
-    aload_0
-    invokespecial Method java/lang/Object."<init>":"()V"
-    return
-.end method
-```
 
 ### 字段定义
 
-```jasm
-.field private "count":"I"
-.field public static final "MAX_VALUE":"I" = 100
-```
+
 
 ### 方法定义
 
-```jasm
-.method public "add":"(II)I"
-    .limit stack 2
-    .limit locals 3
-    iload_1
-    iload_2
-    iadd
-    ireturn
-.end method
-```
+
 
 ## 指令系统
 
@@ -79,108 +56,37 @@ JASM 格式提供了一种直观的方式来编写和阅读 JVM 字节码，它�
 
 ### 方法调用
 
-```jasm
-invokevirtual Method java/io/PrintStream.println:"(Ljava/lang/String;)V"
-invokestatic Method java/lang/Math.max:"(II)I"
-```
+
 
 ### 控制流
 
-```jasm
-ifeq label1
-goto label2
-label1:
-    ; 代码块
-label2:
-    ; 代码块
-```
+
 
 ## 示例程序
 
 ### Hello World
 
-```jasm
-.class public HelloWorld
-.super java/lang/Object
 
-.method public static "main":"([Ljava/lang/String;)V"
-    .limit stack 2
-    .limit locals 1
-    getstatic Field java/lang/System.out:"Ljava/io/PrintStream;"
-    ldc "Hello, World!"
-    invokevirtual Method java/io/PrintStream.println:"(Ljava/lang/String;)V"
-    return
-.end method
-```
 
 ### 简单计算器
 
-```jasm
-.class public Calculator
-.super java/lang/Object
 
-.method public "add":"(II)I"
-    .limit stack 2
-    .limit locals 3
-    iload_1
-    iload_2
-    iadd
-    ireturn
-.end method
-
-.method public "multiply":"(II)I"
-    .limit stack 2
-    .limit locals 3
-    iload_1
-    iload_2
-    imul
-    ireturn
-.end method
-```
 
 ## 高级特性
 
 ### 异常处理
 
-```jasm
-.method public "safeDivide":"(II)I"
-    .limit stack 2
-    .limit locals 3
-    .catch java/lang/ArithmeticException from start to end using handler
-start:
-    iload_1
-    iload_2
-    idiv
-    ireturn
-end:
-handler:
-    pop  ; 移除异常对象
-    iconst_m1
-    ireturn
-.end method
-```
+
 
 ### 泛型支持
 
 JASM 支持 Java 泛型的类型描述符：
 
-```jasm
-.method public "processList":"(Ljava/util/List;)V"
-    .signature "(Ljava/util/List<Ljava/lang/String;>;)V"
-    .limit stack 1
-    .limit locals 2
-    ; 方法实现
-.end method
-```
+
 
 ### 注解支持
 
-```jasm
-.runtime_visible_annotation @Ljava/lang/Deprecated;()
-.method public "oldMethod":"()V"
-    ; 方法实现
-.end method
-```
+
 
 ## 转换过程
 

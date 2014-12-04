@@ -5,14 +5,7 @@ use gaia_types::lexer::TokenType;
 /// 这个枚举定义了 JASM 汇编语言中所有可能的 token 类型。
 /// 所有变体都不包含数据，使得该类型可以实现 Copy trait。
 ///
-/// # 示例
-///
-/// ```rust
-/// use jvm_jasm::lexer::JasmTokenType;
-///
-/// let token = JasmTokenType::Class;
-/// assert_eq!(token, JasmTokenType::Class);
-/// ```
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum JasmTokenType {
     // 关键字
