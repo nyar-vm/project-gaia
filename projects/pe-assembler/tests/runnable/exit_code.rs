@@ -2,7 +2,7 @@
 
 use crate::test_tools::test_path;
 use gaia_types::{helpers::Architecture, GaiaError};
-use pe_assembler::{helpers::PeAssemblerBuilder, types::SubsystemType};
+use pe_assembler::{helpers::PeBuilder, types::SubsystemType};
 use std::process::Command;
 use x86_64_assembler::{builder::ProgramBuilder, instruction::Register};
 
@@ -51,7 +51,7 @@ fn generate_exit_code_x86(exit_code: i32) -> Result<Vec<u8>, GaiaError> {
     program.call_indirect(0)?; // IAT 占位符，构建器后续修补
     let code = program.compile_instructions()?;
 
-    PeAssemblerBuilder::new()
+    PeBuilder::new()
         .architecture(Architecture::X86)
         .subsystem(SubsystemType::Console)
         .entry_point(0x1000)
@@ -71,7 +71,7 @@ fn generate_exit_code_x64(exit_code: i32) -> Result<Vec<u8>, GaiaError> {
     program.call_indirect(0)?; // IAT 占位符，构建器后续修补
     let code = program.compile_instructions()?;
 
-    PeAssemblerBuilder::new()
+    PeBuilder::new()
         .architecture(Architecture::X86_64)
         .subsystem(SubsystemType::Console)
         .entry_point(0x1000)

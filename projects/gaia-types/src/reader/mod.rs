@@ -83,6 +83,8 @@ impl<R, E> BinaryReader<R, E> {
         GaiaDiagnostics { result: Ok(self.reader), diagnostics: self.errors }
     }
 
+    /// 获取并清空当前累积的错误列表。
+    /// 该方法会返回所有在读取过程中遇到的错误，并重置内部的错误存储。
     pub fn take_errors(&mut self) -> Vec<GaiaError> {
         std::mem::take(&mut self.errors)
     }
@@ -139,6 +141,46 @@ impl<R: ReadBytesExt, E: ByteOrder> BinaryReader<R, E> {
         Ok(value)
     }
 
+    /// 读取 i32
+    ///
+    /// # Returns
+    /// 返回读取的 i32 值或 IO 错误
+    pub fn read_i32(&mut self) -> std::io::Result<i32> {
+        let value = self.reader.read_i32::<E>()?;
+        self.position += 4;
+        Ok(value)
+    }
+
+    /// 读取 i64
+    ///
+    /// # Returns
+    /// 返回读取的 i64 值或 IO 错误
+    pub fn read_i64(&mut self) -> std::io::Result<i64> {
+        let value = self.reader.read_i64::<E>()?;
+        self.position += 8;
+        Ok(value)
+    }
+
+    /// 读取 f32
+    ///
+    /// # Returns
+    /// 返回读取的 f32 值或 IO 错误
+    pub fn read_f32(&mut self) -> std::io::Result<f32> {
+        let value = self.reader.read_f32::<E>()?;
+        self.position += 4;
+        Ok(value)
+    }
+
+    /// 读取 f64
+    ///
+    /// # Returns
+    /// 返回读取的 f64 值或 IO 错误
+    pub fn read_f64(&mut self) -> std::io::Result<f64> {
+        let value = self.reader.read_f64::<E>()?;
+        self.position += 8;
+        Ok(value)
+    }
+
     /// 读取指定长度的字节数组
     ///
     /// # Arguments
@@ -180,6 +222,123 @@ impl<R: ReadBytesExt, E: ByteOrder> BinaryReader<R, E> {
         let new_pos = self.reader.seek(SeekFrom::Current(count as i64))?;
         self.position = new_pos;
         Ok(new_pos)
+    }
+
+    /// 读取 LEB128 编码的无符号 32 位整数
+    ///
+    /// # Returns
+    /// 返回读取的 u32 值或 IO 错误
+    pub fn read_u32_leb128(&mut self) -> std::io::Result<u32> {
+        let mut result = 0u32;
+        let mut shift = 0;
+        
+        loop {
+            let byte = self.read_u8()?;
+            result |= ((byte & 0x7F) as u32) << shift;
+            
+            if byte & 0x80 == 0 {
+                break;
+            }
+            
+            shift += 7;
+            if shift >= 32 {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    "LEB128 value too large for u32"
+                ));
+            }
+        }
+        
+        Ok(result)
+    }
+
+    /// 读取 LEB128 编码的有符号 32 位整数
+    ///
+    /// # Returns
+    /// 返回读取的 i32 值或 IO 错误
+    pub fn read_i32_leb128(&mut self) -> std::io::Result<i32> {
+        let mut result = 0i32;
+        let mut shift = 0;
+        let mut byte;
+        
+        loop {
+            byte = self.read_u8()?;
+            result |= ((byte & 0x7F) as i32) << shift;
+            shift += 7;
+            
+            if byte & 0x80 == 0 {
+                break;
+            }
+            
+            if shift >= 32 {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    "LEB128 value too large for i32"
+                ));
+            }
+        }
+        
+        // 符号扩展
+        if shift < 32 && (byte & 0x40) != 0 {
+            result |= !0 << shift;
+        }
+        
+        Ok(result)
+    }
+
+    /// 读取 LEB128 编码的有符号 64 位整数
+    ///
+    /// # Returns
+    /// 返回读取的 i64 值或 IO 错误
+    pub fn read_i64_leb128(&mut self) -> std::io::Result<i64> {
+        let mut result = 0i64;
+        let mut shift = 0;
+        let mut byte;
+        
+        loop {
+            byte = self.read_u8()?;
+            result |= ((byte & 0x7F) as i64) << shift;
+            shift += 7;
+            
+            if byte & 0x80 == 0 {
+                break;
+            }
+            
+            if shift >= 64 {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    "LEB128 value too large for i64"
+                ));
+            }
+        }
+        
+        // 符号扩展
+        if shift < 64 && (byte & 0x40) != 0 {
+            result |= !0 << shift;
+        }
+        
+        Ok(result)
+    }
+}
+
+impl<R, E> BinaryReader<R, E> {
+    /// 计算 LEB128 编码值的字节长度（静态方法）
+    ///
+    /// # Arguments
+    /// * `value` - 要计算长度的值
+    ///
+    /// # Returns
+    /// 返回编码后的字节长度
+    pub fn leb128_size(mut value: u32) -> u32 {
+        let mut size = 0;
+        loop {
+            value >>= 7;
+            size += 1;
+            if value == 0 {
+                break;
+            }
+        }
+        size
     }
 }
 

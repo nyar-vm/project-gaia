@@ -1,6 +1,6 @@
 [package]
 name = "pe-assembler"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["Project Gaia <192607617@qq.com>"]
 description = "支持 x64 和 x86 指令集的现代 PE 汇编器 - 强类型、面向对象、零依赖核心"
 categories = ["compilers"]

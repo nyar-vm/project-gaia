@@ -1,6 +1,6 @@
 [package]
 name = "clr-assembler"
-version = "0.0.0"
+version = "0.0.1"
 authors = ["Project Gaia <192607617@qq.com>"]
 description = "支持 x64 和 x86 指令集的现代 CLR 汇编器 - 强类型、面向对象、零依赖核心"
 categories = ["compilers"]
@@ -10,7 +10,7 @@ repository = "https://github.com/nyar-vm/project-gaia"
 documentation = "http://docs.rs/clr-assembler"
 readme = "readme.md"
 license = "MPL-2.0"
-edition = "2021"
+edition = "2024"
 exclude = ["package.json", "tests/**"]
 
 [dependencies]
@@ -20,7 +20,7 @@ url = "2.5.7"
 serde = { version = "1.0.0", features = ["derive"] }
 
 [dependencies.pe-assembler]
-version = "0.0.2"
+version = "0.0.3"
 path = "../pe-assembler"
 
 [build-dependencies]
@@ -32,7 +32,6 @@ walkdir = "2.5.0"
 
 [features]
 default = []
-easy-test = []
 
 [package.metadata.docs.rs]
 all-features = true

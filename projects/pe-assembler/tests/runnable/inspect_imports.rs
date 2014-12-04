@@ -2,7 +2,7 @@
 
 use crate::test_tools::test_path;
 use gaia_types::helpers::Architecture;
-use pe_assembler::{helpers::PeAssemblerBuilder, types::SubsystemType};
+use pe_assembler::{helpers::PeBuilder, types::SubsystemType};
 use std::fs::{create_dir_all, write};
 use x86_64_assembler::{builder::ProgramBuilder, instruction::Register};
 
@@ -38,7 +38,7 @@ fn inspect_hello_world_imports() {
     data.extend_from_slice(MSG.as_bytes());
     data.push(0);
     data.extend_from_slice(&[0, 0, 0, 0]);
-    let pe_bytes = PeAssemblerBuilder::new()
+    let pe_bytes = PeBuilder::new()
         .architecture(Architecture::X86)
         .subsystem(SubsystemType::Console)
         .entry_point(0x1000)

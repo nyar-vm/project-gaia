@@ -1,6 +1,10 @@
 [workspace]
 resolver = "2"
-members = ["projects/*", "examples/mini-rust"]
+members = [
+    "projects/*",
+    "examples/mini-rust",
+    "examples/mini-c"
+]
 default-members = [
     "projects/gaia-types",
     "projects/wasi-assembler",
@@ -17,8 +21,12 @@ exclude = [
 serde = { version = "1.0", features = ["derive"] }
 
 [workspace.dependencies.gaia-types]
-version = "0.0.2"
+version = "0.0.3"
 path = "projects/gaia-types"
+
+[workspace.dependencies.x86_64-assembler]
+version = "0.0.1"
+path = "projects/x86_64-assembler"
 
 
 [profile.release]

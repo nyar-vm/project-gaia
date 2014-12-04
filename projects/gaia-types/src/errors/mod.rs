@@ -3,7 +3,7 @@
 pub use self::diagnostics::GaiaDiagnostics;
 use crate::{
     helpers::{Architecture, CompilationTarget},
-    SourceLocation,
+    reader::SourceLocation,
 };
 use std::{
     error::Error,
@@ -22,10 +22,9 @@ mod display;
 /// 这个类型别名简化了错误处理，所有可能返回错误的函数都应该使用这个类型
 pub type Result<T> = std::result::Result<T, GaiaError>;
 
-/// Gaia错误类型，包装了具体的错误种类[GaiaErrorKind]
+/// Gaia 错误类型，包装了具体的错误类 [GaiaErrorKind]
 ///
-/// 使用Box来减少枚举的大小，提高性能
-
+/// 这里使用 [Box] 来减少枚举的大小，提高性能
 pub struct GaiaError {
     level: Level,
     /// 具体的错误种类，使用Box包装以减少内存占用
@@ -499,6 +498,27 @@ impl GaiaError {
     pub fn custom_error(message: impl ToString) -> GaiaError {
         GaiaErrorKind::CustomError { message: message.to_string() }.into()
     }
+    /// 创建一个不可达错误。
+    ///
+    /// 当程序执行到理论上不可达的代码路径时调用此函数。它会自动捕获调用位置。
+    ///
+    /// # 返回值
+    ///
+    /// 返回一个包含不可达错误信息的 `GaiaError` 实例。
+    ///
+    /// # 示例
+    ///
+    /// ```
+    /// use gaia_types::GaiaError;
+    /// fn example_unreachable() -> Result<(), GaiaError> {
+    ///     let value = 1;
+    ///     match value {
+    ///         1 => Ok(()),
+    ///         _ => Err(GaiaError::unreachable()), // 此处理论上不可达
+    ///     }
+    /// }
+    /// let _ = example_unreachable();
+    /// ```
     #[track_caller]
     pub fn unreachable() -> Self {
         let location = Location::caller();

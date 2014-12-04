@@ -10,7 +10,7 @@ use gaia_types::{helpers::Architecture, GaiaError};
 use std::io::Cursor;
 /// PE 汇编器构建器
 #[derive(Debug)]
-pub struct PeAssemblerBuilder {
+pub struct PeBuilder {
     architecture: Option<Architecture>,
     subsystem: Option<SubsystemType>,
     entry_point: Option<u32>,
@@ -21,7 +21,7 @@ pub struct PeAssemblerBuilder {
     sections: Vec<PeSection>, // Add this field
 }
 
-impl PeAssemblerBuilder {
+impl PeBuilder {
     /// 创建新的 PE 汇编器构建器
     pub fn new() -> Self {
         Self {
@@ -633,7 +633,7 @@ impl PeAssemblerBuilder {
     }
 }
 
-impl Default for PeAssemblerBuilder {
+impl Default for PeBuilder {
     fn default() -> Self {
         Self::new()
     }

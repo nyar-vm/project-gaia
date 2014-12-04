@@ -2,12 +2,13 @@
 name = "lua-assembler"
 version = "0.0.0"
 authors = ["Aster <192607617@qq.com>"]
-description = "解析以及写入  `.pyc` bytecode files"
-repository = "https://github.com/oovm/wasm.exe"
-documentation = "https://docs.rs/wasm-exe"
+description = "解析以及写入  `.luac` 字节码"
+homepage = "https://gaia-assembly.netlify.app/backends/lua/"
+repository = "https://github.com/nyar-vm/project-gaia"
+documentation = "https://docs.rs/lua-assembler"
 readme = "readme.md"
 license = "MPL-2.0"
-edition = "2021"
+edition = "2024"
 exclude = ["package.json", "tests/**"]
 
 [dependencies]

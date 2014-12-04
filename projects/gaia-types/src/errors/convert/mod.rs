@@ -1,4 +1,4 @@
-use crate::{GaiaError, GaiaErrorKind};
+use crate::{errors::GaiaErrorKind, GaiaError};
 use tracing::Level;
 
 #[cfg(feature = "serde_json")]

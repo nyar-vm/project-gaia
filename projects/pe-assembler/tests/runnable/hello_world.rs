@@ -2,7 +2,7 @@
 
 use crate::test_tools::test_path;
 use gaia_types::{helpers::Architecture, GaiaError};
-use pe_assembler::{helpers::PeAssemblerBuilder, types::SubsystemType};
+use pe_assembler::{helpers::PeBuilder, types::SubsystemType};
 use std::{
     fs::{create_dir_all, write},
     process::Command,
@@ -95,7 +95,7 @@ fn generate_console_log_x86(message: &str) -> Result<Vec<u8>, GaiaError> {
     data.push(0);
     data.extend_from_slice(&[0, 0, 0, 0]);
 
-    PeAssemblerBuilder::new()
+    PeBuilder::new()
         .architecture(Architecture::X86)
         .subsystem(SubsystemType::Console)
         .entry_point(0x1000)
@@ -164,7 +164,7 @@ fn generate_console_log_x64(message: &str) -> Result<Vec<u8>, GaiaError> {
     }
     data.extend_from_slice(&[0u8; 4]);
 
-    PeAssemblerBuilder::new()
+    PeBuilder::new()
         .architecture(Architecture::X86_64)
         .subsystem(SubsystemType::Console)
         .entry_point(0x1000)

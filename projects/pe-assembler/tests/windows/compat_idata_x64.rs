@@ -3,7 +3,7 @@
 use gaia_types::{helpers::Architecture, GaiaError};
 use pe_assembler::{
     formats::exe::reader::ExeReader,
-    helpers::{PeAssemblerBuilder, PeReader},
+    helpers::{PeBuilder, PeReader},
     types::{PeSection, SubsystemType},
 };
 use std::io::Cursor;
@@ -19,7 +19,7 @@ fn test_x64_idata_compat_iat_points_to_hint_name() -> Result<(), GaiaError> {
     program.call_indirect(0)?; // IAT 占位，构建器后续修补
     let code = program.compile_instructions()?;
 
-    let pe_data = PeAssemblerBuilder::new()
+    let pe_data = PeBuilder::new()
         .architecture(Architecture::X86_64)
         .subsystem(SubsystemType::Console)
         .entry_point(0x1000)
