@@ -1,7 +1,7 @@
 //! Mini Rust 代码生成器
 
 use crate::ast::*;
-use gaia_assembler::*;
+use gaia_assembler::{instruction::GaiaInstruction, program::{GaiaConstant, GaiaFunction, GaiaProgram}, types::*};
 use gaia_types::*;
 use std::collections::HashMap;
 
@@ -26,7 +26,7 @@ impl CodeGenerator {
             functions.push(self.generate_function(function)?);
         }
 
-        Ok(GaiaProgram { name: program.name.clone(), functions, constants: Vec::new() })
+        Ok(GaiaProgram { name: program.name.clone(), functions, constants: Vec::new(), globals: None })
     }
 
     /// 生成函数
@@ -92,7 +92,7 @@ impl CodeGenerator {
                 self.local_index += 1;
 
                 // 存储到局部变量
-                instructions.push(GaiaInstruction::StoreLocal(index as u32));
+                instructions.push(GaiaInstruction::StoreLocal(index));
             }
             Statement::Return(expr) => {
                 if let Some(expr) = expr {
@@ -113,7 +113,7 @@ impl CodeGenerator {
             }
             Expression::Identifier(name) => {
                 if let Some(&index) = self.locals.get(name) {
-                    instructions.push(GaiaInstruction::LoadLocal(index as u32));
+                    instructions.push(GaiaInstruction::LoadLocal(index));
                 }
                 else {
                     return Err(GaiaError::syntax_error(format!("未定义的变量: {}", name), SourceLocation::default()));
@@ -128,30 +128,12 @@ impl CodeGenerator {
                     BinaryOperator::Subtract => GaiaInstruction::Subtract,
                     BinaryOperator::Multiply => GaiaInstruction::Multiply,
                     BinaryOperator::Divide => GaiaInstruction::Divide,
-                    BinaryOperator::Equal => GaiaInstruction::CompareEqual,
-                    BinaryOperator::NotEqual => {
-                        // 先比较相等，然后取反
-                        instructions.push(GaiaInstruction::CompareEqual);
-                        instructions.push(GaiaInstruction::LoadConstant(GaiaConstant::Integer32(0)));
-                        instructions.push(GaiaInstruction::CompareEqual);
-                        return Ok(());
-                    }
-                    BinaryOperator::Less => GaiaInstruction::CompareLessThan,
-                    BinaryOperator::LessEqual => {
-                        // a <= b 等价于 !(a > b)
-                        instructions.push(GaiaInstruction::CompareGreaterThan);
-                        instructions.push(GaiaInstruction::LoadConstant(GaiaConstant::Integer32(0)));
-                        instructions.push(GaiaInstruction::CompareEqual);
-                        return Ok(());
-                    }
-                    BinaryOperator::Greater => GaiaInstruction::CompareGreaterThan,
-                    BinaryOperator::GreaterEqual => {
-                        // a >= b 等价于 !(a < b)
-                        instructions.push(GaiaInstruction::CompareLessThan);
-                        instructions.push(GaiaInstruction::LoadConstant(GaiaConstant::Integer32(0)));
-                        instructions.push(GaiaInstruction::CompareEqual);
-                        return Ok(());
-                    }
+                    BinaryOperator::Equal => GaiaInstruction::Equal,
+                    BinaryOperator::NotEqual => GaiaInstruction::NotEqual,
+                    BinaryOperator::Less => GaiaInstruction::LessThan,
+                    BinaryOperator::LessEqual => GaiaInstruction::LessThanOrEqual,
+                    BinaryOperator::Greater => GaiaInstruction::GreaterThan,
+                    BinaryOperator::GreaterEqual => GaiaInstruction::GreaterThanOrEqual,
                 };
 
                 instructions.push(instruction);
@@ -165,10 +147,9 @@ impl CodeGenerator {
                         instructions.push(GaiaInstruction::Subtract);
                     }
                     UnaryOperator::Not => {
-                        // 逻辑非：operand == 0
+                        // 逻辑非
                         self.generate_expression(operand, instructions)?;
-                        instructions.push(GaiaInstruction::LoadConstant(GaiaConstant::Integer32(0)));
-                        instructions.push(GaiaInstruction::CompareEqual);
+                        instructions.push(GaiaInstruction::LogicalNot);
                     }
                 }
             }
@@ -178,13 +159,12 @@ impl CodeGenerator {
                     self.generate_expression(arg, instructions)?;
                 }
 
-                // 处理内置函数
+                // 直接调用函数名，由适配器完成映射
                 if name == "console" {
                     return Err(GaiaError::syntax_error("console 不是函数，应该使用 console.log()", SourceLocation::default()));
                 }
 
-                // 调用函数
-                instructions.push(GaiaInstruction::Call(name.clone()));
+                instructions.push(GaiaInstruction::Call(name.clone(), arguments.len()));
             }
             Expression::MethodCall { object, method, arguments } => {
                 // 处理 console.log
@@ -195,8 +175,8 @@ impl CodeGenerator {
                             self.generate_expression(arg, instructions)?;
                         }
 
-                        // 调用内置的打印函数
-                        instructions.push(GaiaInstruction::Call("__builtin_print".to_string()));
+                        // 调用通用函数名，由适配器完成映射
+                        instructions.push(GaiaInstruction::Call("console.log".to_string(), arguments.len()));
                         return Ok(());
                     }
                 }
@@ -215,8 +195,8 @@ impl CodeGenerator {
                         self.generate_expression(arg, instructions)?;
                     }
 
-                    // 调用内置的打印函数
-                    instructions.push(GaiaInstruction::Call("__builtin_println".to_string()));
+                    // 调用通用函数名，由适配器完成映射
+                    instructions.push(GaiaInstruction::Call("println".to_string(), arguments.len()));
                 }
                 else {
                     return Err(GaiaError::syntax_error(format!("不支持的宏: {}!", name), SourceLocation::default()));
@@ -262,42 +242,5 @@ impl MiniRustParser {
 
         let mut codegen = CodeGenerator::new();
         codegen.generate(&ast)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_simple_function() {
-        let source = r#"
-            fn main() {
-                console.log("Hello Gaia!");
-            }
-        "#;
-
-        let program = MiniRustParser::parse(source).unwrap();
-        assert_eq!(program.functions.len(), 1);
-        assert_eq!(program.functions[0].name, "main");
-    }
-
-    #[test]
-    fn test_arithmetic() {
-        let source = r#"
-            fn add() {
-                let result = 1 + 2;
-                console.log(result);
-            }
-        "#;
-
-        let program = MiniRustParser::parse(source).unwrap();
-        assert_eq!(program.functions.len(), 1);
-
-        // 检查指令序列
-        let instructions = &program.functions[0].instructions;
-        assert!(instructions.contains(&GaiaInstruction::Ldc(GaiaConstant::I32(1))));
-        assert!(instructions.contains(&GaiaInstruction::Ldc(GaiaConstant::I32(2))));
-        assert!(instructions.contains(&GaiaInstruction::Add));
     }
 }

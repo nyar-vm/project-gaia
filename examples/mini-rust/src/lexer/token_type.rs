@@ -12,6 +12,7 @@ pub enum RustTokenType {
     True,
     False,
 
+
     // 标识符和字面量
     Identifier,
     Integer,

@@ -3,8 +3,8 @@
 //! 一个简化的 Rust 语言实现，支持编译到多个目标平台
 
 use clap::{Parser, ValueEnum};
-use gaia_assembler::{assembler::TargetPlatform, *};
-use gaia_types::{helpers::Url, *};
+use gaia_assembler::{assembler::GaiaAssembler, program::GaiaProgram};
+use gaia_types::{helpers::{AbiCompatible, ApiCompatible, Architecture, CompilationTarget, Url}, *};
 use std::{fs, path::PathBuf};
 
 mod ast;
@@ -27,7 +27,7 @@ struct Cli {
     target: Target,
 
     /// 输出目录
-    #[arg(short, long, default_value = "output")]
+    #[arg(short, long, default_value = "target")]
     output: PathBuf,
 
     /// 是否显示详细信息
@@ -49,15 +49,29 @@ enum Target {
     Wasi,
 }
 
-impl From<Target> for Option<TargetPlatform> {
-    fn from(target: Target) -> Self {
-        match target {
-            Target::All => None,
-            Target::Il => Some(TargetPlatform::IL),
-            Target::Jvm => Some(TargetPlatform::JVM),
-            Target::Pe => Some(TargetPlatform::PE),
-            Target::Wasi => Some(TargetPlatform::WASI),
-        }
+fn compilation_target_for(target: Target) -> Option<CompilationTarget> {
+    match target {
+        Target::All => None,
+        Target::Il => Some(CompilationTarget {
+            build: Architecture::CLR,
+            host: AbiCompatible::MicrosoftIntermediateLanguage,
+            target: ApiCompatible::ClrRuntime(4),
+        }),
+        Target::Jvm => Some(CompilationTarget {
+            build: Architecture::JVM,
+            host: AbiCompatible::JavaAssembly,
+            target: ApiCompatible::JvmRuntime(8),
+        }),
+        Target::Pe => Some(CompilationTarget {
+            build: Architecture::X86_64,
+            host: AbiCompatible::PE,
+            target: ApiCompatible::MicrosoftVisualC,
+        }),
+        Target::Wasi => Some(CompilationTarget {
+            build: Architecture::WASM32,
+            host: AbiCompatible::WebAssemblyTextFormat,
+            target: ApiCompatible::WASI,
+        }),
     }
 }
 
@@ -87,7 +101,7 @@ fn main() -> Result<()> {
     fs::create_dir_all(&cli.output).map_err(|e| GaiaError::io_error(e, Url::from_file_path(&cli.output).unwrap()))?;
 
     // 编译到目标平台
-    match cli.target.into() {
+    match compilation_target_for(cli.target) {
         Some(target_platform) => {
             compile_to_single_platform(&program, target_platform, &cli.output, cli.verbose)?;
         }
@@ -102,36 +116,61 @@ fn main() -> Result<()> {
 
 fn compile_to_single_platform(
     program: &GaiaProgram,
-    target: TargetPlatform,
+    target: CompilationTarget,
     output_dir: &PathBuf,
     verbose: bool,
 ) -> Result<()> {
     if verbose {
-        println!("正在编译到 {} 平台...", target.name());
+        println!("正在编译到 {} 平台...", target);
     }
 
-    let compiler = GaiaCompiler::new(target);
-    let bytecode = compiler.compile(program)?;
+    let assembler = GaiaAssembler::new();
+    let generated = assembler.compile(program, &target)?;
 
-    let output_file = output_dir.join(format!("output.{}", target.file_extension()));
-    fs::write(&output_file, bytecode).map_err(|e| GaiaError::io_error(e, Url::from_file_path(&output_file).unwrap()))?;
+    // 写出已生成的文件
+    let mut wrote_any = false;
+    for (filename, bytes) in generated.files {
+        let output_file = output_dir.join(filename);
+        fs::write(&output_file, bytes).map_err(|e| GaiaError::io_error(e, Url::from_file_path(&output_file).unwrap()))?;
+        println!("已生成 {} 文件: {:?}", target, output_file);
+        wrote_any = true;
+    }
 
-    println!("已生成 {} 文件: {:?}", target.name(), output_file);
+    // 针对 PE 目标的回退：如果未生成任何文件，则直接调用 PE 后端生成
+    if !wrote_any && matches!(target.host, AbiCompatible::PE) {
+        if verbose {
+            println!("未检测到后端输出，启用 PE 回退生成...");
+        }
+        let pe_bytes = gaia_assembler::backends::pe::compile(program)?;
+        let output_file = output_dir.join("main.exe");
+        fs::write(&output_file, pe_bytes)
+            .map_err(|e| GaiaError::io_error(e, Url::from_file_path(&output_file).unwrap()))?;
+        println!("已生成 {} 文件: {:?}", target, output_file);
+    }
     Ok(())
 }
 
 fn compile_to_all_platforms(program: &GaiaProgram, output_dir: &PathBuf, verbose: bool) -> Result<()> {
     if verbose {
-        println!("正在编译到所有平台...");
+        println!("正在编译到主选平台...");
     }
 
-    let results = GaiaCompiler::compile_all(program)?;
+    // 暂时跳过 WASI（后端尚未实现函数起始编译），避免影响其它平台输出
+    let targets = vec![
+        CompilationTarget { build: Architecture::CLR, host: AbiCompatible::MicrosoftIntermediateLanguage, target: ApiCompatible::ClrRuntime(4) },
+        CompilationTarget { build: Architecture::JVM, host: AbiCompatible::JavaAssembly, target: ApiCompatible::JvmRuntime(8) },
+        CompilationTarget { build: Architecture::X86_64, host: AbiCompatible::PE, target: ApiCompatible::MicrosoftVisualC },
+    ];
 
-    for (platform, bytecode) in results {
-        let output_file = output_dir.join(format!("output.{}", platform.file_extension()));
-        fs::write(&output_file, bytecode).map_err(|e| GaiaError::io_error(e, Url::from_file_path(&output_file).unwrap()))?;
-
-        println!("已生成 {} 文件: {:?}", platform.name(), output_file);
+    let assembler = GaiaAssembler::new();
+    for target in targets {
+        let generated = assembler.compile(program, &target)?;
+        for (filename, bytes) in generated.files {
+            let output_file = output_dir.join(filename);
+            fs::write(&output_file, bytes)
+                .map_err(|e| GaiaError::io_error(e, Url::from_file_path(&output_file).unwrap()))?;
+            println!("已生成 {} 文件: {:?}", target, output_file);
+        }
     }
 
     Ok(())

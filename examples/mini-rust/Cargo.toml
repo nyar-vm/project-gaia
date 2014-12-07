@@ -1,9 +1,13 @@
 [package]
-name = "mini-rust"
+name = "rusty-rust"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 authors = ["Aster <192607617@qq.com>"]
-description = "Mini Rust language implementation for Gaia assembler"
+description = "Rewrite rust in rust!"
+
+[[bin]]
+name = "rrust"
+path = "src/main.rs"
 
 [dependencies]
 gaia-assembler = { path = "../../projects/gaia-assembler" }

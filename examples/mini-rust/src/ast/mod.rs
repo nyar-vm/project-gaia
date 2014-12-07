@@ -1,5 +1,8 @@
 //! Mini Rust 抽象语法树定义
 
+use gaia_assembler::types::GaiaType;
+use gaia_assembler::program::GaiaConstant;
+use gaia_types::*;
 use serde::{Deserialize, Serialize};
 
 /// Mini Rust 程序
@@ -117,27 +120,27 @@ pub enum Type {
 
 impl Type {
     /// 转换为 Gaia 类型
-    pub fn to_gaia_type(&self) -> gaia_assembler::GaiaType {
+    pub fn to_gaia_type(&self) -> GaiaType {
         match self {
-            Type::I32 => gaia_assembler::GaiaType::Integer32,
-            Type::I64 => gaia_assembler::GaiaType::Integer64,
-            Type::F32 => gaia_assembler::GaiaType::Float32,
-            Type::F64 => gaia_assembler::GaiaType::Float64,
-            Type::String => gaia_assembler::GaiaType::String,
-            Type::Bool => gaia_assembler::GaiaType::Boolean,
-            Type::Unit => gaia_assembler::GaiaType::Object, // 使用 Object 表示 unit 类型
+            Type::I32 => GaiaType::Integer32,
+            Type::I64 => GaiaType::Integer64,
+            Type::F32 => GaiaType::Float32,
+            Type::F64 => GaiaType::Float64,
+            Type::String => GaiaType::String,
+            Type::Bool => GaiaType::Boolean,
+            Type::Unit => GaiaType::Object, // 使用 Object 表示 unit 类型
         }
     }
 }
 
 impl Literal {
     /// 转换为 Gaia 常量
-    pub fn to_gaia_constant(&self) -> gaia_assembler::GaiaConstant {
+    pub fn to_gaia_constant(&self) -> GaiaConstant {
         match self {
-            Literal::Integer(i) => gaia_assembler::GaiaConstant::Integer32(*i as i32),
-            Literal::Float(f) => gaia_assembler::GaiaConstant::Float32(*f as f32),
-            Literal::String(s) => gaia_assembler::GaiaConstant::String(s.clone()),
-            Literal::Boolean(b) => gaia_assembler::GaiaConstant::Boolean(*b),
+            Literal::Integer(i) => GaiaConstant::Integer32(*i as i32),
+            Literal::Float(f) => GaiaConstant::Float32(*f as f32),
+            Literal::String(s) => GaiaConstant::String(s.clone()),
+            Literal::Boolean(b) => GaiaConstant::Boolean(*b),
         }
     }
 }

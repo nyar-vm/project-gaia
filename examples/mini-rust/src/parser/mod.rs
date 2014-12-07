@@ -2,52 +2,107 @@
 
 use crate::{
     ast::*,
-    lexer::{Lexer, Token},
+    lexer::RustTokenType,
 };
-use gaia_types::*;
+use gaia_types::{reader::TokenStream, *};
 
 /// 语法分析器
-pub struct Parser {
-    lexer: Lexer,
-    current_token: Token,
+pub struct Parser<'input> {
+    token_stream: TokenStream<'input, RustTokenType>,
+    current_index: usize,
 }
 
-impl Parser {
-    pub fn new(mut lexer: Lexer) -> Result<Self, GaiaError> {
-        let current_token = lexer.next_token()?;
-        Ok(Self { lexer, current_token })
+impl<'input> Parser<'input> {
+    pub fn new(token_stream: TokenStream<'input, RustTokenType>) -> Self {
+        Self { token_stream, current_index: 0 }
     }
 
-    fn advance(&mut self) -> Result<(), GaiaError> {
-        self.current_token = self.lexer.next_token()?;
+    // 获取当前“有效”token：跳过空白与注释，但保留换行
+    fn current_token(&self) -> &RustTokenType {
+        let tokens = self.token_stream.tokens.get_ref();
+        let mut idx = self.current_index;
+        while let Some(tok) = tokens.get(idx) {
+            match tok.token_type {
+                RustTokenType::Whitespace | RustTokenType::Comment => {
+                    idx += 1;
+                    continue;
+                }
+                _ => return &tok.token_type,
+            }
+        }
+        &RustTokenType::Eof
+    }
+
+    fn get_token_text(&self, index: usize) -> String {
+        if let Some(token) = self.token_stream.tokens.get_ref().get(index) {
+            match self.token_stream.get_text(token) {
+                Ok(s) => s.to_string(),
+                Err(_) => String::new(),
+            }
+        } else {
+            String::new()
+        }
+    }
+
+    // 获取当前有效 token 的源码文本
+    fn current_token_text(&self) -> String {
+        let tokens = self.token_stream.tokens.get_ref();
+        let mut idx = self.current_index;
+        while let Some(tok) = tokens.get(idx) {
+            match tok.token_type {
+                RustTokenType::Whitespace | RustTokenType::Comment => {
+                    idx += 1;
+                    continue;
+                }
+                _ => return self.get_token_text(idx),
+            }
+        }
+        String::new()
+    }
+
+    fn advance(&mut self) -> Result<()> {
+        let tokens = self.token_stream.tokens.get_ref();
+        let mut idx = self.current_index;
+        // 跳过当前索引起的空白/注释，定位到当前有效 token
+        while idx < tokens.len() {
+            match tokens[idx].token_type {
+                RustTokenType::Whitespace | RustTokenType::Comment => idx += 1,
+                _ => break,
+            }
+        }
+        // 消费当前有效 token（如果存在），并将索引推进到其后一个位置
+        if idx < tokens.len() {
+            self.current_index = idx + 1;
+        } else {
+            self.current_index = idx;
+        }
         Ok(())
     }
 
-    fn expect(&mut self, expected: Token) -> Result<(), GaiaError> {
-        if std::mem::discriminant(&self.current_token) == std::mem::discriminant(&expected) {
+    fn expect(&mut self, expected: RustTokenType) -> Result<()> {
+        if std::mem::discriminant(self.current_token()) == std::mem::discriminant(&expected) {
             self.advance()
-        }
-        else {
+        } else {
             Err(GaiaError::syntax_error(
-                format!("期望 {:?}, 但得到 {:?}", expected, self.current_token),
+                format!("期望 {:?}, 但得到 {:?}", expected, self.current_token()),
                 SourceLocation::default(),
             ))
         }
     }
 
-    fn skip_newlines(&mut self) -> Result<(), GaiaError> {
-        while self.current_token == Token::Newline {
+    fn skip_newlines(&mut self) -> Result<()> {
+        while *self.current_token() == RustTokenType::Newline {
             self.advance()?;
         }
         Ok(())
     }
 
-    pub fn parse_program(&mut self) -> Result<Program, GaiaError> {
+    pub fn parse_program(&mut self) -> Result<Program> {
         let mut functions = Vec::new();
 
         self.skip_newlines()?;
 
-        while self.current_token != Token::Eof {
+        while *self.current_token() != RustTokenType::Eof {
             functions.push(self.parse_function()?);
             self.skip_newlines()?;
         }
@@ -55,37 +110,38 @@ impl Parser {
         Ok(Program { name: "main".to_string(), functions })
     }
 
-    fn parse_function(&mut self) -> Result<Function, GaiaError> {
-        self.expect(Token::Fn)?;
+    fn parse_function(&mut self) -> Result<Function> {
+        self.expect(RustTokenType::Fn)?;
 
-        let name = match &self.current_token {
-            Token::Identifier(name) => name.clone(),
-            _ => return Err(GaiaError::syntax_error("期望函数名", SourceLocation::default())),
+        let name = match self.current_token() {
+            RustTokenType::Identifier => {
+                let name = self.current_token_text();
+                self.advance()?;
+                name
+            }
+            _ => return Err(GaiaError::syntax_error("期望函数名".to_string(), SourceLocation::default())),
         };
-        self.advance()?;
 
-        self.expect(Token::LeftParen)?;
+        self.expect(RustTokenType::LeftParen)?;
 
         let mut parameters = Vec::new();
-        while self.current_token != Token::RightParen {
+        while *self.current_token() != RustTokenType::RightParen {
             parameters.push(self.parse_parameter()?);
 
-            if self.current_token == Token::Comma {
+            if *self.current_token() == RustTokenType::Comma {
                 self.advance()?;
-            }
-            else if self.current_token != Token::RightParen {
-                return Err(GaiaError::syntax_error("期望 ',' 或 ')'", SourceLocation::default()));
+            } else if *self.current_token() != RustTokenType::RightParen {
+                return Err(GaiaError::syntax_error("期望 ',' 或 ')'".to_string(), SourceLocation::default()));
             }
         }
 
-        self.expect(Token::RightParen)?;
+        self.expect(RustTokenType::RightParen)?;
 
         // 可选的返回类型
-        let return_type = if self.current_token == Token::Arrow {
+        let return_type = if *self.current_token() == RustTokenType::Arrow {
             self.advance()?;
             Some(self.parse_type()?)
-        }
-        else {
+        } else {
             None
         };
 
@@ -95,25 +151,37 @@ impl Parser {
         Ok(Function { name, parameters, return_type, body })
     }
 
-    fn parse_parameter(&mut self) -> Result<Parameter, GaiaError> {
-        let name = match &self.current_token {
-            Token::Identifier(name) => name.clone(),
-            _ => return Err(GaiaError::syntax_error("期望参数名", SourceLocation::default())),
+    fn parse_parameter(&mut self) -> Result<Parameter> {
+        let name = match self.current_token() {
+            RustTokenType::Identifier => {
+                let name = self.current_token_text();
+                self.advance()?;
+                name
+            }
+            _ => return Err(GaiaError::syntax_error("期望参数名".to_string(), SourceLocation::default())),
         };
-        self.advance()?;
 
-        self.expect(Token::Colon)?;
+        self.expect(RustTokenType::Colon)?;
         let param_type = self.parse_type()?;
 
         Ok(Parameter { name, param_type })
     }
 
-    fn parse_type(&mut self) -> Result<Type, GaiaError> {
-        let type_name = match &self.current_token {
-            Token::Identifier(name) => name.clone(),
-            _ => return Err(GaiaError::syntax_error("期望类型名", SourceLocation::default())),
+    fn parse_type(&mut self) -> Result<Type> {
+        let type_name = match self.current_token() {
+            RustTokenType::Identifier => {
+                let name = self.current_token_text();
+                self.advance()?;
+                name
+            }
+            RustTokenType::LeftParen => {
+                // 处理 unit 类型 ()
+                self.advance()?; // 跳过 (
+                self.expect(RustTokenType::RightParen)?; // 期望 )
+                return Ok(Type::Unit);
+            }
+            _ => return Err(GaiaError::syntax_error("期望类型名".to_string(), SourceLocation::default())),
         };
-        self.advance()?;
 
         match type_name.as_str() {
             "i32" => Ok(Type::I32),
@@ -122,34 +190,33 @@ impl Parser {
             "f64" => Ok(Type::F64),
             "String" => Ok(Type::String),
             "bool" => Ok(Type::Bool),
-            "()" => Ok(Type::Unit),
             _ => Err(GaiaError::syntax_error(format!("未知类型: {}", type_name), SourceLocation::default())),
         }
     }
 
-    fn parse_block(&mut self) -> Result<Block, GaiaError> {
-        self.expect(Token::LeftBrace)?;
+    fn parse_block(&mut self) -> Result<Block> {
+        self.expect(RustTokenType::LeftBrace)?;
         self.skip_newlines()?;
 
         let mut statements = Vec::new();
 
-        while self.current_token != Token::RightBrace && self.current_token != Token::Eof {
+        while *self.current_token() != RustTokenType::RightBrace && *self.current_token() != RustTokenType::Eof {
             statements.push(self.parse_statement()?);
             self.skip_newlines()?;
         }
 
-        self.expect(Token::RightBrace)?;
+        self.expect(RustTokenType::RightBrace)?;
 
         Ok(Block { statements })
     }
 
-    fn parse_statement(&mut self) -> Result<Statement, GaiaError> {
-        match &self.current_token {
-            Token::Let => self.parse_variable_declaration(),
-            Token::Return => self.parse_return_statement(),
+    fn parse_statement(&mut self) -> Result<Statement> {
+        match self.current_token() {
+            RustTokenType::Let => self.parse_variable_declaration(),
+            RustTokenType::Return => self.parse_return_statement(),
             _ => {
                 let expr = self.parse_expression()?;
-                if self.current_token == Token::Semicolon {
+                if *self.current_token() == RustTokenType::Semicolon {
                     self.advance()?;
                 }
                 Ok(Statement::Expression(expr))
@@ -157,62 +224,62 @@ impl Parser {
         }
     }
 
-    fn parse_variable_declaration(&mut self) -> Result<Statement, GaiaError> {
-        self.expect(Token::Let)?;
+    fn parse_variable_declaration(&mut self) -> Result<Statement> {
+        self.expect(RustTokenType::Let)?;
 
-        let name = match &self.current_token {
-            Token::Identifier(name) => name.clone(),
-            _ => return Err(GaiaError::syntax_error("期望变量名", SourceLocation::default())),
+        let name = match self.current_token() {
+            RustTokenType::Identifier => {
+                let name = self.current_token_text();
+                self.advance()?;
+                name
+            }
+            _ => return Err(GaiaError::syntax_error("期望变量名".to_string(), SourceLocation::default())),
         };
-        self.advance()?;
 
-        // 可选的类型注解
-        let var_type = if self.current_token == Token::Colon {
+        let var_type = if *self.current_token() == RustTokenType::Colon {
             self.advance()?;
             Some(self.parse_type()?)
-        }
-        else {
+        } else {
             None
         };
 
-        self.expect(Token::Equal)?;
-        let value = self.parse_expression()?;
+        self.expect(RustTokenType::Equal)?;
+        let initializer = Some(self.parse_expression()?);
 
-        if self.current_token == Token::Semicolon {
+        if *self.current_token() == RustTokenType::Semicolon {
             self.advance()?;
         }
 
-        Ok(Statement::VariableDeclaration { name, var_type, value })
+        Ok(Statement::VariableDeclaration { name, var_type, initializer })
     }
 
-    fn parse_return_statement(&mut self) -> Result<Statement, GaiaError> {
-        self.expect(Token::Return)?;
+    fn parse_return_statement(&mut self) -> Result<Statement> {
+        self.expect(RustTokenType::Return)?;
 
-        let value = if self.current_token == Token::Semicolon || self.current_token == Token::Newline {
+        let value = if *self.current_token() == RustTokenType::Semicolon || *self.current_token() == RustTokenType::Newline {
             None
-        }
-        else {
+        } else {
             Some(self.parse_expression()?)
         };
 
-        if self.current_token == Token::Semicolon {
+        if *self.current_token() == RustTokenType::Semicolon {
             self.advance()?;
         }
 
         Ok(Statement::Return(value))
     }
 
-    fn parse_expression(&mut self) -> Result<Expression, GaiaError> {
+    fn parse_expression(&mut self) -> Result<Expression> {
         self.parse_equality()
     }
 
-    fn parse_equality(&mut self) -> Result<Expression, GaiaError> {
+    fn parse_equality(&mut self) -> Result<Expression> {
         let mut expr = self.parse_comparison()?;
 
-        while matches!(self.current_token, Token::EqualEqual | Token::NotEqual) {
-            let operator = match self.current_token {
-                Token::EqualEqual => BinaryOperator::Equal,
-                Token::NotEqual => BinaryOperator::NotEqual,
+        while matches!(self.current_token(), RustTokenType::EqualEqual | RustTokenType::NotEqual) {
+            let operator = match self.current_token() {
+                RustTokenType::EqualEqual => BinaryOperator::Equal,
+                RustTokenType::NotEqual => BinaryOperator::NotEqual,
                 _ => unreachable!(),
             };
             self.advance()?;
@@ -223,15 +290,15 @@ impl Parser {
         Ok(expr)
     }
 
-    fn parse_comparison(&mut self) -> Result<Expression, GaiaError> {
+    fn parse_comparison(&mut self) -> Result<Expression> {
         let mut expr = self.parse_term()?;
 
-        while matches!(self.current_token, Token::Greater | Token::GreaterEqual | Token::Less | Token::LessEqual) {
-            let operator = match self.current_token {
-                Token::Greater => BinaryOperator::Greater,
-                Token::GreaterEqual => BinaryOperator::GreaterEqual,
-                Token::Less => BinaryOperator::Less,
-                Token::LessEqual => BinaryOperator::LessEqual,
+        while matches!(self.current_token(), RustTokenType::Greater | RustTokenType::GreaterEqual | RustTokenType::Less | RustTokenType::LessEqual) {
+            let operator = match self.current_token() {
+                RustTokenType::Greater => BinaryOperator::Greater,
+                RustTokenType::GreaterEqual => BinaryOperator::GreaterEqual,
+                RustTokenType::Less => BinaryOperator::Less,
+                RustTokenType::LessEqual => BinaryOperator::LessEqual,
                 _ => unreachable!(),
             };
             self.advance()?;
@@ -242,13 +309,13 @@ impl Parser {
         Ok(expr)
     }
 
-    fn parse_term(&mut self) -> Result<Expression, GaiaError> {
+    fn parse_term(&mut self) -> Result<Expression> {
         let mut expr = self.parse_factor()?;
 
-        while matches!(self.current_token, Token::Plus | Token::Minus) {
-            let operator = match self.current_token {
-                Token::Plus => BinaryOperator::Add,
-                Token::Minus => BinaryOperator::Subtract,
+        while matches!(self.current_token(), RustTokenType::Plus | RustTokenType::Minus) {
+            let operator = match self.current_token() {
+                RustTokenType::Plus => BinaryOperator::Add,
+                RustTokenType::Minus => BinaryOperator::Subtract,
                 _ => unreachable!(),
             };
             self.advance()?;
@@ -259,13 +326,13 @@ impl Parser {
         Ok(expr)
     }
 
-    fn parse_factor(&mut self) -> Result<Expression, GaiaError> {
+    fn parse_factor(&mut self) -> Result<Expression> {
         let mut expr = self.parse_unary()?;
 
-        while matches!(self.current_token, Token::Star | Token::Slash) {
-            let operator = match self.current_token {
-                Token::Star => BinaryOperator::Multiply,
-                Token::Slash => BinaryOperator::Divide,
+        while matches!(self.current_token(), RustTokenType::Star | RustTokenType::Slash) {
+            let operator = match self.current_token() {
+                RustTokenType::Star => BinaryOperator::Multiply,
+                RustTokenType::Slash => BinaryOperator::Divide,
                 _ => unreachable!(),
             };
             self.advance()?;
@@ -276,74 +343,75 @@ impl Parser {
         Ok(expr)
     }
 
-    fn parse_unary(&mut self) -> Result<Expression, GaiaError> {
-        match &self.current_token {
-            Token::Bang => {
+    fn parse_unary(&mut self) -> Result<Expression> {
+        match self.current_token() {
+            RustTokenType::Bang => {
                 self.advance()?;
-                let expr = self.parse_unary()?;
-                Ok(Expression::UnaryOperation { operator: UnaryOperator::Not, operand: Box::new(expr) })
+                let operand = self.parse_unary()?;
+                Ok(Expression::UnaryOperation { operator: UnaryOperator::Not, operand: Box::new(operand) })
             }
-            Token::Minus => {
+            RustTokenType::Minus => {
                 self.advance()?;
-                let expr = self.parse_unary()?;
-                Ok(Expression::UnaryOperation { operator: UnaryOperator::Negate, operand: Box::new(expr) })
+                let operand = self.parse_unary()?;
+                Ok(Expression::UnaryOperation { operator: UnaryOperator::Negate, operand: Box::new(operand) })
             }
             _ => self.parse_call(),
         }
     }
 
-    fn parse_call(&mut self) -> Result<Expression, GaiaError> {
+    fn parse_call(&mut self) -> Result<Expression> {
         let mut expr = self.parse_primary()?;
 
         loop {
-            match &self.current_token {
-                Token::LeftParen => {
+            match self.current_token() {
+                RustTokenType::LeftParen => {
                     self.advance()?;
                     let mut arguments = Vec::new();
 
-                    while self.current_token != Token::RightParen {
+                    while *self.current_token() != RustTokenType::RightParen {
                         arguments.push(self.parse_expression()?);
 
-                        if self.current_token == Token::Comma {
+                        if *self.current_token() == RustTokenType::Comma {
                             self.advance()?;
-                        }
-                        else if self.current_token != Token::RightParen {
-                            return Err(GaiaError::syntax_error("期望 ',' 或 ')'", SourceLocation::default()));
+                        } else if *self.current_token() != RustTokenType::RightParen {
+                            return Err(GaiaError::syntax_error("期望 ',' 或 ')'".to_string(), SourceLocation::default()));
                         }
                     }
 
-                    self.expect(Token::RightParen)?;
+                    self.expect(RustTokenType::RightParen)?;
 
                     expr = match expr {
                         Expression::Identifier(name) => Expression::FunctionCall { name, arguments },
-                        _ => return Err(GaiaError::syntax_error("只能调用标识符", SourceLocation::default())),
+                        _ => return Err(GaiaError::syntax_error("只能调用标识符".to_string(), SourceLocation::default())),
                     };
                 }
-                Token::Dot => {
+                RustTokenType::Dot => {
                     self.advance()?;
-                    let method_name = match &self.current_token {
-                        Token::Identifier(name) => name.clone(),
-                        _ => return Err(GaiaError::syntax_error("期望方法名", SourceLocation::default())),
+                    let method_name = match self.current_token() {
+                        RustTokenType::Identifier => {
+                            let name = self.current_token_text();
+                            self.advance()?;
+                            name
+                        }
+                        _ => return Err(GaiaError::syntax_error("期望方法名".to_string(), SourceLocation::default())),
                     };
-                    self.advance()?;
 
-                    self.expect(Token::LeftParen)?;
+                    self.expect(RustTokenType::LeftParen)?;
                     let mut arguments = Vec::new();
 
-                    while self.current_token != Token::RightParen {
+                    while *self.current_token() != RustTokenType::RightParen {
                         arguments.push(self.parse_expression()?);
 
-                        if self.current_token == Token::Comma {
+                        if *self.current_token() == RustTokenType::Comma {
                             self.advance()?;
-                        }
-                        else if self.current_token != Token::RightParen {
-                            return Err(GaiaError::syntax_error("期望 ',' 或 ')'", SourceLocation::default()));
+                        } else if *self.current_token() != RustTokenType::RightParen {
+                            return Err(GaiaError::syntax_error("期望 ',' 或 ')'".to_string(), SourceLocation::default()));
                         }
                     }
 
-                    self.expect(Token::RightParen)?;
+                    self.expect(RustTokenType::RightParen)?;
 
-                    expr = Expression::MethodCall { object: Box::new(expr), method_name, arguments };
+                    expr = Expression::MethodCall { object: Box::new(expr), method: method_name, arguments };
                 }
                 _ => break,
             }
@@ -352,108 +420,51 @@ impl Parser {
         Ok(expr)
     }
 
-    fn parse_primary(&mut self) -> Result<Expression, GaiaError> {
-        match &self.current_token.clone() {
-            Token::Integer(value) => {
-                let value = *value;
+    fn parse_primary(&mut self) -> Result<Expression> {
+        match self.current_token() {
+            RustTokenType::Integer => {
+                let text = self.current_token_text();
+                let value = text.parse::<i64>().map_err(|_| GaiaError::syntax_error("无效的整数".to_string(), SourceLocation::default()))?;
                 self.advance()?;
                 Ok(Expression::Literal(Literal::Integer(value)))
             }
-            Token::Float(value) => {
-                let value = *value;
+            RustTokenType::Float => {
+                let text = self.current_token_text();
+                let value = text.parse::<f64>().map_err(|_| GaiaError::syntax_error("无效的浮点数".to_string(), SourceLocation::default()))?;
                 self.advance()?;
                 Ok(Expression::Literal(Literal::Float(value)))
             }
-            Token::StringLiteral(value) => {
-                let value = value.clone();
+            RustTokenType::StringLiteral => {
+                let text = self.current_token_text();
+                // 移除引号
+                let value = if text.len() >= 2 && text.starts_with('"') && text.ends_with('"') {
+                    text[1..text.len()-1].to_string()
+                } else {
+                    text
+                };
                 self.advance()?;
                 Ok(Expression::Literal(Literal::String(value)))
             }
-            Token::True => {
+            RustTokenType::True => {
                 self.advance()?;
                 Ok(Expression::Literal(Literal::Boolean(true)))
             }
-            Token::False => {
+            RustTokenType::False => {
                 self.advance()?;
                 Ok(Expression::Literal(Literal::Boolean(false)))
             }
-            Token::Println => {
-                self.advance()?; // 跳过 println!
-
-                // 解析参数列表
-                self.expect(Token::LeftParen)?;
-                let mut arguments = Vec::new();
-
-                while self.current_token != Token::RightParen {
-                    arguments.push(self.parse_expression()?);
-
-                    if self.current_token == Token::Comma {
-                        self.advance()?;
-                    }
-                    else if self.current_token != Token::RightParen {
-                        return Err(GaiaError::syntax_error("期望 ',' 或 ')'", SourceLocation::default()));
-                    }
-                }
-
-                self.expect(Token::RightParen)?;
-
-                Ok(Expression::MacroCall { name: "println".to_string(), arguments })
-            }
-            Token::Identifier(name) => {
-                let name = name.clone();
+            RustTokenType::Identifier => {
+                let name = self.current_token_text();
                 self.advance()?;
                 Ok(Expression::Identifier(name))
             }
-            Token::LeftParen => {
+            RustTokenType::LeftParen => {
                 self.advance()?;
                 let expr = self.parse_expression()?;
-                self.expect(Token::RightParen)?;
+                self.expect(RustTokenType::RightParen)?;
                 Ok(expr)
             }
-            _ => Err(GaiaError::syntax_error(format!("意外的 token: {:?}", self.current_token), SourceLocation::default())),
+            _ => Err(GaiaError::syntax_error(format!("意外的 token: {:?}", self.current_token()), SourceLocation::default())),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_simple_function() {
-        let input = r#"
-            fn main() {
-                console.log("Hello World");
-            }
-        "#;
-
-        let lexer = Lexer::new(input);
-        let mut parser = Parser::new(lexer).unwrap();
-        let program = parser.parse_program().unwrap();
-
-        assert_eq!(program.functions.len(), 1);
-        assert_eq!(program.functions[0].name, "main");
-        assert_eq!(program.functions[0].parameters.len(), 0);
-    }
-
-    #[test]
-    fn test_parse_function_with_parameters() {
-        let input = r#"
-            fn add(a: i32, b: i32) -> i32 {
-                return a + b;
-            }
-        "#;
-
-        let lexer = Lexer::new(input);
-        let mut parser = Parser::new(lexer).unwrap();
-        let program = parser.parse_program().unwrap();
-
-        assert_eq!(program.functions.len(), 1);
-        let func = &program.functions[0];
-        assert_eq!(func.name, "add");
-        assert_eq!(func.parameters.len(), 2);
-        assert_eq!(func.parameters[0].name, "a");
-        assert_eq!(func.parameters[1].name, "b");
-        assert!(func.return_type.is_some());
     }
 }
