@@ -27,9 +27,13 @@
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "devDependencies": {
+        "@braintree/sanitize-url": "^6.0.0",
         "@shikijs/vitepress-twoslash": "^3.12.2",
-        "mermaid": "^11.11.0",
-        "vitepress": "^1.0.0",
-        "vitepress-plugin-mermaid": "^2.0.17"
+        "vitepress": "^1.0.0-beta.1",
+        "vue": "^3.3.4"
+    },
+    "dependencies": {
+        "@mermaid-js/mermaid-mindmap": "^9.3.0",
+        "mermaid": "^10.9.4"
     }
 }

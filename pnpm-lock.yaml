@@ -34,13 +34,15 @@ importers:
 
   projects/elf-assembler: {}
 
+  projects/gaia-assembler: {}
+
   projects/gaia-document:
     dependencies:
       '@mermaid-js/mermaid-mindmap':
         specifier: ^9.3.0
         version: 9.3.0
       mermaid:
-        specifier: ^10.0.0
+        specifier: ^10.9.4
         version: 10.9.4
     devDependencies:
       '@braintree/sanitize-url':
@@ -80,6 +82,8 @@ importers:
   projects/jvm-assembler: {}
 
   projects/lua-assembler: {}
+
+  projects/macho-assembler: {}
 
   projects/pe-assembler: {}
 

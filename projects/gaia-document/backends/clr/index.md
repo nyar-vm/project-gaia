@@ -6,6 +6,14 @@ Common Language Runtime (CLR) 后端支持，用于生成 .NET 平台的可执�
 
 CLR 后端通过 Gaia 统一接口为 .NET 平台提供编译支持，生成 Microsoft Intermediate Language (MSIL) 和 PE 格式的可执行文件或动态链接库。
 
+```mermaid
+graph TD
+    A[Gaia Assembler] --> B(CLR Backend)
+    B --> C{MSIL Code Generation}
+    C --> D[PE File Output]
+    D --> E(Executable/Library)
+```
+
 ## 支持的功能
 
 - MSIL 代码生成

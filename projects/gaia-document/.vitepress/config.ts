@@ -1,10 +1,10 @@
-import {defineConfig} from 'vitepress'
-import {withMermaid} from 'vitepress-plugin-mermaid'
+import {defineConfig} from 'vitepress';
 import msilGrammar from './msil.tmLanguage.json' with {type: 'json'}
 import jasmGrammar from './jasm.tmLanguage.json' with {type: 'json'}
 import valkyrieGrammar from './valkyrie.tmLanguage.json' with {type: 'json'}
+import mermaidPlugin from "./mermaid-plugin";
 
-const config = defineConfig({
+export default defineConfig({
     title: 'Gaia Assembler',
     description: 'Gaia - 现代多平台汇编器和工具链',
 
@@ -12,6 +12,10 @@ const config = defineConfig({
         theme: {
             light: 'one-light',
             dark: 'one-dark-pro'
+        },
+        config: (md) => {
+            console.log('config.ts: markdown.config function called');
+            md.use(mermaidPlugin);
         },
         shikiSetup(shiki) {
             shiki.loadLanguageSync({
@@ -38,6 +42,7 @@ const config = defineConfig({
         }
     },
     themeConfig: {
+        logo: '/logo.svg',
         nav: [
             {text: '首页', link: '/'},
             {
@@ -58,15 +63,16 @@ const config = defineConfig({
             {
                 text: '后端支持',
                 items: [
-                    {text: 'CLR (.NET)', link: '/backends/clr/'},
+                    {text: '.NET (C#)', link: '/backends/clr/'},
                     {text: 'JVM (Java)', link: '/backends/jvm/'},
                     {text: 'PE (Windows)', link: '/backends/pe/'},
                     {text: 'ELF (Linux/Unix)', link: '/backends/elf/'},
-                    {text: 'WASM (WebAssembly)', link: '/backends/wasm/'}
+                    {text: 'WASM (WebAssembly)', link: '/backends/wasm/'},
+                    {text: 'LUAC (Lua)', link: '/backends/lua/'},
+                    {text: 'PYC (Python)', link: '/backends/pyc/'},
                 ]
             },
         ],
-
         sidebar: {
             '/getting-started/': [
                 {
@@ -135,10 +141,12 @@ const config = defineConfig({
                     items: [
                         {text: '后端概述', link: '/backends/'},
                         {text: 'CLR (.NET)', link: '/backends/clr/'},
-                        {text: 'JVM (Java)', link: '/backends/jvm/'},
+                        {text: 'CLASS (JVM)', link: '/backends/jvm/'},
                         {text: 'PE (Windows)', link: '/backends/pe/'},
                         {text: 'ELF (Linux/Unix)', link: '/backends/elf/'},
                         {text: 'WASM (WebAssembly)', link: '/backends/wasm/'},
+                        {text: 'LUAC (Lua)', link: '/backends/lua/'},
+                        {text: 'PYC (Python)', link: '/backends/pyc/'},
                         {text: 'Gaia Assembly', link: '/backends/gaia/'}
                     ]
                 }
@@ -170,11 +178,72 @@ const config = defineConfig({
                         {text: '异常处理指令', link: '/backends/jvm/exception-instructions'}
                     ]
                 }
+            ],
+            '/backends/pe/': [
+                {
+                    text: 'PE (Windows)',
+                    items: [
+                        {text: 'PE 概述', link: '/backends/pe/'},
+                        {text: '基本概念', link: '/backends/pe/concepts'},
+                        {text: '文件结构', link: '/backends/pe/file-structure'},
+                        {text: '入门指南', link: '/backends/pe/getting-started'}
+                    ]
+                }
+            ],
+            '/backends/elf/': [
+                {
+                    text: 'ELF (Linux/Unix)',
+                    items: [
+                        {text: 'ELF 概述', link: '/backends/elf/'},
+                        {text: '基本概念', link: '/backends/elf/concepts'},
+                        {text: '文件结构', link: '/backends/elf/file-structure'},
+                        {text: '入门指南', link: '/backends/elf/getting-started'}
+                    ]
+                }
+            ],
+            '/backends/wasm/': [
+                {
+                    text: 'WASM (WebAssembly)',
+                    items: [
+                        {text: 'WASM 概述', link: '/backends/wasm/'},
+                        {text: '基本概念', link: '/backends/wasm/concepts'},
+                        {text: '入门指南', link: '/backends/wasm/getting-started'},
+                        {text: '模块结构', link: '/backends/wasm/module-structure'}
+                    ]
+                }
+            ],
+            '/backends/lua/': [
+                {
+                    text: 'LUAC (Lua)',
+                    items: [
+                        {text: 'Lua 概述', link: '/backends/lua/'},
+                        {text: '基础指令', link: '/backends/lua/basic-instructions'},
+                        {text: '算术指令', link: '/backends/lua/arithmetic-instructions'},
+                        {text: '控制流指令', link: '/backends/lua/control-flow-instructions'},
+                        {text: '函数调用指令', link: '/backends/lua/method-instructions'},
+                        {text: '对象操作指令', link: '/backends/lua/object-instructions'},
+                        {text: '异常处理指令', link: '/backends/lua/exception-instructions'}
+                    ]
+                }
+            ],
+            '/backends/pyc/': [
+                {
+                    text: 'PYC (Python)',
+                    items: [
+                        {text: 'Python 概述', link: '/backends/pyc/'},
+                        {text: '基础指令', link: '/backends/pyc/basic-instructions'},
+                        {text: '算术指令', link: '/backends/pyc/arithmetic-instructions'},
+                        {text: '控制流指令', link: '/backends/pyc/control-flow-instructions'},
+                        {text: '函数调用指令', link: '/backends/pyc/method-instructions'},
+                        {text: '对象操作指令', link: '/backends/pyc/object-instructions'},
+                        {text: '异常处理指令', link: '/backends/pyc/exception-instructions'}
+                    ]
+                }
             ]
         },
 
         socialLinks: [
-            {icon: 'github', link: 'https://github.com/oovm/project-gaia'}
+            {icon: 'github', link: 'https://github.com/nyar-vm/project-gaia'}
         ],
 
         footer: {
@@ -182,16 +251,12 @@ const config = defineConfig({
             copyright: 'Copyright © 2024 Gaia Project'
         }
     },
-})
-
-
-export default withMermaid({
-    ...config,
-    mermaid: {
-        // refer https://mermaid.js.org/config/setup/modules/mermaidAPI.html#mermaidapi-configuration-defaults for options
+    vite: {
+        ssr: {noExternal: ['dayjs']},
+        optimizeDeps: {include: ['@braintree/sanitize-url']}
     },
-    // optionally set additional config for plugin itself with MermaidPluginConfig
-    mermaidPlugin: {
-        class: "mermaid my-class", // set additional css classes for parent container
-    },
+    head: [
+        // ['script', {src: 'https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js'}],
+        // ['script', {}, 'window.addEventListener(\'load\', () => { mermaid.initialize({ startOnLoad: true }); });']
+    ]
 });

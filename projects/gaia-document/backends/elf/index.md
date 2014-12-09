@@ -4,6 +4,13 @@ ELF (Executable and Linkable Format) 后端通过 Gaia 统一接口为 Linux 和
 
 ## 概述
 
+```mermaid
+graph TD
+    A[Gaia Assembler] --> B(ELF Backend)
+    B --> C{ELF File Generation}
+    C --> D[Executable/Shared Library]
+```
+
 ELF 后端通过 Gaia 统一编译接口为 Linux 和 Unix 平台提供编译支持，生成标准的 ELF 格式二进制文件。通过 Gaia 的 ELF 后端，您可以：
 
 - 生成高性能的原生 Linux/Unix 应用程序

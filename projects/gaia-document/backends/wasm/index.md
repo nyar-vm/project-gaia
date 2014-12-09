@@ -29,6 +29,13 @@
 
 ## WASM 后端概览
 
+```mermaid
+graph TD
+    A[Gaia Assembler] --> B(WASM Backend)
+    B --> C{WASM Module Generation}
+    C --> D[WASM Binary Output]
+```
+
 Gaia WASM 后端通过统一编译接口为 WebAssembly 平台提供编译支持，具备以下特性：
 
 ### ✨ 核心特性

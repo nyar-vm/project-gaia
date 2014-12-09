@@ -39,14 +39,30 @@ Gaia 框架为多种目标平台提供统一的编译接口，每个后端都针
 - WASI (WebAssembly System Interface) 支持
 - 高性能 Web 应用程序
 
+### [LUA (Lua) 后端](./lua/) ⚠️
+
+- **状态**: 规划中，尚未实现
+- 计划生成 Lua 字节码 (luac)
+- 预期支持 Lua 5.1/5.2/5.3/5.4 版本
+- 轻量级脚本语言支持
+- 游戏开发和嵌入式系统
+
+### [PYC (Python) 后端](./pyc/)
+
+- 生成 Python 字节码 (.pyc)
+- 支持 Python 3.x 版本
+- 跨平台 Python 应用程序
+- 数据科学和机器学习集成
+
 ## 选择合适的后端
 
 选择后端时需要考虑以下因素：
 
-- **目标平台**: Windows (PE)、Linux (ELF)、Web (WASM)、跨平台 (.NET/JVM)
-- **性能要求**: 原生代码 (PE/ELF) vs 虚拟机 (.NET/JVM/WASM)
+- **目标平台**: Windows (PE)、Linux (ELF)、Web (WASM)、跨平台 (.NET/JVM/Lua/Python)
+- **性能要求**: 原生代码 (PE/ELF) vs 虚拟机 (.NET/JVM/WASM) vs 解释器 (Lua/Python)
 - **生态系统**: 现有库和工具的兼容性
 - **部署方式**: 独立可执行文件 vs 运行时依赖
+- **应用场景**: 游戏开发 (Lua)、数据科学 (Python)、企业应用 (.NET/JVM)
 
 ## 通用特性
 

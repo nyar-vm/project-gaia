@@ -4,6 +4,13 @@ PE (Portable Executable) 后端通过 Gaia 统一接口为 Windows 平台提供�
 
 ## 概述
 
+```mermaid
+graph TD
+    A[Gaia Assembler] --> B(PE Backend)
+    B --> C{PE File Generation}
+    C --> D[Executable/DLL Output]
+```
+
 PE 后端通过 Gaia 统一编译接口为 Windows 平台提供编译支持，生成标准的 PE 格式二进制文件。通过 Gaia 的 PE 后端，您可以：
 
 - 生成高性能的原生 Windows 应用程序

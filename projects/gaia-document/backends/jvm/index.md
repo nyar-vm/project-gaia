@@ -4,6 +4,13 @@ Gaia 框架的 JVM 后端支持，通过统一编译接口为 Java 虚拟机平�
 
 ## 概述
 
+```mermaid
+graph TD
+    A[Gaia Assembler] --> B(JVM Backend)
+    B --> C{JVM Bytecode Generation}
+    C --> D[Class File Output]
+```
+
 JVM 后端通过 Gaia 统一接口为 Java 平台提供编译支持，包括：
 
 - 标准 JVM 字节码生成
