@@ -22,7 +22,7 @@ use std::fmt::{Display, Formatter};
 /// # 示例
 ///
 /// ```rust
-/// use gaia_types::helpers::compilation_target::{
+/// # use gaia_types::helpers::{
 ///     AbiCompatible, ApiCompatible, Architecture, CompilationTarget,
 /// };
 ///

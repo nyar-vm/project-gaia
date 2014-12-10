@@ -1,0 +1,17 @@
+[package]
+name = "msl-assembler"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+description = "Metal Shading Language (MSL) assembler for Gaia project"
+homepage = "https://gaia-assembly.netlify.app/backends/msl/"
+repository = "https://github.com/nyar-vm/project-gaia/tree/main/examples/msl-assembler"
+documentation = "https://docs.rs/msl-assembler"
+readme = "readme.md"
+exclude = ["package.json"]
+
+[dependencies]
+gaia-types = { workspace = true }
+gaia-assembler = { workspace = true }
+serde = { workspace = true }

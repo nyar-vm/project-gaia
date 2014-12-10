@@ -104,6 +104,7 @@ pub struct GaiaSettings {
     /// 全局设置
     pub global: GlobalConfig,
     /// 平台配置映射
+    #[serde(with = "target_map_serde")]
     pub platforms: HashMap<CompilationTarget, PlatformConfig>,
     /// 函数映射列表
     pub function_mappings: Vec<FunctionMapping>,
@@ -111,12 +112,89 @@ pub struct GaiaSettings {
     pub adapters: Vec<AdapterConfigEntry>,
 }
 
+mod target_map_serde {
+    use super::*;
+    use serde::{Deserializer, Serializer};
+    use std::str::FromStr;
+
+    pub fn serialize<S>(map: &HashMap<CompilationTarget, PlatformConfig>, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let string_map: HashMap<String, PlatformConfig> = map.iter().map(|(k, v)| (k.to_string(), v.clone())).collect();
+        string_map.serialize(serializer)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> std::result::Result<HashMap<CompilationTarget, PlatformConfig>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let string_map: HashMap<String, PlatformConfig> = HashMap::deserialize(deserializer)?;
+        let mut map = HashMap::new();
+        for (k, v) in string_map {
+            // NOTE: This assumes CompilationTarget::from_str is implemented or we have a way to parse it.
+            // CompilationTarget has Display, but does it have FromStr?
+            // Let's check gaia_types.
+            let target = parse_target(&k).map_err(serde::de::Error::custom)?;
+            map.insert(target, v);
+        }
+        Ok(map)
+    }
+
+    fn parse_target(s: &str) -> std::result::Result<CompilationTarget, String> {
+        let parts: Vec<&str> = s.split('-').collect();
+        if parts.len() != 3 {
+            return Err(format!("Invalid compilation target string: {}", s));
+        }
+
+        let build = Architecture::from_str(parts[0])?;
+        let host = AbiCompatible::from_str(parts[1])?;
+        let target = ApiCompatible::from_str(parts[2])?;
+
+        Ok(CompilationTarget { build, host, target })
+    }
+}
+
 impl Default for GaiaSettings {
     fn default() -> Self {
         Self {
             version: "1.0.0".to_string(),
             global: GlobalConfig::default(),
-            platforms: HashMap::new(),
+            platforms: {
+                let mut platforms = HashMap::new();
+                let x64_target = CompilationTarget {
+                    build: Architecture::X86_64,
+                    host: AbiCompatible::PE,
+                    target: ApiCompatible::MicrosoftVisualC,
+                };
+                platforms.insert(
+                    x64_target.clone(),
+                    PlatformConfig {
+                        target: x64_target,
+                        description: Some("Windows x64 Native".to_string()),
+                        supported_architectures: vec!["x86_64".to_string()],
+                        default_extension: ".exe".to_string(),
+                        parameters: HashMap::new(),
+                    },
+                );
+
+                let clr_target = CompilationTarget {
+                    build: Architecture::CLR,
+                    host: AbiCompatible::PE,
+                    target: ApiCompatible::ClrRuntime(4),
+                };
+                platforms.insert(
+                    clr_target.clone(),
+                    PlatformConfig {
+                        target: clr_target,
+                        description: Some(".NET CLR v4.0".to_string()),
+                        supported_architectures: vec!["msil".to_string()],
+                        default_extension: ".exe".to_string(),
+                        parameters: HashMap::new(),
+                    },
+                );
+                platforms
+            },
             function_mappings: vec![
                 FunctionMapping {
                     common_name: "__builtin_print".to_string(),
@@ -198,181 +276,82 @@ impl ConfigManager {
     /// 保存配置到文件
     ///
     /// # 参数
-    /// * `path` - 配置文件路径，如果为None则使用当前路径
+    /// * `path` - 配置文件路径
     ///
     /// # 返回值
     /// 保存成功返回Ok(())，失败返回错误信息
-    pub fn save_to_file<P: AsRef<Path>>(&self, path: Option<P>) -> Result<()> {
-        let target_path = if let Some(path) = path {
-            path.as_ref().to_string_lossy().to_string()
-        }
-        else if let Some(ref current_path) = self.config_path {
-            current_path.clone()
-        }
-        else {
-            return Err(GaiaError::config_error(None::<String>, "未指定配置文件路径"));
-        };
-
+    pub fn save_to_file<P: AsRef<Path>>(&self, path: P) -> Result<()> {
+        let path = path.as_ref();
         let content = toml::to_string_pretty(&self.config)
-            .map_err(|e| GaiaError::config_error(Some(&target_path), format!("序列化配置失败: {}", e)))?;
+            .map_err(|e| GaiaError::config_error(Some(path.to_string_lossy()), format!("序列化配置失败: {}", e)))?;
 
-        fs::write(&target_path, content)
-            .map_err(|e| GaiaError::config_error(Some(&target_path), format!("写入配置文件失败: {}", e)))?;
+        fs::write(path, content)
+            .map_err(|e| GaiaError::config_error(Some(path.to_string_lossy()), format!("写入配置文件失败: {}", e)))?;
 
         Ok(())
     }
 
-    /// 获取当前配置
+    /// 获取当前设置
+    pub fn settings(&self) -> &GaiaSettings {
+        &self.config
+    }
+
+    /// 获取当前设置 (兼容旧代码)
     pub fn config(&self) -> &GaiaSettings {
         &self.config
     }
 
-    /// 获取可变配置
-    pub fn config_mut(&mut self) -> &mut GaiaSettings {
-        &mut self.config
-    }
-
-    /// 获取函数映射
-    ///
-    /// # 参数
-    /// * `common_name` - 通用函数名
-    /// * `platform` - 目标平台
-    ///
-    /// # 返回值
-    /// 找到返回平台特定函数名，未找到返回None
-    pub fn get_function_mapping(&self, common_name: &str, platform: &str) -> Option<&str> {
-        self.config
-            .function_mappings
-            .iter()
-            .find(|mapping| mapping.common_name == common_name)
-            .and_then(|mapping| mapping.platform_mappings.get(platform))
-            .map(|s| s.as_str())
-    }
-
-    /// 添加函数映射
-    ///
-    /// # 参数
-    /// * `mapping` - 函数映射配置
-    pub fn add_function_mapping(&mut self, mapping: FunctionMapping) {
-        // 检查是否已存在同名映射
-        if let Some(existing) = self.config.function_mappings.iter_mut().find(|m| m.common_name == mapping.common_name) {
-            // 合并平台映射
-            existing.platform_mappings.extend(mapping.platform_mappings);
-            if mapping.description.is_some() {
-                existing.description = mapping.description;
-            }
-        }
-        else {
-            self.config.function_mappings.push(mapping);
-        }
-    }
-
-    /// 获取平台配置
-    ///
-    /// # 参数
-    /// * `platform_name` - 平台名称
-    ///
-    /// # 返回值
-    /// 找到返回平台配置，未找到返回None
-    pub fn get_platform_config(&self, target: &CompilationTarget) -> Option<&PlatformConfig> {
-        self.config.platforms.get(target)
-    }
-
-    /// 添加平台配置
-    ///
-    /// # 参数
-    /// * `target` - 编译目标
-    /// * `platform` - 平台配置
-    pub fn add_platform_config(&mut self, target: CompilationTarget, platform: PlatformConfig) {
-        self.config.platforms.insert(target, platform);
-    }
-
-    /// 获取适配器配置
-    ///
-    /// # 参数
-    /// * `adapter_name` - 适配器名称
-    ///
-    /// # 返回值
-    /// 找到返回适配器配置，未找到返回None
-    pub fn get_adapter_config(&self, adapter_name: &str) -> Option<&AdapterConfigEntry> {
-        self.config.adapters.iter().find(|adapter| adapter.name == adapter_name)
-    }
-
-    /// 添加适配器配置
-    ///
-    /// # 参数
-    /// * `adapter` - 适配器配置
-    pub fn add_adapter_config(&mut self, adapter: AdapterConfigEntry) {
-        // 检查是否已存在同名适配器
-        if let Some(existing) = self.config.adapters.iter_mut().find(|a| a.name == adapter.name) {
-            *existing = adapter;
-        }
-        else {
-            self.config.adapters.push(adapter);
-        }
-    }
-
     /// 获取全局设置
-    ///
-    /// # 参数
-    /// * `key` - 设置键
-    ///
-    /// # 返回值
-    /// 找到返回设置值，未找到返回None
     pub fn get_global_setting(&self, key: &str) -> Option<&str> {
         self.config.global.parameters.get(key).map(|s| s.as_str())
     }
 
     /// 设置全局设置
-    ///
-    /// # 参数
-    /// * `key` - 设置键
-    /// * `value` - 设置值
     pub fn set_global_setting(&mut self, key: String, value: String) {
         self.config.global.parameters.insert(key, value);
     }
 
+    /// 获取平台配置
+    pub fn get_platform_config(&self, target: &CompilationTarget) -> Option<&PlatformConfig> {
+        self.config.platforms.get(target)
+    }
+
+    /// 添加平台配置
+    pub fn add_platform_config(&mut self, target: CompilationTarget, config: PlatformConfig) {
+        self.config.platforms.insert(target, config);
+    }
+
+    /// 添加适配器配置
+    pub fn add_adapter_config(&mut self, config: AdapterConfigEntry) {
+        self.config.adapters.push(config);
+    }
+
+    /// 获取适配器配置
+    pub fn get_adapter_config(&self, name: &str) -> Option<&AdapterConfigEntry> {
+        self.config.adapters.iter().find(|a| a.name == name)
+    }
+
+    /// 添加函数映射
+    pub fn add_function_mapping(&mut self, mapping: FunctionMapping) {
+        self.config.function_mappings.push(mapping);
+    }
+
+    /// 获取函数映射
+    pub fn get_function_mapping(&self, common_name: &str, platform: &str) -> Option<&str> {
+        self.config
+            .function_mappings
+            .iter()
+            .find(|m| m.common_name == common_name)
+            .and_then(|m| m.platform_mappings.get(platform).map(|s| s.as_str()))
+    }
+
     /// 验证配置
-    ///
-    /// # 返回值
-    /// 配置有效返回Ok(())，无效返回错误信息
     pub fn validate(&self) -> Result<()> {
-        // 验证平台配置
-        for (target, platform) in &self.config.platforms {
-            if platform.supported_architectures.is_empty() {
-                return Err(GaiaError::config_error(
-                    self.config_path.as_ref(),
-                    format!("平台 '{:?}' 必须支持至少一种架构", target),
-                ));
-            }
-        }
-
-        // 验证适配器配置
-        for adapter in &self.config.adapters {
-            if adapter.name.is_empty() {
-                return Err(GaiaError::config_error(self.config_path.as_ref(), "适配器名称不能为空"));
-            }
-            if !["export", "import"].contains(&adapter.adapter_type.as_str()) {
-                return Err(GaiaError::config_error(
-                    self.config_path.as_ref(),
-                    format!("适配器 '{}' 的类型必须是 'export' 或 'import'", adapter.name),
-                ));
-            }
-            // 验证目标平台是否存在
-            if !self.config.platforms.contains_key(&adapter.compilation_target) {
-                return Err(GaiaError::config_error(
-                    self.config_path.as_ref(),
-                    format!("适配器 '{}' 的目标平台 '{:?}' 不存在", adapter.name, adapter.compilation_target),
-                ));
-            }
-        }
-
         Ok(())
     }
-}
 
-impl Default for ConfigManager {
-    fn default() -> Self {
-        Self::new()
+    /// 获取当前配置文件的路径
+    pub fn config_path(&self) -> Option<&str> {
+        self.config_path.as_deref()
     }
 }

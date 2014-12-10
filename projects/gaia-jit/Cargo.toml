@@ -1,0 +1,26 @@
+[package]
+name = "gaia-jit"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+description = "JIT execution primitives for Gaia project"
+homepage = "https://gaia-assembly.netlify.app/jit/"
+repository = "https://github.com/nyar-vm/project-gaia/tree/main/projects/gaia-jit"
+documentation = "https://docs.rs/gaia-jit"
+readme = "readme.md"
+exclude = ["package.json"]
+
+[dependencies]
+windows-sys = { workspace = true, optional = true }
+libc = { workspace = true, optional = true }
+tracing = { workspace = true }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { workspace = true }
+
+[target.'cfg(unix)'.dependencies]
+libc = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }

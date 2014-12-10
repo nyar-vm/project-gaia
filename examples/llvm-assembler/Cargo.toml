@@ -1,0 +1,23 @@
+[package]
+name = "llvm-assembler"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "LLVM IR assembler for Gaia project"
+homepage = "https://gaia-assembly.netlify.app/backends/llvm/"
+repository = "https://github.com/nyar-vm/project-gaia/tree/main/examples/llvm-assembler"
+documentation = "https://docs.rs/llvm-assembler"
+readme = "readme.md"
+exclude = ["package.json"]
+
+[dependencies]
+gaia-types = { workspace = true }
+oak-core = { workspace = true }
+oak-pretty-print = { workspace = true }
+oak-llvm-ir = { workspace = true, features = ["oak-pretty-print"] }
+serde = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }

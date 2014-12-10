@@ -46,6 +46,8 @@ pub enum Architecture {
     JVM,
     /// 公共语言运行时。
     CLR,
+    /// NVIDIA GPU SASS 架构
+    NvSass,
     /// 其他架构类型
     Other(String),
 }
@@ -66,7 +68,32 @@ impl Display for Architecture {
             Architecture::WASM64 => f.write_str("wasm64"),
             Architecture::JVM => f.write_str("jvm"),
             Architecture::CLR => f.write_str("clr"),
+            Architecture::NvSass => f.write_str("nv_sass"),
             Architecture::Other(name) => f.write_str(name),
+        }
+    }
+}
+
+impl std::str::FromStr for Architecture {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "unknown" => Ok(Architecture::Unknown),
+            "x86" => Ok(Architecture::X86),
+            "x64" | "x86_64" => Ok(Architecture::X86_64),
+            "arm" | "arm32" => Ok(Architecture::ARM32),
+            "arm64" => Ok(Architecture::ARM64),
+            "riscv32" => Ok(Architecture::RISCV32),
+            "riscv64" => Ok(Architecture::RISCV64),
+            "mips" | "mips32" => Ok(Architecture::MIPS32),
+            "mips64" => Ok(Architecture::MIPS64),
+            "wasm32" => Ok(Architecture::WASM32),
+            "wasm64" => Ok(Architecture::WASM64),
+            "jvm" => Ok(Architecture::JVM),
+            "clr" => Ok(Architecture::CLR),
+            "nv_sass" | "sass" => Ok(Architecture::NvSass),
+            name => Ok(Architecture::Other(name.to_string())),
         }
     }
 }

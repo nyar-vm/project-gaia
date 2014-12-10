@@ -23,6 +23,13 @@ asmtools.jar
 *.txt
 *.log
 
+# Python
+*.pyc
+
+# Web Asm
+*.wasm
+*.wasi
+
 # Binary
 *.exe
 *.dll

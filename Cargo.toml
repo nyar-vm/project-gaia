@@ -2,31 +2,99 @@
 resolver = "2"
 members = [
     "projects/*",
-    "examples/mini-rust",
-    "examples/mini-c"
+    "examples/*"
 ]
 default-members = [
     "projects/gaia-types",
-    "projects/wasi-assembler",
     "projects/gaia-assembler",
-    "projects/gaia-frontend"
+    "projects/gaia-jit",
+    "examples/wasi-assembler",
+    "examples/clr-assembler",
+    "examples/elf-assembler",
+    "examples/gcn-assembler",
+    "examples/jvm-assembler",
+    "examples/lua-assembler",
+    "examples/llvm-assembler",
+    "examples/pe-assembler",
+    "examples/x86_64-assembler",
+    "examples/macho-assembler",
+    "examples/msl-assembler",
+    "examples/sass-assembler",
+    "examples/spirv-assembler",
+    "examples/pyc-assembler"
 ]
 exclude = [
     "projects/.DS_Store",
     "projects/gaia-document",
-    "projects/gaia-frontend-wasm32",
 ]
 
+[workspace.package]
+version = "0.0.5"
+edition = "2024"
+authors = ["Gaia Team <192607617↯qq.com>"]
+license = "MPL-2.0"
+repository = "https://github.com/nyar-vm/project-gaia"
+homepage = "https://gaia-assembly.netlify.app/"
+
 [workspace.dependencies]
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+byteorder = "1.5.0"
+url = { version = "2.5.7", features = ["serde"] }
+tracing = "0.1.41"
+walkdir = "2.5.0"
+toml = "0.9"
+num = "0.4.3"
+ordered-float = "5.1.0"
+source-map = "0.15.0"
+tempfile = "3.17"
+bitflags = "2.9"
+pretty_assertions = "1.4"
+leb128 = "0.2.5"
+wat = "1.240.0"
+wasmparser = "0.240.0"
+wasmtime = "37.0.2"
+wasmtime-wasi = "37.0.2"
+region = "3.0.2"
+windows-sys = { version = "0.52.0", features = ["Win32_System_Memory", "Win32_Foundation", "Win32_System_SystemInformation", "Win32_System_Diagnostics_Debug", "Win32_System_Threading"] }
+libc = "0.2"
 
-[workspace.dependencies.gaia-types]
-version = "0.0.3"
-path = "projects/gaia-types"
+# External projects for Local
+# oak-core = { version = "0.0.3", path = "../oaks/projects/oak-core" }
+# oak-pretty-print = { version = "0.0.3", path = "../oaks/projects/oak-pretty-print" }
+# oak-msil = { version = "0.0.3", path = "../oaks/examples/oak-msil" }
+# oak-lua = { version = "0.0.3", path = "../oaks/examples/oak-lua" }
+# oak-wat = { version = "0.0.3", path = "../oaks/examples/oak-wat" }
+# oak-jasm = { version = "0.0.3", path = "../oaks/examples/oak-jasm" }
+# oak-llvm-ir = { version = "0.0.3", path = "../oaks/examples/oak-llvm-ir" }
 
-[workspace.dependencies.x86_64-assembler]
-version = "0.0.1"
-path = "projects/x86_64-assembler"
+# External projects for CI
+oak-core = "0.0.3"
+oak-pretty-print = "0.0.3"
+oak-msil = "0.0.3"
+oak-lua = "0.0.3"
+oak-wat = "0.0.3"
+oak-jasm = "0.0.3"
+oak-llvm-ir = "0.0.3"
+
+# Internal projects
+gaia-jit = { version = "0.0.5", path = "projects/gaia-jit" }
+gaia-types = { version = "0.0.5", path = "projects/gaia-types" }
+gaia-assembler = { version = "0.0.5", path = "projects/gaia-assembler" }
+x86_64-assembler = { version = "0.0.5", path = "examples/x86_64-assembler" }
+gcn-assembler = { version = "0.0.5", path = "examples/gcn-assembler" }
+msl-assembler = { version = "0.0.5", path = "examples/msl-assembler" }
+sass-assembler = { version = "0.0.5", path = "examples/sass-assembler" }
+spirv-assembler = { version = "0.0.5", path = "examples/spirv-assembler" }
+pe-assembler = { version = "0.0.5", path = "examples/pe-assembler" }
+clr-assembler = { version = "0.0.5", path = "examples/clr-assembler" }
+jvm-assembler = { version = "0.0.5", path = "examples/jvm-assembler", package = "jasm-assembler" }
+elf-assembler = { version = "0.0.5", path = "examples/elf-assembler" }
+macho-assembler = { version = "0.0.5", path = "examples/macho-assembler" }
+lua-assembler = { version = "0.0.5", path = "examples/lua-assembler" }
+llvm-assembler = { version = "0.0.5", path = "examples/llvm-assembler" }
+wasi-assembler = { version = "0.0.5", path = "examples/wasi-assembler" }
+python-assembler = { version = "0.0.5", path = "examples/pyc-assembler" }
 
 
 [profile.release]

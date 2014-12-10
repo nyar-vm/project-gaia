@@ -1,155 +1,111 @@
-# 编译目标平台定义模块
+# Compilation Target Platform Definition Module
 
-本模块定义了编译器目标平台的三要素组合系统，类似于LLVM的target triple概念。用于精确描述编译输出的目标平台特性。
+This module defines a triple-combination system for compiler target platforms, similar to LLVM's target triple concept. It is used to accurately describe the characteristics of the target platform for compilation output.
 
-## 三要素架构
+## Triple-Element Architecture
 
-格式为：`build-host-target`
+The format is: `build-host-target`
 
-- **build**: 底层的运行时架构（Architecture）
-- **host**: 二进制格式（AbiCompatible）  
-- **target**: API接口（ApiCompatible）
+- **build**: Underlying runtime architecture (`Architecture`)
+- **host**: Binary format (`AbiCompatible`)
+- **target**: API interface (`ApiCompatible`)
 
-## 示例组合
+## Example Combinations
 
-### 传统平台
-```text
-x86-linux-gnu           // 32位x86架构，Linux系统，GNU工具链
-x86_64-windows_pc-msvc  // 64位x86架构，Windows系统，MSVC工具链
-x86_64-windows_pc-gnu   // 64位x86架构，Windows系统，GNU工具链
-arm64-linux-gnu         // 64位ARM架构，Linux系统，GNU工具链
-```
+### Traditional Platforms
+- `x86-linux-gnu`: 32-bit x86 architecture, Linux system, GNU toolchain
+- `x86_64-windows_pc-msvc`: 64-bit x86 architecture, Windows system, MSVC toolchain
+- `x86_64-windows_pc-gnu`: 64-bit x86 architecture, Windows system, GNU toolchain
+- `arm64-linux-gnu`: 64-bit ARM architecture, Linux system, GNU toolchain
 
-### 虚拟机平台
-```text
-jvm-unknown-unknown     // JVM架构，未知ABI，通用API
-jvm-unknown-jdk8        // JVM架构，未知ABI，JDK8 API
-jvm-jasm-jdk8           // JVM架构，JASM文本格式，JDK8 API
-clr-unknown-net2_0      // CLR架构，未知ABI，.NET 2.0 API
-clr-msil-net4_0         // CLR架构，MSIL文本格式，.NET 4.0 API
-```
+### Virtual Machine Platforms
+- `jvm-unknown-unknown`: JVM architecture, unknown ABI, general API
+- `jvm-unknown-jdk8`: JVM architecture, unknown ABI, JDK8 API
+- `jvm-jasm-jdk8`: JVM architecture, JASM text format, JDK8 API
+- `clr-unknown-net2_0`: CLR architecture, unknown ABI, .NET 2.0 API
+- `clr-msil-net4_0`: CLR architecture, MSIL text format, .NET 4.0 API
 
-### WebAssembly平台
-```text
-wasm32-unknown-unknown  // 32位WebAssembly，未知ABI，通用API
-wasm32-wat-unknown      // 32位WebAssembly，WAT文本格式，通用API
-wasm32-wat-wasi_p2gnu   // 32位WebAssembly，WAT文本格式，WASI P2 GNU接口
-```
+### WebAssembly Platform
+- `wasm32-unknown-unknown`: 32-bit WebAssembly, unknown ABI, general API
+- `wasm32-wat-unknown`: 32-bit WebAssembly, WAT text format, general API
+- `wasm32-wat-wasi_p2gnu`: 32-bit WebAssembly, WAT text format, WASI P2 GNU interface
 
-## 架构类型 (Architecture)
+## Architecture Types (`Architecture`)
 
-### 物理架构
-- **X86**: 32位x86架构
-- **X86_64**: 64位x86架构  
-- **ARM32**: 32位ARM架构
-- **ARM64**: 64位ARM/AArch64架构
-- **RISCV32**: 32位RISC-V架构
-- **RISCV64**: 64位RISC-V架构
-- **MIPS32**: 32位MIPS架构
-- **MIPS64**: 64位MIPS架构
-- **WASM32**: 32位WebAssembly
-- **WASM64**: 64位WebAssembly
+### Physical Architectures
+- **X86**: 32-bit x86 architecture
+- **X86_64**: 64-bit x86 architecture
+- **ARM32**: 32-bit ARM architecture
+- **ARM64**: 64-bit ARM/AArch64 architecture
+- **RISCV32**: 32-bit RISC-V architecture
+- **RISCV64**: 64-bit RISC-V architecture
+- **MIPS32**: 32-bit MIPS architecture
+- **MIPS64**: 64-bit MIPS architecture
+- **WASM32**: 32-bit WebAssembly
+- **WASM64**: 64-bit WebAssembly
 
-### 虚拟机架构
-- **JVM**: Java虚拟机
-- **CLR**: .NET公共语言运行时
-- **Other(String)**: 自定义架构名称
+### Virtual Machine Architectures
+- **JVM**: Java Virtual Machine
+- **CLR**: .NET Common Language Runtime
+- **Other(String)**: Custom architecture name
 
-## ABI兼容 (AbiCompatible)
+## ABI Compatibility (`AbiCompatible`)
 
-表示二进制接口格式：
+Represents the binary interface format:
 
-- **Unknown**: 最大兼容，虚拟机字节码或裸机机器码
-- **ELF**: ELF格式（Linux、macOS等）
-- **PE**: PE格式（Windows）
-- **Jasm**: JVM字节码文本格式
-- **Msil**: CLR字节码文本格式
-- **WAT**: WebAssembly文本格式
+- **Unknown**: Maximum compatibility, virtual machine bytecode or bare-metal machine code
+- **ELF**: ELF format (Linux, macOS, etc.)
+- **PE**: PE format (Windows)
+- **Jasm**: JVM bytecode text format
+- **Msil**: CLR bytecode text format
+- **WAT**: WebAssembly text format
 
-## API兼容 (ApiCompatible)
+## API Compatibility (`ApiCompatible`)
 
-表示目标平台的API接口：
+Represents the API interface of the target platform:
 
-- **Unknown**: 未知API，最大兼容性
-- **Msvc**: Microsoft Visual C++运行时
-- **Gnu**: GNU工具链和glibc
-- **JDK(u16)**: Java开发工具包版本（如JDK8、JDK11）
-- **CLR(u16)**: .NET公共语言运行时版本
-- **Unity**: Unity引擎API
-- **WASI**: WebAssembly系统接口
+- **Unknown**: Unknown API, maximum compatibility
+- **Msvc**: Microsoft Visual C++ runtime
+- **Gnu**: GNU toolchain and glibc
+- **JDK(u16)**: Java Development Kit version (e.g., JDK8, JDK11)
+- **CLR(u16)**: .NET Common Language Runtime version
+- **Unity**: Unity engine API
+- **WASI**: WebAssembly System Interface
 
-## 实现功能
+## Features and Functionality
 
-### Architecture 方法
+### Architecture Methods
+Creates an architecture from a COFF machine type. Supported COFF machine types:
+- `0x014c`: `IMAGE_FILE_MACHINE_I386` → `X86`
+- `0x8664`: `IMAGE_FILE_MACHINE_AMD64` → `X86_64`
+- `0x01c0`: `IMAGE_FILE_MACHINE_ARM` → `ARM32`
+- `0xaa64`: `IMAGE_FILE_MACHINE_ARM64` → `ARM64`
+- `0x0166`: `IMAGE_FILE_MACHINE_R4000` → `MIPS32`
+- Others: Converted to `Other("machine_XXXX")` format
 
-```rust
-/// 从 COFF 机器类型创建架构
-pub fn from_machine_type(machine: u16) -> Self
-```
+### Display Implementation
+`Architecture` implements the `Display` trait, with the following output formats:
+- `X86` → "x86"
+- `X86_64` → "x64"
+- `ARM32` → "arm"
+- `ARM64` → "arm64"
+- `RISCV32` → "riscv32"
+- `RISCV64` → "riscv64"
+- `MIPS32` → "mips"
+- `MIPS64` → "mips64"
+- `WASM32` → "wasm32"
+- `WASM64` → "wasm64"
+- `JVM` → "jvm"
+- `CLR` → "clr"
+- `Other(name)` → name
 
-支持的COFF机器类型：
-- `0x014c`: IMAGE_FILE_MACHINE_I386 → X86
-- `0x8664`: IMAGE_FILE_MACHINE_AMD64 → X86_64  
-- `0x01c0`: IMAGE_FILE_MACHINE_ARM → ARM32
-- `0xaa64`: IMAGE_FILE_MACHINE_ARM64 → ARM64
-- `0x0166`: IMAGE_FILE_MACHINE_R4000 → MIPS32
-- 其他：转换为 Other("machine_XXXX") 格式
+## Design Characteristics
 
-### Display 实现
+1. **Triple-Element Separation**: Clearly distinguishes between architecture, ABI, and API layers.
+2. **Serialization Support**: Uses `serde` for serialization/deserialization to formats like JSON.
+3. **Extensibility**: Supports custom architectures through the `Other` variant.
+4. **Version Support**: Parameterized version numbers for JDK and CLR.
+5. **Multi-Platform Coverage**: Supports physical architectures, virtual machines, and WebAssembly.
+6. **Utility**: Provides utility functions for conversion from COFF machine types.
 
-Architecture 实现了 Display trait，输出格式：
-- X86 → "x86"
-- X86_64 → "x64"
-- ARM32 → "arm"
-- ARM64 → "arm64"
-- RISCV32 → "riscv32"
-- RISCV64 → "riscv64"
-- MIPS32 → "mips"
-- MIPS64 → "mips64"
-- WASM32 → "wasm32"
-- WASM64 → "wasm64"
-- JVM → "jvm"
-- CLR → "clr"
-- Other(name) → name
-
-## 使用示例
-
-```rust
-use gaia_types::helpers::compilation_target::{CompilationTarget, Architecture, AbiCompatible, ApiCompatible};
-
-// 创建Linux x86_64目标
-let linux_target = CompilationTarget {
-    build: Architecture::X86_64,
-    host: AbiCompatible::ELF,
-    target: ApiCompatible::Gnu,
-};
-
-// 创建Windows MSVC目标
-let windows_target = CompilationTarget {
-    build: Architecture::X86_64,
-    host: AbiCompatible::PE,
-    target: ApiCompatible::Msvc,
-};
-
-// 创建JVM目标
-let jvm_target = CompilationTarget {
-    build: Architecture::JVM,
-    host: AbiCompatible::Unknown,
-    target: ApiCompatible::JDK(8),
-};
-
-// 从COFF机器类型创建架构
-let arch = Architecture::from_machine_type(0x8664); // X86_64
-println!("Architecture: {}", arch); // 输出: Architecture: x64
-```
-
-## 设计特点
-
-1. **三要素分离**: 清晰地区分了架构、ABI和API三个层面
-2. **序列化支持**: 使用`serde`支持JSON等格式的序列化/反序列化
-3. **扩展性**: 通过`Other`变体支持自定义架构
-4. **版本支持**: JDK和CLR支持版本号参数
-5. **多平台覆盖**: 支持物理架构、虚拟机和WebAssembly
-6. **实用性**: 提供从COFF机器类型转换的实用函数
-
-这个设计为编译器提供了灵活的target描述机制，可以精确指定编译输出的目标平台特性。
+This design provides a flexible target description mechanism for the compiler, allowing precise specification of target platform characteristics for compilation output.

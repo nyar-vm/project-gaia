@@ -1,0 +1,30 @@
+[package]
+name = "elf-assembler"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+description = "ELF assembler for Gaia project"
+keywords = ["elf", "linux", "assembler", "disassembler", "assembly"]
+homepage = "https://gaia-assembly.netlify.app/backends/elf/"
+repository = "https://github.com/nyar-vm/project-gaia/tree/main/examples/elf-assembler"
+documentation = "https://docs.rs/elf-assembler"
+readme = "readme.md"
+exclude = ["package.json"]
+
+[dependencies]
+byteorder = { workspace = true }
+gaia-types = { workspace = true }
+x86_64-assembler = { workspace = true }
+serde = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+
+[build-dependencies]
+
+[features]
+default = []
+
+[package.metadata.docs.rs]
+all-features = true

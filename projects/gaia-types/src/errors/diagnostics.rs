@@ -18,16 +18,16 @@ use tracing::Level;
 ///
 /// # 示例
 /// ```rust
-/// use gaia_types::errors::diagnostics::GaiaDiagnostics;
+/// # use gaia_types::GaiaDiagnostics;
 ///
-/// fn parse_source() -> GaiaDiagnostics<String> {
-///     let mut diagnostics = GaiaDiagnostics::success("parsed content".to_string());
-///
-///     // 添加警告
-///     diagnostics.add_warning("Deprecated syntax detected");
-///
-///     diagnostics
-/// }
+/// # fn parse_source() -> GaiaDiagnostics<String> {
+/// #     let mut diagnostics = GaiaDiagnostics::success("parsed content".to_string());
+/// #
+/// #     // 添加警告
+/// #     diagnostics.add_warning(gaia_types::GaiaError::custom_error("Deprecated syntax detected"));
+/// #
+/// #     diagnostics
+/// # }
 /// ```
 #[derive(Debug)]
 pub struct GaiaDiagnostics<T> {
@@ -55,10 +55,11 @@ impl<T> GaiaDiagnostics<T> {
     ///
     /// # 示例
     /// ```rust
-    /// use gaia_types::GaiaDiagnostics;
+    /// # use gaia_types::GaiaDiagnostics;
     ///
-    /// let diagnostics = GaiaDiagnostics::success(42);
-    /// assert!(diagnostics.result.is_ok());
+    /// # let diagnostics = GaiaDiagnostics::success(42);
+    /// # assert!(diagnostics.result.is_ok());
+    /// # assert_eq!(diagnostics.result.unwrap(), 42);
     /// ```
     pub fn success(value: T) -> Self {
         Self { result: Ok(value), diagnostics: Vec::new() }
@@ -74,11 +75,14 @@ impl<T> GaiaDiagnostics<T> {
     ///
     /// # 示例
     /// ```rust
-    /// use gaia_types::{GaiaDiagnostics, GaiaError};
-    ///
-    /// let error = GaiaError::syntax_error("Invalid syntax", (1, 1));
-    /// let diagnostics = GaiaDiagnostics::failure(error);
-    /// assert!(diagnostics.result.is_err());
+    /// # use gaia_types::GaiaDiagnostics;
+    /// # use gaia_types::GaiaError;
+    /// # use gaia_types::SourceLocation;
+    /// #
+    /// # let location = SourceLocation { line: 1, column: 1, url: None };
+    /// # let error = GaiaError::syntax_error("Invalid syntax", location);
+    /// # let diagnostics = GaiaDiagnostics::<()>::failure(error);
+    /// # assert!(diagnostics.result.is_err());
     /// ```
     pub fn failure(fatal: GaiaError) -> Self {
         Self { result: Err(fatal), diagnostics: Vec::new() }
@@ -93,12 +97,15 @@ impl<T> GaiaDiagnostics<T> {
     /// 警告信息表示非致命的问题，不会中断编译过程，但需要用户注意
     ///
     /// # 示例
-    /// ```rust
-    /// use gaia_types::{GaiaDiagnostics, GaiaError};
-    ///
-    /// let mut diagnostics = GaiaDiagnostics::success(());
-    /// let warning = GaiaError::syntax_error("Unused variable 'x'", (1, 1));
-    /// diagnostics.add_warning(warning);
+    /// ```rust,no_run
+    /// # use gaia_types::GaiaDiagnostics;
+    /// # use gaia_types::GaiaError;
+    /// # use gaia_types::SourceLocation;
+    /// #
+    /// # let mut diagnostics = GaiaDiagnostics::success(());
+    /// # let location = SourceLocation { line: 1, column: 1, url: None };
+    /// # let warning = GaiaError::syntax_error("Unused variable 'x'", location);
+    /// # diagnostics.add_warning(warning);
     /// ```
     pub fn add_warning(&mut self, warnings: impl Into<GaiaError>) {
         let mut error = warnings.into();
@@ -115,13 +122,16 @@ impl<T> GaiaDiagnostics<T> {
     /// 跟踪信息用于调试目的，通常包含详细的内部状态信息
     ///
     /// # 示例
-    /// ```rust
-    /// use gaia_types::{reader::SourceLocation, GaiaDiagnostics, GaiaError};
-    ///
-    /// let mut diagnostics = GaiaDiagnostics::success(());
-    /// let tracing =
-    ///     GaiaError::syntax_error("Entering function parse_expression", SourceLocation::new(1, 1));
-    /// diagnostics.add_tracing(tracing);
+    /// ```rust,no_run
+    /// # use gaia_types::GaiaDiagnostics;
+    /// # use gaia_types::GaiaError;
+    /// # use gaia_types::SourceLocation;
+    /// #
+    /// # let mut diagnostics = GaiaDiagnostics::success(());
+    /// # let location = SourceLocation { line: 1, column: 1, url: None };
+    /// # let tracing =
+    /// #     GaiaError::syntax_error("Entering function parse_expression", location);
+    /// # diagnostics.add_tracing(tracing);
     /// ```
     pub fn add_tracing(&mut self, tracing: impl Into<GaiaError>) {
         let mut error = tracing.into();
@@ -142,10 +152,12 @@ impl<T> GaiaDiagnostics<T> {
     ///
     /// # 示例
     /// ```rust
-    /// use gaia_types::GaiaDiagnostics;
-    ///
-    /// let diagnostics = GaiaDiagnostics::success(());
-    /// assert!(!diagnostics.should_halt());
+    /// # use gaia_types::GaiaDiagnostics;
+    /// # use gaia_types::GaiaError;
+    /// # use gaia_types::SourceLocation;
+    /// #
+    /// # let diagnostics = GaiaDiagnostics::success(());
+    /// # assert!(!diagnostics.should_halt());
     /// ```
     pub fn should_halt(&self) -> bool {
         if self.result.is_err() {
@@ -166,10 +178,10 @@ impl<T> GaiaDiagnostics<T> {
     ///
     /// # 示例
     /// ```rust
-    /// use gaia_types::GaiaDiagnostics;
-    /// use std::ops::ControlFlow;
-    ///
-    /// let diagnostics = GaiaDiagnostics::success(42);
+    /// # use gaia_types::GaiaDiagnostics;
+    /// # use std::ops::ControlFlow;
+    /// #
+    /// # let diagnostics = GaiaDiagnostics::success(42);
     /// match diagnostics.try_value() {
     ///     ControlFlow::Continue(value) => println!("Success: {}", value),
     ///     ControlFlow::Break(diag) => eprintln!("Failed: {:?}", diag),

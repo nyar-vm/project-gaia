@@ -2,22 +2,22 @@
 //!
 //! Contains compiler implementations for various target platforms
 
+pub mod gcn;
 pub mod jvm;
 pub mod msil;
 pub mod pe;
+pub mod sass;
 pub mod wasi;
+pub mod x86;
 
 // Re-export backend structs
-pub use self::{jvm::JvmBackend, msil::ClrBackend, pe::PeBackend, wasi::WasiBackend};
+#[cfg(feature = "clr")]
+pub use self::msil::ClrBackend;
+pub use self::{gcn::GcnBackend, jvm::JvmBackend, pe::PeBackend, sass::SassBackend, wasi::WasiBackend, x86::X86Backend};
 
-use crate::config::{GaiaConfig, GaiaSettings};
-use gaia_types::{
-    helpers::{AbiCompatible, ApiCompatible, Architecture, CompilationTarget},
-    GaiaError, Result,
-};
+use crate::{config::GaiaConfig, program::GaiaModule};
+use gaia_types::{helpers::CompilationTarget, Result};
 use std::collections::HashMap;
-use crate::program::GaiaProgram;
-
 
 /// Backend compiler trait
 pub trait Backend {
@@ -32,10 +32,10 @@ pub trait Backend {
     fn match_score(&self, target: &CompilationTarget) -> f32;
 
     /// Compile Gaia program to target platform
-    fn generate(&self, program: &GaiaProgram, config: &GaiaConfig) -> Result<GeneratedFiles>;
+    fn generate(&self, program: &GaiaModule, config: &GaiaConfig) -> Result<GeneratedFiles>;
 }
 
 pub struct GeneratedFiles {
     pub files: HashMap<String, Vec<u8>>,
-    pub diagnostics: Vec<GaiaError>,
+    pub diagnostics: Vec<gaia_types::GaiaError>,
 }

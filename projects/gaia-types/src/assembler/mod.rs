@@ -95,6 +95,33 @@ impl<W: Write, E> BinaryWriter<W, E> {
         self.writer.write_u64::<E>(value)
     }
 
+    /// 将一个 i16 值写入到字节流中。
+    pub fn write_i16(&mut self, value: i16) -> std::io::Result<()>
+    where
+        W: Write,
+        E: ByteOrder,
+    {
+        self.writer.write_i16::<E>(value)
+    }
+
+    /// 将一个 i32 值写入到字节流中。
+    pub fn write_i32(&mut self, value: i32) -> std::io::Result<()>
+    where
+        W: Write,
+        E: ByteOrder,
+    {
+        self.writer.write_i32::<E>(value)
+    }
+
+    /// 将一个 i64 值写入到字节流中。
+    pub fn write_i64(&mut self, value: i64) -> std::io::Result<()>
+    where
+        W: Write,
+        E: ByteOrder,
+    {
+        self.writer.write_i64::<E>(value)
+    }
+
     /// 将字节数组写入到字节流中。
     ///
     /// # 参数

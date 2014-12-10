@@ -1,0 +1,28 @@
+[package]
+name = "x86_64-assembler"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+description = "Modern assembler for x64 and x86 instruction sets - strongly typed, object-oriented, zero-dependency core"
+categories = ["compilers"]
+keywords = ["x86", "x86-64", "assembler", "disassembler", "assembly"]
+homepage = "https://gaia-assembly.netlify.app/backends/x86/"
+repository = "https://github.com/nyar-vm/project-gaia/tree/main/examples/x86_64-assembler"
+documentation = "http://docs.rs/x86_64-assembler"
+readme = "readme.md"
+exclude = ["package.json"]
+
+[dependencies]
+bitflags = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+gaia-types = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }
+
+[features]
+default = []
+
+[package.metadata.docs.rs]
+all-features = true

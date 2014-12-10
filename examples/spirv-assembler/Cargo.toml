@@ -1,0 +1,17 @@
+[package]
+name = "spirv-assembler"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+description = "SPIR-V backend for Gaia project"
+homepage = "https://gaia-assembly.netlify.app/backends/spirv/"
+repository = "https://github.com/nyar-vm/project-gaia/tree/main/examples/spirv-assembler"
+documentation = "https://docs.rs/spirv-assembler"
+readme = "readme.md"
+exclude = ["package.json"]
+
+[dependencies]
+gaia-types = { workspace = true }
+gaia-assembler = { workspace = true }
+serde = { workspace = true }

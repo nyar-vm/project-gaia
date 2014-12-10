@@ -1,0 +1,39 @@
+[package]
+name = "clr-assembler"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+description = "Modern CLR assembler for x64 and x86 instruction sets - strongly typed, object-oriented, zero-dependency core"
+categories = ["compilers"]
+keywords = ["dotnet", "clr", "msil", "assembler", "disassembler"]
+homepage = "https://gaia-assembly.netlify.app/backends/clr/"
+repository = "https://github.com/nyar-vm/project-gaia/tree/main/examples/clr-assembler"
+documentation = "http://docs.rs/clr-assembler"
+readme = "readme.md"
+exclude = ["package.json"]
+
+[dependencies]
+byteorder = { workspace = true }
+gaia-types = { workspace = true }
+url = { workspace = true, features = ["serde"] }
+serde = { workspace = true, features = ["derive"] }
+pe-assembler = { workspace = true }
+oak-msil = { workspace = true, features = ["oak-pretty-print"] }
+oak-core = { workspace = true }
+oak-pretty-print = { workspace = true }
+
+[build-dependencies]
+
+[dev-dependencies]
+serde_json = { workspace = true }
+gaia-types = { workspace = true, features = ["serde_json"] }
+walkdir = { workspace = true }
+
+
+
+[features]
+default = []
+
+[package.metadata.docs.rs]
+all-features = true

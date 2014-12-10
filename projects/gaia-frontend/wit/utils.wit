@@ -1,5 +1,0 @@
-interface utils {
-    use types.{target-arch};
-    /// 获取版本信息
-    get-version: func() -> string;
-}

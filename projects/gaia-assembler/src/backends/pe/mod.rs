@@ -2,13 +2,16 @@
 //! This backend generates .NET PE files containing IL code, not native machine code
 
 use super::{Backend, GeneratedFiles};
-use crate::{backends::msil::ClrBackend, config::GaiaConfig};
+#[cfg(feature = "clr")]
+use crate::backends::msil::ClrBackend;
+use crate::{config::GaiaConfig, program::GaiaModule};
+#[allow(unused_imports)]
 use gaia_types::{
     helpers::{AbiCompatible, ApiCompatible, Architecture, CompilationTarget},
     *,
 };
+#[cfg(feature = "clr")]
 use std::collections::HashMap;
-use crate::program::GaiaProgram;
 
 /// PE Backend implementation
 #[derive(Default)]
@@ -20,42 +23,50 @@ impl Backend for PeBackend {
     }
 
     fn primary_target(&self) -> CompilationTarget {
-        CompilationTarget { build: Architecture::X86_64, host: AbiCompatible::PE, target: ApiCompatible::MicrosoftVisualC }
+        CompilationTarget { build: Architecture::CLR, host: AbiCompatible::PE, target: ApiCompatible::ClrRuntime(4) }
     }
 
     fn match_score(&self, target: &CompilationTarget) -> f32 {
         match target.host {
             AbiCompatible::PE => match target.build {
-                // dll, exe output, 10% support
-                Architecture::X86 => 10.0,
-                // dll, exe output, 10% support
-                Architecture::X86_64 => 10.0,
+                Architecture::CLR => 80.0,
+                // .NET PE is a container for IL, so it can support native archs but with low score
+                Architecture::X86 | Architecture::X86_64 => 5.0,
                 _ => -100.0,
             },
             _ => -100.0,
         }
     }
 
-    fn generate(&self, program: &GaiaProgram, _config: &GaiaConfig) -> Result<GeneratedFiles> {
-        let mut files = HashMap::new();
-        // 如果存在 main 函数，则输出可执行文件；否则输出 DLL
-        let has_main = program.functions.iter().any(|f| f.name == "main");
-        let filename = if has_main { "main.exe" } else { "main.dll" };
-        // 使用 CLR 后端按统一设置生成 IL，再打包为 PE
-        let il_code = ClrBackend::generate_with_settings(program, &_config.setting)?;
-        files.insert(filename.to_string(), generate_dotnet_pe_file(&il_code, &program.name)?);
-        Ok(GeneratedFiles { files, diagnostics: vec![] })
+    fn generate(&self, _program: &GaiaModule, _config: &GaiaConfig) -> Result<GeneratedFiles> {
+        #[cfg(feature = "clr")]
+        {
+            let mut files = HashMap::new();
+            // 如果存在 main 函数，则输出可执行文件；否则输出 DLL
+            let has_main = _program.functions.iter().any(|f| f.name == "main");
+            let filename = if has_main { "main.exe" } else { "main.dll" };
+            // 使用 CLR 后端按统一设置生成 IL，再打包为 PE
+            let il_code = ClrBackend::generate_with_settings(_program, &_config.setting)?;
+            files.insert(filename.to_string(), generate_dotnet_pe_file(&il_code, &_program.name)?);
+            Ok(GeneratedFiles { files, diagnostics: vec![] })
+        }
+        #[cfg(not(feature = "clr"))]
+        {
+            Err(GaiaError::platform_unsupported("PE", "CLR backend required"))
+        }
     }
 }
 
 /// Compile Gaia program to .NET PE executable file
-pub fn compile(program: &GaiaProgram) -> Result<Vec<u8>> {
+#[cfg(feature = "clr")]
+pub fn compile(program: &GaiaModule) -> Result<Vec<u8>> {
     // 兼容旧接口：使用默认设置生成 IL 并打包
     let il_code = ClrBackend::generate(program)?;
     generate_dotnet_pe_file(&il_code, &program.name)
 }
 
 /// Generate a .NET PE file containing the IL code
+#[cfg(feature = "clr")]
 fn generate_dotnet_pe_file(il_code: &[u8], program_name: &str) -> Result<Vec<u8>> {
     // Create a minimal .NET PE file structure
     // This is a simplified implementation that creates a basic .NET executable
@@ -71,6 +82,7 @@ fn generate_dotnet_pe_file(il_code: &[u8], program_name: &str) -> Result<Vec<u8>
 }
 
 /// Create a minimal .NET PE file structure
+#[cfg(feature = "clr")]
 fn create_minimal_dotnet_pe(il_code: &str, program_name: &str) -> Result<Vec<u8>> {
     // This is a simplified implementation
     // In a real implementation, we would need to create proper PE headers,

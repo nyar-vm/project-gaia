@@ -1,126 +1,122 @@
-use crate::{instruction::GaiaInstruction, types::GaiaType};
+use crate::{
+    instruction::GaiaInstruction,
+    types::{GaiaSignature, GaiaType},
+};
 use serde::{Deserialize, Serialize};
 
-/// Gaia 程序
+/// Gaia 程序模块
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct GaiaProgram {
-    /// 程序名
+pub struct GaiaModule {
     pub name: String,
-    /// 函数列表
     pub functions: Vec<GaiaFunction>,
-    /// 常量池（名称，值）
+    pub structs: Vec<GaiaStruct>,
+    pub classes: Vec<GaiaClass>,
     pub constants: Vec<(String, GaiaConstant)>,
-    /// 全局变量列表（可选）
-    pub globals: Option<Vec<GaiaGlobal>>,
+    pub globals: Vec<GaiaGlobal>,
+    pub imports: Vec<GaiaImport>,
 }
 
-impl Default for GaiaProgram {
-    fn default() -> Self {
-        Self { name: "untitled".to_string(), functions: Vec::new(), constants: Vec::new(), globals: None }
-    }
+/// 外部导入项
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct GaiaImport {
+    pub library: String,
+    pub symbol: String,
 }
 
-impl GaiaProgram {
-    /// 创建新的空程序
-    pub fn new(name: impl Into<String>) -> Self {
-        Self { name: name.into(), functions: Vec::new(), constants: Vec::new(), globals: None }
-    }
-
-    /// 添加函数
-    pub fn add_function(&mut self, function: GaiaFunction) {
-        self.functions.push(function);
-    }
-
-    /// 添加常量
-    pub fn add_constant(&mut self, name: impl Into<String>, value: GaiaConstant) {
-        self.constants.push((name.into(), value));
-    }
-
-    /// 添加全局变量
-    pub fn add_global(&mut self, global: GaiaGlobal) {
-        if let Some(ref mut globals) = self.globals {
-            globals.push(global);
-        }
-        else {
-            self.globals = Some(vec![global]);
-        }
-    }
-}
-
-/// Gaia 常量值
+/// Gaia 类 (用于托管运行时)
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum GaiaConstant {
-    /// 8位整数常量
-    Integer8(i8),
-    /// 16位整数常量
-    Integer16(i16),
-    /// 32位整数常量
-    Integer32(i32),
-    /// 64位整数常量
-    Integer64(i64),
-    /// 32位浮点常量
-    Float32(f32),
-    /// 64位浮点常量
-    Float64(f64),
-    /// 布尔常量
-    Boolean(bool),
-    /// 字符串常量
-    String(String),
-    /// 空值
-    Null,
+pub struct GaiaClass {
+    pub name: String,
+    pub parent: Option<String>,
+    pub interfaces: Vec<String>,
+    pub fields: Vec<GaiaField>,
+    pub methods: Vec<GaiaFunction>,
+    pub attributes: Vec<String>,
+}
+
+/// Gaia 字段
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct GaiaField {
+    pub name: String,
+    pub ty: GaiaType,
+    pub is_static: bool,
+    pub visibility: Visibility,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum Visibility {
+    Public,
+    Private,
+    Protected,
+    Internal,
+}
+
+/// Gaia 函数
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct GaiaFunction {
+    pub name: String,
+    pub signature: GaiaSignature,
+    pub blocks: Vec<GaiaBlock>,
+    pub is_external: bool,
+}
+
+/// Gaia 基本块
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct GaiaBlock {
+    pub label: String,
+    pub instructions: Vec<GaiaInstruction>,
+    pub terminator: GaiaTerminator,
+}
+
+/// 终结指令 (控制流)
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum GaiaTerminator {
+    /// 跳转
+    Jump(String),
+    /// 条件跳转 (真标签, 假标签)
+    Branch { true_label: String, false_label: String },
+    /// 函数返回
+    Return,
+    /// 调用并跳转 (函数名, 参数, 返回后跳转的标签)
+    Call { callee: String, args_count: usize, next_block: String },
+    /// 停止/退出
+    Halt,
+}
+
+/// Gaia 结构体
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct GaiaStruct {
+    pub name: String,
+    pub fields: Vec<(String, GaiaType)>,
 }
 
 /// Gaia 全局变量
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GaiaGlobal {
-    /// 变量名
     pub name: String,
-    /// 变量类型
-    pub var_type: GaiaType,
-    /// 初始值（可选）
+    pub ty: GaiaType,
     pub initial_value: Option<GaiaConstant>,
-    /// 是否为常量
-    pub is_constant: bool,
 }
 
-/// Gaia 函数定义
+/// Gaia 常量
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct GaiaFunction {
-    /// 函数名
-    pub name: String,
-    /// 参数类型列表
-    pub parameters: Vec<GaiaType>,
-    /// 返回类型
-    pub return_type: Option<GaiaType>,
-    /// 指令序列
-    pub instructions: Vec<GaiaInstruction>,
-    /// 局部变量类型列表
-    pub locals: Vec<GaiaType>,
-}
-
-impl GaiaFunction {
-    /// 创建新函数
-    pub fn new(name: impl Into<String>) -> Self {
-        Self { name: name.into(), parameters: Vec::new(), return_type: None, instructions: Vec::new(), locals: Vec::new() }
-    }
-
-    /// 添加参数
-    pub fn add_parameter(&mut self, param_type: GaiaType) {
-        self.parameters.push(param_type);
-    }
-
-    /// 设置返回类型
-    pub fn set_return_type(&mut self, return_type: GaiaType) {
-        self.return_type = Some(return_type);
-    }
-
-    /// 添加指令
-    pub fn add_instruction(&mut self, instruction: GaiaInstruction) {
-        self.instructions.push(instruction);
-    }
-
-    /// 添加局部变量
-    pub fn add_local(&mut self, local_type: GaiaType) {
-        self.locals.push(local_type);
-    }
+pub enum GaiaConstant {
+    Bool(bool),
+    I8(i8),
+    U8(u8),
+    I16(i16),
+    U16(u16),
+    I32(i32),
+    U32(u32),
+    I64(i64),
+    U64(u64),
+    F32(f32),
+    F64(f64),
+    String(String),
+    /// 原始二进制数据 (用于权重、常量数组等)
+    Blob(Vec<u8>),
+    /// 常量数组
+    Array(Vec<GaiaConstant>),
+    /// 空值/空引用
+    Null,
 }

@@ -1,62 +1,43 @@
-# Gaia Types - DWARF 调试信息模块
+# Gaia Types - DWARF Debug Information Module
 
-这个模块提供了 WebAssembly DWARF 调试信息的完整支持。
+This module provides comprehensive support for WebAssembly DWARF debug information.
 
-## 功能概述
+## Features Overview
 
-### DWARF 结构体支持
-- **标准兼容**: 遵循 WebAssembly DWARF 规范
-- **完整实现**: 支持所有主要的 DWARF 调试信息结构体
-- **内存高效**: 优化的数据结构，减少内存占用
+### DWARF Structure Support
+- **Standard Compliance**: Follows the WebAssembly DWARF specification.
+- **Full Implementation**: Supports all major DWARF debug information structures.
+- **Memory Efficient**: Optimized data structures to reduce memory footprint.
 
-### 自定义段处理
-- **段解析**: 解析 WebAssembly 文件中的 DWARF 自定义段
-- **数据提取**: 从自定义段中提取调试信息
-- **格式验证**: 验证 DWARF 数据的完整性和正确性
+### Custom Section Handling
+- **Section Parsing**: Parses DWARF custom sections in WebAssembly files.
+- **Data Extraction**: Extracts debug information from custom sections.
+- **Format Validation**: Validates the integrity and correctness of DWARF data.
 
-## 主要组件
+## Main Components
 
-### DWARF 结构体
-- **调试信息**: 编译单元、类型信息、变量信息
-- **行号信息**: 源代码行号映射
-- **调用栈**: 调用栈展开信息
-- **宏信息**: 宏定义和展开信息
+### DWARF Structures
+- **Debug Information**: Compilation units, type information, and variable information.
+- **Line Number Information**: Mapping of source code line numbers.
+- **Call Stack**: Information for call stack unwinding.
+- **Macro Information**: Macro definitions and expansion information.
 
-### 自定义段类型
-- `.debug_info`: 主要调试信息段
-- `.debug_line`: 行号信息段
-- `.debug_abbrev`: 缩写信息段
-- `.debug_str`: 字符串表段
-- `.debug_ranges`: 地址范围段
+### Custom Section Types
+- `.debug_info`: Primary debug information section.
+- `.debug_line`: Line number information section.
+- `.debug_abbrev`: Abbreviation information section.
+- `.debug_str`: String table section.
+- `.debug_ranges`: Address range section.
 
-## 使用示例
+## Reference Specifications
 
-```rust
-use gaia_types::helpers::dwarf::{DwarfInfo, CustomSection};
+- WebAssembly DWARF Specification
+- DWARF Debugging Format Standard
+- WebAssembly Custom Section Specification
 
-// 解析 DWARF 信息
-let dwarf_info = DwarfInfo::parse(dwarf_data)?;
+## Design Principles
 
-// 处理自定义段
-let custom_section = CustomSection::from_bytes(section_data)?;
-let dwarf_info = custom_section.parse_dwarf()?;
-
-// 获取调试信息
-let compile_units = dwarf_info.compile_units();
-for unit in compile_units {
-    println!("编译单元: {}", unit.name());
-}
-```
-
-## 参考规范
-
-- [WebAssembly DWARF 规范](https://yurydelendik.github.io/webassembly-dwarf/)
-- [DWARF 调试格式标准](https://dwarfstd.org/)
-- [WebAssembly 自定义段规范](https://webassembly.github.io/spec/core/appendix/custom.html)
-
-## 设计原则
-
-- **标准遵循**: 严格遵循 DWARF 和 WebAssembly 标准
-- **性能优化**: 高效的解析和处理算法
-- **内存安全**: 安全的内存管理和错误处理
-- **扩展性**: 支持未来的 DWARF 扩展
+- **Standard Compliance**: Strictly follows DWARF and WebAssembly standards.
+- **Performance Optimization**: Efficient parsing and processing algorithms.
+- **Memory Safety**: Secure memory management and error handling.
+- **Extensibility**: Supports future DWARF extensions.

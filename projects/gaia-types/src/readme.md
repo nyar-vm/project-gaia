@@ -1,217 +1,179 @@
-# gaia-types 维护文档
+# gaia-types Maintenance Documentation
 
-## 项目概述
+## Project Overview
 
-gaia-types 是 Gaia 项目的核心类型系统库，提供统一的错误处理、架构抽象、编译目标定义等基础功能。作为整个工具链的基础组件，该库采用零依赖设计，确保稳定性和可移植性。
+gaia-types is the core type system library for the Gaia project, providing foundational functionalities such as unified error handling, architecture abstractions, and compilation target definitions. As a basic component of the entire toolchain, this library uses a zero-dependency design to ensure stability and portability.
 
-## 架构设计
+## Architecture Design
 
-### 核心设计原则
+### Core Design Principles
 
-- **零依赖核心**: 核心功能不依赖外部 crate，确保最小化依赖树
-- **统一错误模型**: 提供一致的错误处理接口，支持详细的错误诊断信息
-- **架构抽象**: 支持多架构的统一抽象，便于跨平台开发
-- **类型安全**: 利用 Rust 类型系统防止常见编程错误
-- **性能优先**: 关键路径零分配，栈上数据结构优先
+- **Zero-Dependency Core**: Core functions do not depend on external crates, ensuring a minimal dependency tree.
+- **Unified Error Model**: Provides a consistent error handling interface with support for detailed error diagnostics.
+- **Architecture Abstraction**: Supports unified abstraction for multiple architectures, facilitating cross-platform development.
+- **Type-Safe**: Leverages the Rust type system to prevent common programming errors.
+- **Performance-First**: Zero allocations on critical paths, prioritizing stack-based data structures.
 
-### 技术栈
+### Tech Stack
 
-- **语言**: Rust (Edition 2021)
-- **特性**: 使用 `#![feature(try_trait_v2)]` 提供高级错误处理
-- **序列化**: 可选的 serde 支持（通过 feature 控制）
-- **文档**: 完整的文档测试覆盖
+- **Language**: Rust (Edition 2024)
+- **Features**: Uses `#![feature(try_trait_v2)]` for advanced error handling.
+- **Serialization**: Optional serde support (controlled via features).
+- **Documentation**: Complete documentation test coverage.
 
-## 模块架构
+## Module Architecture
 
-### 模块职责划分
+### Module Responsibility Division
 
-#### 1. `errors` 模块 - 统一错误处理系统
-- **职责**: 提供统一的错误类型和诊断信息
-- **关键类型**: `GaiaError`, `GaiaErrorKind`, `GaiaDiagnostics`
-- **设计考量**: 
-  - 使用 `Box` 包装减少枚举大小
-  - 支持结构化错误信息
-  - 集成 tracing 日志系统
-  - 提供详细的源代码位置信息
+#### 1. `errors` Module - Unified Error Handling System
+- **Responsibility**: Provides unified error types and diagnostic information.
+- **Key Types**: `GaiaError`, `GaiaErrorKind`, `GaiaDiagnostics`
+- **Design Considerations**: 
+  - Uses `Box` wrapping to reduce enum size.
+  - Supports structured error information.
+  - Integrates with the tracing logging system.
+  - Provides detailed source code location information.
 
-#### 2. `helpers` 模块 - 架构和目标抽象
-- **职责**: 定义支持的架构和编译目标
-- **关键类型**: `Architecture`, `CompilationTarget`, `AbiCompatible`, `ApiCompatible`
-- **设计考量**:
-  - 支持物理架构（x86, ARM, RISC-V 等）
-  - 支持虚拟机架构（JVM, CLR）
-  - 提供架构兼容性检查
-  - 序列化支持便于配置存储
+#### 2. `helpers` Module - Architecture and Target Abstraction
+- **Responsibility**: Defines supported architectures and compilation targets.
+- **Key Types**: `Architecture`, `CompilationTarget`, `AbiCompatible`, `ApiCompatible`
+- **Design Considerations**:
+  - Supports physical architectures (x86, ARM, RISC-V, etc.).
+  - Supports virtual machine architectures (JVM, CLR).
+  - Provides architecture compatibility checks.
+  - Serialization support for easy configuration storage.
 
-#### 3. `reader` 模块 - 二进制读取抽象
-- **职责**: 提供统一的二进制数据读取接口
-- **关键类型**: `BinaryReader`, `SourceLocation`, `SourcePosition`
-- **设计考量**:
-  - 支持大端和小端字节序
-  - 提供详细的错误位置信息
-  - 零拷贝设计避免不必要的内存分配
+#### 3. `reader` Module - Binary Reading Abstraction
+- **Responsibility**: Provides a unified interface for reading binary data.
+- **Key Types**: `BinaryReader`, `SourceLocation`, `SourcePosition`
+- **Design Considerations**:
+  - Supports both big-endian and little-endian byte orders.
+  - Provides detailed error location information.
+  - Zero-copy design avoids unnecessary memory allocations.
 
-#### 4. `writer` 模块 - 文本写入抽象
-- **职责**: 提供统一的文本输出接口
-- **关键类型**: `TextWriter`
-- **设计考量**:
-  - 支持多种输出格式
-  - 提供格式化选项
-  - 错误处理集成
+#### 4. `writer` Module - Text Writing Abstraction
+- **Responsibility**: Provides a unified interface for text output.
+- **Key Types**: `TextWriter`
+- **Design Considerations**:
+  - Supports multiple output formats.
+  - Provides formatting options.
+  - Error handling integration.
 
-#### 5. `lexer` 模块 - 词法分析基础
-- **职责**: 提供通用的词法分析功能
-- **设计考量**:
-  - 支持多种词法单元类型
-  - 提供详细的词法错误信息
+#### 5. `lexer` Module - Lexical Analysis Foundation
+- **Responsibility**: Provides general lexical analysis functionality.
+- **Design Considerations**:
+  - Supports multiple token types.
+  - Provides detailed lexical error information.
 
-#### 6. `parser` 模块 - 语法分析基础
-- **职责**: 提供通用的语法分析功能
-- **设计考量**:
-  - 递归下降解析器
-  - 错误恢复机制
-  - 详细的语法错误信息
+#### 6. `parser` Module - Syntax Analysis Foundation
+- **Responsibility**: Provides general syntax analysis functionality.
+- **Design Considerations**:
+  - Recursive descent parser.
+  - Error recovery mechanism.
+  - Detailed syntax error information.
 
-#### 7. `assembler` 模块 - 汇编器基础
-- **职责**: 提供汇编相关的基本功能
-- **关键类型**: `BinaryWriter`
-- **设计考量**:
-  - 支持多种输出格式
-  - 提供汇编错误处理
+#### 7. `assembler` Module - Assembler Foundation
+- **Responsibility**: Provides basic functionality related to assembly.
+- **Key Types**: `BinaryWriter`
+- **Design Considerations**:
+  - Supports multiple output formats.
+  - Provides assembly error handling.
 
-## 核心类型详解
+## Core Types Details
 
-### 错误处理系统
+### Error Handling System
 
-#### GaiaError 结构
-```rust
-pub struct GaiaError {
-    level: Level,           // 错误级别（错误、警告、信息等）
-    kind: Box<GaiaErrorKind>, // 具体的错误类型
-}
-```
+#### GaiaError Structure
+Provides a unified error handling interface, including error levels and specific error types.
 
-#### GaiaErrorKind 枚举
-包含所有可能的错误类型：
-- **语法错误**: `SyntaxError` - 源代码语法问题
-- **IO 错误**: `IoError` - 文件读写失败
-- **架构错误**: `UnsupportedArchitecture` - 不支持的架构
-- **编译错误**: `CompilationFailed` - 编译过程失败
-- **配置错误**: `ConfigError` - 配置文件问题
+#### GaiaErrorKind Enum
+Includes all possible error types: syntax errors, IO errors, architecture errors, compilation errors, configuration errors, etc.
 
-### 架构抽象系统
+### Architecture Abstraction System
 
-#### Architecture 枚举
-```rust
-pub enum Architecture {
-    Unknown,    // 未知架构
-    X86,        // x86 32位
-    X86_64,     // x86-64 64位
-    ARM32,      // ARM 32位
-    ARM64,      // ARM64 64位
-    RISCV32,    // RISC-V 32位
-    RISCV64,    // RISC-V 64位
-    MIPS32,     // MIPS 32位
-    MIPS64,     // MIPS 64位
-    WASM32,     // WebAssembly 32位
-    WASM64,     // WebAssembly 64位
-    JVM,        // Java虚拟机
-    CLR,        // .NET运行时
-    Other(String), // 其他架构
-}
-```
+#### Architecture Enum
+Supports various physical architectures (x86, ARM, RISC-V, MIPS, WebAssembly) and virtual machine architectures (JVM, CLR).
 
-#### CompilationTarget 结构
-定义编译目标，包含架构、ABI、API版本等信息。
+#### CompilationTarget Structure
+Defines the compilation target, including information such as architecture, ABI, and API versions.
 
-## 开发环境配置
+## Development Environment Configuration
 
-### 必需工具
-- Rust 1.70+ (建议使用 rustup 管理)
-- Cargo (随 Rust 一起安装)
+### Required Tools
+- Rust 1.70+ (recommended to manage via rustup)
+- Cargo (installed with Rust)
 
-### 常用命令
-```bash
-# 构建项目
-cargo build
+### Common Commands
+- `cargo build` - Build the project
+- `cargo test` - Run tests
+- `cargo test --doc` - Run documentation tests
+- `cargo doc --open` - Generate documentation
+- `cargo clippy` - Check code quality
 
-# 运行测试
-cargo test
+## Key Design Decisions
 
-# 运行文档测试
-cargo test --doc
+### Error Handling Strategy
+1. **Unified Error Type**: All errors are represented by `GaiaError`.
+2. **Structured Error Information**: Provides machine-readable error details.
+3. **Source Code Location**: Every error includes detailed source code location information.
+4. **Error Levels**: Supports different levels such as error, warning, and information.
 
-# 生成文档
-cargo doc --open
+### Architecture Abstraction Strategy
+1. **Enum Representation**: Uses enums to ensure the completeness of architecture types.
+2. **Display Implementation**: Provides human-readable architecture names.
+3. **Serialization Support**: Facilitates configuration file storage and transmission.
+4. **Extensibility**: Supports custom architecture types.
 
-# 检查代码质量
-cargo clippy
-```
+### Performance Optimization Considerations
+1. **Zero-Allocation Design**: Avoids heap allocations on core paths.
+2. **Box Wrapping**: Uses Box to reduce enum size and improve cache efficiency.
+3. **Inline Optimization**: Critical functions use inline attributes.
 
-## 关键设计决策
+## Maintenance Guide
 
-### 错误处理策略
-1. **统一错误类型**: 所有错误都通过 `GaiaError` 表示
-2. **结构化错误信息**: 提供机器可读的错误详情
-3. **源代码位置**: 每个错误都包含详细的源代码位置信息
-4. **错误级别**: 支持错误、警告、信息等不同级别
+### Process for Adding New Error Types
+1. **Error Research**: Analyze the scenarios and scope of the error.
+2. **Type Definition**: Add new error variants to `GaiaErrorKind`.
+3. **Constructor Functions**: Create convenient constructors for new error types.
+4. **Error Conversion**: Implement conversion from other error types.
+5. **Display Implementation**: Provide human-readable error messages.
+6. **Test Coverage**: Add unit tests and documentation tests.
 
-### 架构抽象策略
-1. **枚举表示**: 使用枚举确保架构类型的完整性
-2. **显示实现**: 提供人类可读的架构名称
-3. **序列化支持**: 便于配置文件存储和传输
-4. **扩展性**: 支持自定义架构类型
+### Process for Adding New Architecture Support
+1. **Architecture Research**: Confirm technical specifications and ABI of the new architecture.
+2. **Enum Extension**: Add the new architecture to the `Architecture` enum.
+3. **Display Implementation**: Update the `Display` trait implementation.
+4. **Compatibility Check**: Add architecture compatibility verification logic.
+5. **Serialization Support**: Ensure the new architecture can be correctly serialized.
+6. **Documentation Update**: Update relevant documentation and examples.
 
-### 性能优化考量
-1. **零分配设计**: 核心路径避免堆分配
-2. **Box包装**: 使用Box减少枚举大小，提高缓存效率
-3. **内联优化**: 关键函数使用内联属性
+### Common Maintenance Pitfalls
+1. **Error Size**: Be careful to control the size of error types to avoid excessive stack allocation.
+2. **Architecture Consistency**: Ensure all architecture-related code correctly handles new architectures.
+3. **Backward Compatibility**: Consider serialization compatibility when modifying enums.
+4. **Documentation Sync**: Update documentation tests promptly after code changes.
 
-## 维护指南
+## Detailed Module Documentation
 
-### 新增错误类型流程
-1. **错误调研**: 分析错误发生的场景和影响范围
-2. **类型定义**: 在 `GaiaErrorKind` 中添加新的错误变体
-3. **构造函数**: 为新的错误类型创建便捷的构造函数
-4. **错误转换**: 实现从其他错误类型的转换
-5. **显示实现**: 提供人类可读的错误信息
-6. **测试覆盖**: 添加单元测试和文档测试
+Each sub-module contains specific maintenance documentation:
 
-### 新增架构支持流程
-1. **架构调研**: 确认新架构的技术规格和ABI
-2. **枚举扩展**: 在 `Architecture` 枚举中添加新架构
-3. **显示实现**: 更新 `Display` trait 实现
-4. **兼容性检查**: 添加架构兼容性验证逻辑
-5. **序列化支持**: 确保新架构可以正确序列化
-6. **文档更新**: 更新相关文档和示例
+- `errors/readme.md` - Detailed design of the error handling system.
+- `helpers/readme.md` - Detailed explanation of architecture abstraction.
+- `reader/readme.md` - Implementation details of binary reading.
+- `writer/readme.md` - Implementation details of text writing.
 
-### 常见维护陷阱
-1. **错误大小**: 注意控制错误类型的大小，避免栈上分配过大
-2. **架构一致性**: 确保所有架构相关的代码都正确处理新架构
-3. **向后兼容**: 修改枚举时要考虑序列化兼容性
-4. **文档同步**: 代码修改后要及时更新文档测试
+## Release Process
 
-## 模块详细文档
+### Version Management
+- Follow Semantic Versioning (SemVer).
+- Major version: Incompatible API changes.
+- Minor version: Downward-compatible new functionality.
+- Patch version: Downward-compatible bug fixes.
 
-各子模块包含专门的维护文档：
-
-- `errors/readme.md` - 错误处理系统的详细设计
-- `helpers/readme.md` - 架构抽象的详细说明
-- `reader/readme.md` - 二进制读取的实现细节
-- `writer/readme.md` - 文本写入的实现细节
-
-## 发布流程
-
-### 版本管理
-- 遵循语义化版本控制 (SemVer)
-- 主版本号: 不兼容的 API 修改
-- 次版本号: 向下兼容的功能性新增
-- 修订号: 向下兼容的问题修正
-
-### 发布前检查清单
-- [ ] 所有测试通过 (`cargo test`)
-- [ ] 文档测试通过 (`cargo test --doc`)
-- [ ] 无警告 (`cargo build`)
-- [ ] 文档完整 (`cargo doc`)
-- [ ] 版本号更新 (`Cargo.toml`)
-- [ ] CHANGELOG 更新
+### Pre-release Checklist
+- [ ] All tests passed (`cargo test`)
+- [ ] Documentation tests passed (`cargo test --doc`)
+- [ ] No warnings (`cargo build`)
+- [ ] Documentation complete (`cargo doc`)
+- [ ] Version number updated (`Cargo.toml`)
+- [ ] CHANGELOG updated

@@ -1,0 +1,39 @@
+[package]
+name = "jasm-assembler"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+description = "Modern assembler for JVM instruction set - strongly typed, object-oriented, zero-dependency core"
+categories = ["compilers"]
+keywords = ["jvm", "jasm", "assembler", "disassembler", "assembly"]
+homepage = "https://gaia-assembly.netlify.app/backends/jvm/"
+repository = "https://github.com/nyar-vm/project-gaia/tree/main/examples/jasm-assembler"
+documentation = "http://docs.rs/jasm-assembler"
+readme = "readme.md"
+exclude = ["package.json"]
+
+[lib]
+name = "jvm_assembler"
+
+[dependencies]
+gaia-types = { workspace = true }
+serde = { workspace = true }
+byteorder = { workspace = true }
+oak-core = { workspace = true }
+oak-pretty-print = { workspace = true }
+oak-jasm = { workspace = true, features = ["oak-pretty-print"] }
+
+[build-dependencies]
+
+[dev-dependencies]
+walkdir = { workspace = true }
+serde_json = { workspace = true }
+gaia-types = { workspace = true, features = ["serde_json"] }
+
+
+[features]
+default = []
+
+[package.metadata.docs.rs]
+all-features = true

@@ -39,7 +39,7 @@ impl<'input, T: Copy> TokenStream<'input, T> {
     /// # 示例
     ///
     /// ```
-    /// use gaia_types::reader::{SourcePosition, Token, TokenStream};
+    /// # use gaia_types::reader::{SourcePosition, Token, TokenStream};
     ///
     /// let input = "hello world";
     /// let tokens = vec![
@@ -138,7 +138,7 @@ impl<'input, T: Copy> TokenStream<'input, T> {
     /// # 示例
     ///
     /// ```
-    /// use gaia_types::{
+    /// # use gaia_types::{
     ///     reader::{SourcePosition, Token, TokenStream},
     ///     GaiaError,
     /// };

@@ -102,18 +102,67 @@ pub enum ApiCompatible {
     ///
     /// 允许 WebAssembly 代码在不同环境中安全地运行
     WASI,
+
+    /// Vulkan 图形 API
+    Vulkan,
+
+    /// Metal 图形 API
+    Metal,
+
+    /// CUDA 平台 API
+    Cuda,
+
+    /// ROCm/HIP 平台 API
+    Hip,
+
+    /// WebGPU API
+    WebGpu,
 }
 
 impl Display for ApiCompatible {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ApiCompatible::Unknown => f.write_str("unknown"),
-            ApiCompatible::Gnu => f.write_str("gnu"),
-            ApiCompatible::MicrosoftVisualC => f.write_str("msvc"),
-            ApiCompatible::JvmRuntime(version) => write!(f, "jvm{}", version),
-            ApiCompatible::ClrRuntime(version) => write!(f, "clr{}", version),
-            ApiCompatible::Unity => f.write_str("unity"),
-            ApiCompatible::WASI => f.write_str("wasi"),
+            ApiCompatible::Unknown => write!(f, "unknown"),
+            ApiCompatible::Gnu => write!(f, "gnu"),
+            ApiCompatible::MicrosoftVisualC => write!(f, "msvc"),
+            ApiCompatible::JvmRuntime(v) => write!(f, "jvm{}", v),
+            ApiCompatible::ClrRuntime(v) => write!(f, "clr{}", v),
+            ApiCompatible::Unity => write!(f, "unity"),
+            ApiCompatible::WASI => write!(f, "wasi"),
+            ApiCompatible::Cuda => write!(f, "cuda"),
+            ApiCompatible::Hip => write!(f, "hip"),
+            ApiCompatible::Vulkan => write!(f, "vulkan"),
+            ApiCompatible::Metal => write!(f, "metal"),
+            ApiCompatible::WebGpu => write!(f, "webgpu"),
+        }
+    }
+}
+
+impl std::str::FromStr for ApiCompatible {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.to_lowercase();
+        match s.as_str() {
+            "unknown" => Ok(ApiCompatible::Unknown),
+            "gnu" => Ok(ApiCompatible::Gnu),
+            "msvc" | "microsoftvisualc" => Ok(ApiCompatible::MicrosoftVisualC),
+            "unity" => Ok(ApiCompatible::Unity),
+            "wasi" => Ok(ApiCompatible::WASI),
+            "cuda" => Ok(ApiCompatible::Cuda),
+            "hip" | "rocm" => Ok(ApiCompatible::Hip),
+            "vulkan" => Ok(ApiCompatible::Vulkan),
+            "metal" => Ok(ApiCompatible::Metal),
+            "webgpu" => Ok(ApiCompatible::WebGpu),
+            _ if s.starts_with("jvm") => {
+                let v = s[3..].parse::<u32>().map_err(|e| e.to_string())?;
+                Ok(ApiCompatible::JvmRuntime(v))
+            }
+            _ if s.starts_with("clr") => {
+                let v = s[3..].parse::<u16>().map_err(|e| e.to_string())?;
+                Ok(ApiCompatible::ClrRuntime(v))
+            }
+            _ => Err(format!("Unknown ApiCompatible: {}", s)),
         }
     }
 }

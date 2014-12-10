@@ -1,0 +1,17 @@
+[package]
+name = "gcn-assembler"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+description = "GCN assembler for Gaia project"
+homepage = "https://gaia-assembly.netlify.app/backends/gcn/"
+repository = "https://github.com/nyar-vm/project-gaia/tree/main/examples/gcn-assembler"
+documentation = "https://docs.rs/gcn-assembler"
+readme = "readme.md"
+exclude = ["package.json"]
+
+[dependencies]
+gaia-types = { workspace = true }
+serde = { workspace = true }
+tracing = { workspace = true }

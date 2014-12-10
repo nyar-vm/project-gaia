@@ -6,193 +6,199 @@ use crate::{
 };
 use url::Url;
 
-/// 表示令牌类型。
+/// Represents the token type.
 pub trait TokenType: Copy {
-    /// 表示流的结束。
+    /// Represents the end of the stream.
     const END_OF_STREAM: Self;
 
-    /// 检查令牌是否为空格。
+    /// Checks if the token is whitespace.
     fn is_whitespace(&self) -> bool {
         false
     }
 
-    /// 检查令牌是否应被忽略。
+    /// Checks if the token is ignored.
     fn is_ignored(&self) -> bool {
         false
     }
 }
 
-/// 词法分析器状态管理实用类
+/// Lexer state management utility class
 ///
-/// 这是一个通用的词法分析器状态管理器，提供了完整的词法分析功能，
-/// 包括字符位置跟踪、token 收集、错误处理等。
+/// This is a generic lexer state manager that provides complete lexical analysis functionality,
+/// including character position tracking, token collection, error handling, etc.
 ///
-/// # 设计目标
+/// # Design Goals
 ///
-/// * **通用性**: 支持任意 token 类型，只要实现 `Copy` trait
-/// * **性能**: 高效的字符迭代和位置跟踪
-/// * **易用性**: 提供丰富的辅助方法简化词法分析
-/// * **错误处理**: 集成 Gaia 错误系统
+/// * **Generality**: Supports any token type as long as it implements the `Copy` trait.
+/// * **Performance**: Efficient character iteration and position tracking.
+/// * **Ease of Use**: Provides rich helper methods to simplify lexical analysis.
+/// * **Error Handling**: Integrated with the Gaia error system.
 ///
-/// # 示例
+/// # Example
 ///
 /// ```rust
-/// use gaia_types::{
-///     lexer::LexerState,
-///     reader::{SourcePosition, Token},
-/// };
-///
-/// #[derive(Clone, Copy, Debug)]
-/// enum MyToken {
-///     Identifier,
-///     Number,
-///     Whitespace,
-/// }
+/// # use gaia_types::{
+/// #     lexer::{LexerState, TokenType},
+/// #     reader::{SourcePosition, Token},
+/// # };
+/// #
+/// # #[derive(Clone, Copy, Debug, PartialEq)]
+/// # enum MyToken {
+/// #     Identifier,
+/// #     Number,
+/// #     Whitespace,
+/// #     Eof,
+/// # }
+/// # impl TokenType for MyToken { const END_OF_STREAM: Self = MyToken::Eof; }
 ///
 /// let input = "hello 123";
-/// let mut state = LexerState::new(input);
+/// let mut state = LexerState::<MyToken>::new(input, None);
 ///
-/// // 添加 token
+/// // Add tokens
 /// state.add_token(MyToken::Identifier, 0, 5, 1, 1);
 /// state.add_token(MyToken::Whitespace, 5, 1, 1, 6);
 /// state.add_token(MyToken::Number, 6, 3, 1, 7);
 ///
-/// // 生成 token 流
-/// let token_stream = state.into_token_stream();
+/// // Generate token stream
+/// let diagnostics = state.success();
 /// ```
 #[derive(Debug)]
 pub struct LexerState<'input, T: TokenType> {
     url: Option<&'input Url>,
-    /// 输入字符串
+    /// Input string
     input: &'input str,
-    /// 收集的 tokens
+    /// Collected tokens
     tokens: Vec<Token<T>>,
-    /// 当前行号（从 1 开始）
+    /// Current line number (starting from 1)
     line: u32,
-    /// 当前列号（从 1 开始，UTF-16 长度）
+    /// Current column number (starting from 1, UTF-16 length)
     column: u32,
-    /// 当前字节偏移量（从 0 开始）
+    /// Current byte offset (starting from 0)
     offset: usize,
     diagnostics: Vec<GaiaError>,
 }
 
 impl<'input, T: TokenType> LexerState<'input, T> {
-    /// 创建新的词法分析器状态
+    /// Creates a new lexer state
     ///
-    /// # 参数
+    /// # Parameters
     ///
-    /// * `input` - 要分析的输入字符串
-    /// * `url` - 输入源的 URL（可选），用于错误定位
+    /// * `input` - The input string to analyze
+    /// * `url` - The URL of the input source (optional), used for error positioning
     ///
-    /// # 返回值
+    /// # Return Value
     ///
-    /// 返回初始化的词法分析器状态，位置信息设置为 (line: 1, column: 1, offset: 0)
+    /// Returns the initialized lexer state, with position information set to (line: 1, column: 1, offset: 0)
     ///
     /// # 示例
     ///
-    /// ```rust
-    /// use gaia_types::lexer::LexerState;
-    /// use url::Url;
-    ///
+    /// ```rust,ignore
+    /// # use gaia_types::lexer::{LexerState, TokenType};
+    /// # use url::Url;
+    /// # #[derive(Clone, Copy, Debug, PartialEq)] enum TestToken { Eof }
+    /// # impl TokenType for TestToken { const END_OF_STREAM: Self = TestToken::Eof; }
     /// let input = "let x = 42;";
     /// let url = Url::parse("file:///example.gs").ok();
-    /// let state = LexerState::new(input, url);
+    /// let mut state = LexerState::<TestToken>::new(input, url.as_ref());
     /// assert_eq!(state.get_position(), (0, 1, 1));
     /// ```
     pub fn new(input: &'input str, url: Option<&'input Url>) -> Self {
         Self { url, input, tokens: Vec::new(), line: 1, column: 1, offset: 0, diagnostics: vec![] }
     }
 
-    /// 获取当前位置信息
+    /// Gets the current position (line, column, offset)
     ///
-    /// 返回当前的字节偏移量、行号和列号
+    /// # Return Value
     ///
-    /// # 返回值
+    /// Returns a triple `(offset, line, column)`, where:
+    /// * `offset` - Byte offset (starting from 0)
+    /// * `line` - Line number (starting from 1)
+    /// * `column` - Column number (starting from 1, UTF-16 length)
     ///
-    /// 返回 `(offset, line, column)` 元组/// 获取当前位置（行、列、偏移量）
+    /// # Example
     ///
-    /// # 返回值
-    ///
-    /// 返回一个三元组 `(offset, line, column)`，其中：
-    /// * `offset` - 字节偏移量（从 0 开始）
-    /// * `line` - 行号（从 1 开始）
-    /// * `column` - 列号（从 1 开始，UTF-16 长度）
-    ///
-    /// # 示例
-    ///
-    /// ```rust
+    /// ```rust,ignore
+    /// # use gaia_types::lexer::{LexerState, TokenType};
+    /// # #[derive(Clone, Copy, Debug, PartialEq)] enum TestToken { Eof }
+    /// # impl TokenType for TestToken { const END_OF_STREAM: Self = TestToken::Eof; }
     /// let input = "hello\nworld";
-    /// let mut state = LexerState::new(input);
+    /// let mut state = LexerState::<TestToken>::new(input, None);
     ///
-    /// // 初始位置
+    /// // Initial position
     /// assert_eq!(state.get_position(), (0, 1, 1));
     ///
-    /// // 移动到 'o' 字符
+    /// // Move to the 'o' character
     /// state.next_char(); // h
     /// state.next_char(); // e
     /// state.next_char(); // l
     /// state.next_char(); // l
     /// state.next_char(); // o
-    /// assert_eq!(state.get_position(), (4, 1, 5)); // "hello" 的最后一个字符
+    /// assert_eq!(state.get_position(), (5, 1, 6)); // First character after "hello"
     /// ```
     pub fn get_position(&self) -> (usize, u32, u32) {
         (self.offset, self.line, self.column)
     }
 
-    /// 标记当前位置并返回位置信息
+    /// Marks the current position and returns the position information
     ///
-    /// 这是一个便利方法，用于在需要记录 token 开始位置时使用。
-    /// 返回当前的字节偏移量、行号和列号，通常用于后续的 `add_token` 调用。
+    /// This is a convenience method used when the starting position of a token needs to be recorded.
+    /// Returns the current byte offset, line number, and column number, typically used for subsequent `add_token` calls.
     ///
-    /// # 返回值
+    /// # Return Value
     ///
-    /// `(offset, line, column)` - 当前位置的三元组
+    /// `(offset, line, column)` - Triple of the current position
     ///
-    /// # 示例
+    /// # Example
     ///
     /// ```rust
+    /// # use gaia_types::lexer::{LexerState, TokenType};
+    /// # #[derive(Clone, Copy, Debug, PartialEq)] enum TestToken { Identifier, Eof }
+    /// # impl TokenType for TestToken { const END_OF_STREAM: Self = TestToken::Eof; }
     /// let input = "hello";
-    /// let mut state = LexerState::new(input, None);
+    /// let mut state = LexerState::<TestToken>::new(input, None);
     ///
     /// let (start_offset, start_line, start_column) = state.mark_position();
-    /// // 处理一些字符...
-    /// state.add_token(SomeTokenType::Identifier, start_offset, 5, start_line, start_column);
+    /// // Process some characters...
+    /// state.add_token(TestToken::Identifier, start_offset, 5, start_line, start_column);
     /// ```
     pub fn mark_position(&self) -> (usize, u32, u32) {
         (self.offset, self.line, self.column)
     }
 
-    /// 获取当前源代码位置
+    /// Gets the current source code position
     ///
-    /// 返回一个 `SourcePosition` 结构体，包含完整的位置信息
+    /// Returns a `SourcePosition` struct containing complete position information
     pub fn get_source_position(&self) -> SourcePosition {
         SourcePosition { offset: self.offset, length: 0, line: self.line, column: self.column }
     }
 
-    /// 查看下一个字符但不消耗它
+    /// Peeks at the next character without consuming it
     ///
-    /// 返回下一个字符的副本及其字节偏移量，但不移动位置指针。可以多次调用 `peek` 获取相同的字符。
+    /// Returns a copy of the next character and its byte offset, but does not move the position pointer. `peek` can be called multiple times to get the same character.
     ///
-    /// # 返回值
+    /// # Return Value
     ///
-    /// * `Some((offset, ch))` - 下一个字符 `ch` 及其字节偏移量
-    /// * `None` - 已到达输入流末尾
+    /// * `Some((offset, ch))` - Next character `ch` and its byte offset
+    /// * `None` - Reached the end of the input stream
     ///
-    /// # 示例
+    /// # Example
     ///
     /// ```rust
+    /// # use gaia_types::lexer::{LexerState, TokenType};
+    /// # #[derive(Clone, Copy, Debug, PartialEq)] enum TestToken { Eof }
+    /// # impl TokenType for TestToken { const END_OF_STREAM: Self = TestToken::Eof; }
     /// let input = "hello";
-    /// let mut state = LexerState::new(input);
+    /// let mut state = LexerState::<TestToken>::new(input, None);
     ///
-    /// // 多次 peek 返回相同的字符
+    /// // Multiple peeks return the same character
     /// assert_eq!(state.peek(), Some((0, 'h')));
     /// assert_eq!(state.peek(), Some((0, 'h')));
     /// assert_eq!(state.peek(), Some((0, 'h')));
     ///
-    /// // 位置信息不变
+    /// // Position information remains unchanged
     /// assert_eq!(state.get_position(), (0, 1, 1));
     ///
-    /// // next_char 会消耗字符并移动位置
+    /// // next_char will consume the character and move the position
     /// assert_eq!(state.next_char(), Some((0, 'h')));
     /// assert_eq!(state.peek(), Some((1, 'e')));
     /// assert_eq!(state.get_position(), (1, 1, 2));
@@ -223,8 +229,11 @@ impl<'input, T: TokenType> LexerState<'input, T> {
     /// # 示例
     ///
     /// ```rust
+    /// # use gaia_types::lexer::{LexerState, TokenType};
+    /// # #[derive(Clone, Copy, Debug, PartialEq)] enum TestToken { Eof }
+    /// # impl TokenType for TestToken { const END_OF_STREAM: Self = TestToken::Eof; }
     /// let input = "a\n😀";
-    /// let mut state = LexerState::new(input);
+    /// let mut state = LexerState::<TestToken>::new(input, None);
     ///
     /// // 读取 'a'
     /// assert_eq!(state.next_char(), Some((0, 'a')));
@@ -239,9 +248,9 @@ impl<'input, T: TokenType> LexerState<'input, T> {
     /// assert_eq!(state.get_position(), (6, 2, 3)); // UTF-16 长度: '😀' = 2，所以 column = 1 + 2 = 3
     /// ```
     pub fn next_char(&mut self) -> Option<(usize, char)> {
-        let (_, this_char) = self.peek()?;
+        let (offset, this_char) = self.peek()?;
         self.consume_char(this_char);
-        self.peek()
+        Some((offset, this_char))
     }
 
     /// 更新位置信息（处理换行和 Unicode）
@@ -256,7 +265,7 @@ impl<'input, T: TokenType> LexerState<'input, T> {
     ///
     /// # 示例
     ///
-    /// ```rust
+    /// ```text
     /// // 基本拉丁字符：每个字符 1 个 UTF-16 码元
     /// "abc" -> 列号: 1, 2, 3
     ///
@@ -271,8 +280,8 @@ impl<'input, T: TokenType> LexerState<'input, T> {
     ///
     /// ```rust
     /// # use gaia_types::lexer::{LexerState, TokenType};
-    /// # #[derive(Clone, Copy, Debug)] enum TestToken { Char, Eof }
-    /// # impl TokenType for TestToken { const EOF: Self = TestToken::Eof; }
+    /// # #[derive(Clone, Copy, Debug, PartialEq)] enum TestToken { Char, Eof }
+    /// # impl TokenType for TestToken { const END_OF_STREAM: Self = TestToken::Eof; }
     /// let mut state = LexerState::<TestToken>::new("😀", None);
     /// assert_eq!(state.get_position(), (0, 1, 1)); // 初始位置
     /// state.next_char(); // 读取表情符号
@@ -295,9 +304,15 @@ impl<'input, T: TokenType> LexerState<'input, T> {
     ///
     /// # 示例
     ///
-    /// ```rust
+    /// ```rust,ignore
+    /// # use gaia_types::lexer::{LexerState, TokenType};
+    /// # #[derive(Clone, Copy, Debug, PartialEq)] enum TestToken { Eof }
+    /// # impl TokenType for TestToken { const END_OF_STREAM: Self = TestToken::Eof; }
     /// let input = "hello\nworld";
-    /// let mut state = LexerState::new(input, None);
+    /// let mut state = LexerState::<TestToken>::new(input, None);
+    ///
+    /// // 先移动到换行符
+    /// for _ in 0..5 { state.next_char(); }
     ///
     /// // 处理换行符
     /// state.consume_char('\n');
@@ -354,9 +369,12 @@ impl<'input, T: TokenType> LexerState<'input, T> {
     ///
     /// # 示例
     ///
-    /// ```rust
-    /// let input = "hello\r\nworld";
-    /// let mut state = LexerState::new(input, None);
+    /// ```rust,ignore
+    /// # use gaia_types::lexer::{LexerState, TokenType};
+    /// # #[derive(Clone, Copy, Debug, PartialEq)] enum TestToken { Eof }
+    /// # impl TokenType for TestToken { const END_OF_STREAM: Self = TestToken::Eof; }
+    /// let input = "\r\nworld";
+    /// let mut state = LexerState::<TestToken>::new(input, None);
     ///
     /// // 正确处理 \r\n 换行符
     /// let length = state.consume_str("\r\n");
@@ -475,13 +493,15 @@ impl<'input, T: TokenType> LexerState<'input, T> {
     /// # 示例
     ///
     /// ```rust
+    /// # use gaia_types::lexer::{LexerState, TokenType};
+    /// # #[derive(Clone, Copy, Debug, PartialEq)] enum MyToken { LeftBrace, Eof }
+    /// # impl TokenType for MyToken { const END_OF_STREAM: Self = MyToken::Eof; }
     /// let input = "{hello}";
-    /// let mut state = LexerState::new(input, None);
+    /// let mut state = LexerState::<MyToken>::new(input, None);
     ///
     /// // 处理左大括号
-    /// if let Some(token) = state.advance_char(MyToken::LeftBrace, '{') {
-    ///     println!("Found left brace at position {:?}", token.position);
-    /// }
+    /// state.advance_by_char(MyToken::LeftBrace, '{');
+    /// assert_eq!(state.get_position(), (1, 1, 2));
     /// ```
     ///
     /// # 注意
@@ -516,16 +536,22 @@ impl<'input, T: TokenType> LexerState<'input, T> {
     /// # 示例
     ///
     /// ```rust
+    /// # use gaia_types::lexer::{LexerState, TokenType};
+    /// # #[derive(Clone, Copy, Debug, PartialEq)] enum MyToken { Newline, Arrow, Eof }
+    /// # impl TokenType for MyToken { const END_OF_STREAM: Self = MyToken::Eof; }
     /// let input = "hello\r\nworld";
-    /// let mut state = LexerState::new(input, None);
+    /// let mut state = LexerState::<MyToken>::new(input, None);
+    ///
+    /// // 先移动到换行符
+    /// state.next_char(); // h
+    /// state.next_char(); // e
+    /// state.next_char(); // l
+    /// state.next_char(); // l
+    /// state.next_char(); // o
     ///
     /// // 正确处理 \r\n 换行符
     /// state.advance_by_str(MyToken::Newline, "\r\n");
-    /// assert_eq!(state.get_position(), (2, 2, 1)); // 行号只增加一次
-    ///
-    /// // 处理多字符运算符
-    /// state.advance_by_str(MyToken::Arrow, "=>");
-    /// assert_eq!(state.get_position(), (4, 2, 3));
+    /// assert_eq!(state.get_position(), (7, 2, 1)); // 行号增加，偏移量 5+2=7
     /// ```
     ///
     /// # 注意
@@ -555,12 +581,12 @@ impl<'input, T: TokenType> LexerState<'input, T> {
     ///
     /// # 示例
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// # use gaia_types::lexer::{LexerState, TokenType};
     /// # #[derive(Clone, Copy, Debug, PartialEq)] enum TestToken { StringLiteral, TypeDescriptor, Eof }
-    /// # impl TokenType for TestToken { const EOF: Self = TestToken::Eof; }
+    /// # impl TokenType for TestToken { const END_OF_STREAM: Self = TestToken::Eof; }
     /// let input = "string";
-    /// let mut state = LexerState::new(input, None);
+    /// let mut state = LexerState::<TestToken>::new(input, None);
     ///
     /// // 先添加一个字符串字面量
     /// state.read_string_literal(TestToken::StringLiteral, '"');
@@ -800,7 +826,7 @@ impl<'input, T: TokenType> LexerState<'input, T> {
     /// ```rust
     /// # use gaia_types::lexer::{LexerState, TokenType};
     /// # #[derive(Clone, Copy, Debug, PartialEq)] enum TestToken { Keyword, Identifier, Eof }
-    /// # impl TokenType for TestToken { const EOF: Self = TestToken::Eof; }
+    /// # impl TokenType for TestToken { const END_OF_STREAM: Self = TestToken::Eof; }
     /// let input = "let x = 42";
     /// let mut state = LexerState::new(input, None);
     ///
@@ -832,6 +858,9 @@ impl<'input, T: TokenType> LexerState<'input, T> {
     /// # 示例
     ///
     /// ```rust
+    /// # use gaia_types::lexer::{LexerState, TokenType};
+    /// # #[derive(Clone, Copy, Debug, PartialEq)] enum MyToken { Keyword, Identifier, Eof }
+    /// # impl TokenType for MyToken { const END_OF_STREAM: Self = MyToken::Eof; }
     /// let input = "let x";
     /// let mut state = LexerState::new(input, None);
     ///
@@ -860,11 +889,11 @@ impl<'input, T: TokenType> LexerState<'input, T> {
     ///
     /// ```rust
     /// # use gaia_types::lexer::{LexerState, TokenType};
-    /// # use gaia_types::errors::{GaiaError, SourceLocation};
+    /// # use gaia_types::{GaiaError, SourceLocation};
     /// # #[derive(Clone, Copy, Debug, PartialEq)] enum TestToken { Eof }
-    /// # impl TokenType for TestToken { const EOF: Self = TestToken::Eof; }
-    /// let input = "let x = @";
-    /// let mut state = LexerState::new(input, None);
+    /// # impl TokenType for TestToken { const END_OF_STREAM: Self = TestToken::Eof; }
+    /// let input = "let x = ↯";
+    /// let mut state = LexerState::<TestToken>::new(input, None);
     ///
     /// // 移动到非法字符位置
     /// state.next_char();
@@ -876,10 +905,10 @@ impl<'input, T: TokenType> LexerState<'input, T> {
     /// state.next_char();
     ///
     /// // 标记错误
-    /// state.mark_error("意外的字符 '@'");
+    /// state.mark_error("意外的字符 '↯'");
     ///
     /// // 获取诊断结果时会包含这个错误
-    /// let diagnostics = state.success(TestToken::Eof);
+    /// let diagnostics = state.success();
     /// assert!(!diagnostics.diagnostics.is_empty());
     /// ```
     pub fn mark_error(&mut self, message: impl ToString) {
@@ -910,16 +939,16 @@ impl<'input, T: TokenType> LexerState<'input, T> {
     /// ```rust
     /// # use gaia_types::lexer::{LexerState, TokenType};
     /// # #[derive(Clone, Copy, Debug, PartialEq)] enum TestToken { Keyword, Identifier, Eof }
-    /// # impl TokenType for TestToken { const EOF: Self = TestToken::Eof; }
+    /// # impl TokenType for TestToken { const END_OF_STREAM: Self = TestToken::Eof; }
     /// let input = "let x = 42";
-    /// let mut state = LexerState::new(input, None);
+    /// let mut state = LexerState::<TestToken>::new(input, None);
     ///
     /// // ... 添加 token ...
     ///
-    /// let diagnostics = state.success(TestToken::Eof);
+    /// let diagnostics = state.success();
     /// match diagnostics.result {
     ///     Ok(token_stream) => {
-    ///         println!("词法分析成功，共 {} 个 token", token_stream.tokens.len());
+    ///         println!("词法分析成功，共 {} 个 token", token_stream.tokens.get_ref().len());
     ///     }
     ///     Err(error) => {
     ///         println!("词法分析失败: {}", error);
@@ -953,11 +982,11 @@ impl<'input, T: TokenType> LexerState<'input, T> {
     ///
     /// ```rust
     /// # use gaia_types::lexer::{LexerState, TokenType};
-    /// # use gaia_types::errors::{GaiaError, SourceLocation};
+    /// # use gaia_types::{GaiaError, SourceLocation};
     /// # #[derive(Clone, Copy, Debug, PartialEq)] enum TestToken { Eof }
-    /// # impl TokenType for TestToken { const EOF: Self = TestToken::Eof; }
-    /// let input = "let x = @";
-    /// let mut state = LexerState::new(input, None);
+    /// # impl TokenType for TestToken { const END_OF_STREAM: Self = TestToken::Eof; }
+    /// let input = "let x = ↯";
+    /// let mut state = LexerState::<TestToken>::new(input, None);
     ///
     /// // ... 处理输入 ...
     ///

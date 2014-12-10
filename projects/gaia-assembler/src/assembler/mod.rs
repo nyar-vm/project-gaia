@@ -2,7 +2,7 @@
 //!
 //! 提供统一的编译接口，支持编译到多个目标平台
 
-use crate::{backends::*, program::GaiaProgram};
+use crate::{backends::*, program::GaiaModule};
 use gaia_types::{helpers::CompilationTarget, GaiaErrorKind, *};
 
 /// Gaia 编译器
@@ -13,22 +13,32 @@ pub struct GaiaAssembler {
 impl GaiaAssembler {
     /// 创建新的编译器实例，包含所有可用的后端
     pub fn new() -> Self {
-        let backends: Vec<Box<dyn Backend>> =
-            vec![Box::new(ClrBackend {}), Box::new(JvmBackend {}), Box::new(PeBackend {}), Box::new(WasiBackend {})];
+        #[allow(unused_mut)]
+        let mut backends: Vec<Box<dyn Backend>> = vec![
+            Box::new(JvmBackend {}),
+            Box::new(PeBackend {}),
+            Box::new(WasiBackend {}),
+            Box::new(X86Backend {}),
+            Box::new(GcnBackend::new()),
+            Box::new(SassBackend::new()),
+        ];
+
+        #[cfg(feature = "clr")]
+        backends.push(Box::new(ClrBackend {}));
 
         Self { backends }
     }
 
     /// 编译 Gaia 程序到指定目标
-    pub fn compile(&self, program: &GaiaProgram, target: &CompilationTarget) -> Result<GeneratedFiles> {
+    pub fn compile(&self, program: &GaiaModule, target: &CompilationTarget) -> Result<GeneratedFiles> {
         // 优先按 host 精确选择后端，避免匹配度导致的误选
         let mut best_backend: Option<&Box<dyn Backend>> = None;
         let mut best_score = 0.0;
 
-        // 先尝试以 backend 的 primary_target 与传入 target 的 host 精确匹配
+        // 先尝试以 backend 的 primary_target 与传入 target 的 host 和 build 精确匹配
         if let Some(candidate) = self.backends.iter().find(|b| {
             let pt = b.primary_target();
-            pt.host == target.host
+            pt.host == target.host && pt.build == target.build
         }) {
             best_backend = Some(candidate);
             best_score = 100.0; // 精确匹配优先
@@ -64,7 +74,7 @@ impl GaiaAssembler {
 }
 
 /// 编译到指定平台
-pub fn compile_to_platform(program: &GaiaProgram, target: CompilationTarget) -> Result<Vec<u8>> {
+pub fn compile_to_platform(program: &GaiaModule, target: CompilationTarget) -> Result<Vec<u8>> {
     let compiler = GaiaAssembler::new();
     let generated_files = compiler.compile(program, &target)?;
 

@@ -3,86 +3,89 @@
 use crate::GaiaError;
 use std::fmt::Write;
 
-/// 文本写入器，用于写入格式化的文本数据
+/// Text writer used for writing formatted text data
 ///
-/// 这个结构体提供了文本输出的格式化功能，包括缩进管理、
-/// 自动换行和自定义缩进文本支持。
+/// This struct provides formatting functionality for text output, including indentation management,
+/// automatic line breaks, and support for custom indentation text.
 ///
-/// # 类型参数
+/// # Type Parameters
 ///
-/// * `W` - 底层的写入器类型，必须实现 `Write` trait
+/// * `W` - The underlying writer type, which must implement the `Write` trait.
 ///
-/// # 示例
+/// # Example
 ///
 /// ```rust
-/// use gaia_types::writer::TextWriter;
-/// use std::io::Cursor;
+/// # use gaia_types::writer::TextWriter;
+/// # use std::fmt::Write;
 ///
-/// let mut buffer = Cursor::new(Vec::new());
-/// let mut writer = TextWriter::new(buffer, "    ");
+/// let mut buffer = String::new();
+/// let mut writer = TextWriter::new(&mut buffer);
 ///
 /// writer.write_line("function main() {").unwrap();
-/// writer.indent();
+/// writer.indent("").unwrap();
 /// writer.write_line("return 42;").unwrap();
-/// writer.dedent();
+/// writer.dedent("").unwrap();
 /// writer.write_line("}").unwrap();
 ///
-/// let result = String::from_utf8(writer.finish().into_inner()).unwrap();
-/// assert_eq!(result, "function main() {\n    return 42;\n}\n");
+/// assert_eq!(buffer, "function main() {\n    return 42;\n}\n");
 /// ```
 #[derive(Debug)]
 pub struct TextWriter<W> {
-    /// 底层的写入器
+    /// Underlying writer
     writer: W,
-    /// 当前的缩进级别
+    /// Current indentation level
     indent_level: u16,
-    /// 缩进文本（如空格或制表符）
+    /// Indentation text (e.g., spaces or tabs)
     indent_text: &'static str,
 }
 
 impl<W: Write> TextWriter<W> {
-    /// 创建一个新的文本写入器
+    /// Creates a new text writer
     ///
-    /// # 参数
+    /// # Parameters
     ///
-    /// * `writer` - 底层的写入器
-    /// * `indent_text` - 缩进文本，如 "    "（4个空格）或 "\t"（制表符）
+    /// * `writer` - Underlying writer
+    /// * `indent_text` - Indentation text, such as "    " (4 spaces) or "\t" (tab)
     ///
-    /// # 返回值
+    /// # Return Value
     ///
-    /// 返回一个新的 `TextWriter` 实例
+    /// Returns a new `TextWriter` instance
     ///
-    /// # 示例
+    /// # Example
     ///
     /// ```rust
-    /// use gaia_types::writer::TextWriter;
-    /// use std::io::Cursor;
+    /// # use gaia_types::writer::TextWriter;
+    /// # use std::fmt::Write;
     ///
-    /// let buffer = Cursor::new(Vec::new());
-    /// let writer = TextWriter::new(buffer); // 使用2个空格缩进
+    /// let mut buffer = String::new();
+    /// let writer = TextWriter::new(&mut buffer); // Uses 4 spaces for indentation
     /// ```
     pub fn new(writer: W) -> Self {
         Self { writer, indent_level: 0, indent_text: "    " }
     }
 
-    /// 增加缩进级别
+    /// Returns the underlying writer
+    pub fn into_inner(self) -> W {
+        self.writer
+    }
+
+    /// Increases the indentation level
     ///
-    /// 调用此方法后，后续写入的文本会自动添加额外的缩进
+    /// Subsequent text written after calling this method will automatically have extra indentation added.
     ///
-    /// # 示例
+    /// # Example
     ///
     /// ```rust
-    /// use gaia_types::writer::TextWriter;
-    /// use std::io::Cursor;
+    /// # use gaia_types::writer::TextWriter;
+    /// # use std::fmt::Write;
     ///
-    /// let mut buffer = Cursor::new(Vec::new());
-    /// let mut writer = TextWriter::new(buffer, "    ");
+    /// let mut buffer = String::new();
+    /// let mut writer = TextWriter::new(&mut buffer);
     ///
-    /// writer.write_line("outer {").unwrap();
-    /// writer.indent(); // 增加缩进
+    /// writer.write_line("outer ").unwrap();
+    /// writer.indent("{"); // Increase indentation
     /// writer.write_line("inner code").unwrap();
-    /// writer.dedent(); // 减少缩进
-    /// writer.write_line("}").unwrap();
+    /// writer.dedent("}"); // Decrease indentation
     /// ```
     pub fn indent(&mut self, text: &str) -> Result<u16, GaiaError> {
         if !text.is_empty() {
@@ -92,14 +95,14 @@ impl<W: Write> TextWriter<W> {
         Ok(self.indent_level)
     }
 
-    /// 减少缩进级别
+    /// Decreases the indentation level
     ///
-    /// 调用此方法后，后续写入的文本会减少缩进级别
-    /// 如果当前缩进级别已经是0，则不会产生任何效果
+    /// Subsequent text written after calling this method will have its indentation level decreased.
+    /// If the current indentation level is already 0, it will have no effect.
     ///
-    /// # 示例
+    /// # Example
     ///
-    /// 参见 `indent` 方法的示例
+    /// See the example for the `indent` method.
     pub fn dedent(&mut self, text: &str) -> Result<u16, GaiaError> {
         self.indent_level = self.indent_level.saturating_sub(1);
         if !text.is_empty() {
@@ -108,83 +111,83 @@ impl<W: Write> TextWriter<W> {
         Ok(self.indent_level)
     }
 
-    /// 写入一行文本
+    /// Writes a line of text
     ///
-    /// 这个方法会自动添加当前缩进级别对应的缩进文本，
-    /// 并在文本末尾添加换行符
+    /// This method automatically adds indentation corresponding to the current indentation level,
+    /// and appends a newline character at the end of the text.
     ///
-    /// # 参数
+    /// # Parameters
     ///
-    /// * `text` - 要写入的文本内容
+    /// * `text` - The text content to be written
     ///
-    /// # 返回值
+    /// # Return Value
     ///
-    /// 返回 `Result<()>`，如果写入成功则返回 `Ok(())`，否则返回错误
+    /// Returns `Result<()>`. If the write is successful, it returns `Ok(())`; otherwise, it returns an error.
     ///
-    /// # 示例
+    /// # Example
     ///
     /// ```rust
-    /// use gaia_types::writer::TextWriter;
-    /// use std::io::Cursor;
+    /// # use gaia_types::writer::TextWriter;
+    /// # use std::fmt::Write;
     ///
-    /// let mut buffer = Cursor::new(Vec::new());
-    /// let mut writer = TextWriter::new(buffer, "    ");
+    /// let mut buffer = String::new();
+    /// let mut writer = TextWriter::new(&mut buffer);
     ///
-    /// writer.write_line("这是一行文本").unwrap();
+    /// writer.write_line("This is a line of text").unwrap();
     /// ```
     pub fn write_line(&mut self, text: &str) -> Result<(), std::fmt::Error> {
         self.write_indent()?;
         writeln!(self.writer, "{}", text)
     }
 
-    /// 写入文本（不添加换行）
+    /// Writes text (without adding a newline)
     ///
-    /// 这个方法会写入文本内容，但不会自动添加换行符
+    /// This method writes text content but does not automatically add a newline character.
     ///
-    /// # 参数
+    /// # Parameters
     ///
-    /// * `text` - 要写入的文本内容
+    /// * `text` - The text content to be written
     ///
-    /// # 返回值
+    /// # Return Value
     ///
-    /// 返回 `Result<()>`，如果写入成功则返回 `Ok(())`，否则返回错误
+    /// Returns `Result<()>`. If the write is successful, it returns `Ok(())`; otherwise, it returns an error.
     ///
-    /// # 示例
+    /// # Example
     ///
     /// ```rust
-    /// use gaia_types::writer::TextWriter;
-    /// use std::io::Cursor;
+    /// # use gaia_types::writer::TextWriter;
+    /// # use std::fmt::Write;
     ///
-    /// let mut buffer = Cursor::new(Vec::new());
-    /// let mut writer = TextWriter::new(buffer, "    ");
+    /// let mut buffer = String::new();
+    /// let mut writer = TextWriter::new(&mut buffer);
     ///
-    /// writer.write("部分文本").unwrap();
-    /// writer.write_line("继续文本").unwrap();
+    /// writer.write("partial text").unwrap();
+    /// writer.write_line("continued text").unwrap();
     /// ```
     pub fn write(&mut self, text: &str) -> Result<(), std::fmt::Error> {
         write!(self.writer, "{}", text)
     }
 
-    /// 写入当前缩进级别的缩进文本
+    /// Writes indentation for the current indentation level
     ///
-    /// 这个方法会写入与当前缩进级别对应的缩进文本
+    /// This method writes indentation text corresponding to the current indentation level.
     ///
-    /// # 返回值
+    /// # Return Value
     ///
-    /// 返回 `Result<()>`，如果写入成功则返回 `Ok(())`，否则返回错误
+    /// Returns `Result<()>`. If the write is successful, it returns `Ok(())`; otherwise, it returns an error.
     ///
-    /// # 示例
+    /// # Example
     ///
     /// ```rust
-    /// use gaia_types::writer::TextWriter;
-    /// use std::io::Cursor;
+    /// # use gaia_types::writer::TextWriter;
+    /// # use std::fmt::Write;
     ///
-    /// let mut buffer = Cursor::new(Vec::new());
-    /// let mut writer = TextWriter::new(buffer, "    ");
+    /// let mut buffer = String::new();
+    /// let mut writer = TextWriter::new(&mut buffer);
     ///
-    /// writer.indent();
-    /// writer.write_indent().unwrap(); // 写入4个空格
-    /// writer.write_line("缩进的文本").unwrap();
+    /// writer.indent("").unwrap();
+    /// writer.write_indent().unwrap(); // Writes 4 spaces
+    /// writer.write_line("indented text").unwrap();
     /// ```
     pub fn write_indent(&mut self) -> Result<(), std::fmt::Error> {
         for _ in 0..self.indent_level {
@@ -193,7 +196,7 @@ impl<W: Write> TextWriter<W> {
         Ok(())
     }
 
-    /// 获取当前的缩进级别
+    /// Gets the current indentation level
     ///
     /// # 返回值
     ///
@@ -202,14 +205,14 @@ impl<W: Write> TextWriter<W> {
     /// # 示例
     ///
     /// ```rust
-    /// use gaia_types::writer::TextWriter;
-    /// use std::io::Cursor;
+    /// # use gaia_types::writer::TextWriter;
+    /// # use std::fmt::Write;
     ///
-    /// let mut buffer = Cursor::new(Vec::new());
-    /// let mut writer = TextWriter::new(buffer, "    ");
+    /// let mut buffer = String::new();
+    /// let mut writer = TextWriter::new(&mut buffer);
     ///
     /// assert_eq!(writer.indent_level(), 0);
-    /// writer.indent();
+    /// writer.indent("").unwrap();
     /// assert_eq!(writer.indent_level(), 1);
     /// ```
     pub fn indent_level(&self) -> u16 {
@@ -227,11 +230,11 @@ impl<W: Write> TextWriter<W> {
     /// # 示例
     ///
     /// ```rust
-    /// use gaia_types::writer::TextWriter;
-    /// use std::io::Cursor;
+    /// # use gaia_types::writer::TextWriter;
+    /// # use std::fmt::Write;
     ///
-    /// let buffer = Cursor::new(Vec::new());
-    /// let writer = TextWriter::new(buffer, "    ");
+    /// let mut buffer = String::new();
+    /// let writer = TextWriter::new(&mut buffer);
     /// let inner_writer = writer.finish();
     /// ```
     pub fn finish(self) -> W {

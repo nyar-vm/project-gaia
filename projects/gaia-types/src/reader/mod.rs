@@ -231,24 +231,21 @@ impl<R: ReadBytesExt, E: ByteOrder> BinaryReader<R, E> {
     pub fn read_u32_leb128(&mut self) -> std::io::Result<u32> {
         let mut result = 0u32;
         let mut shift = 0;
-        
+
         loop {
             let byte = self.read_u8()?;
             result |= ((byte & 0x7F) as u32) << shift;
-            
+
             if byte & 0x80 == 0 {
                 break;
             }
-            
+
             shift += 7;
             if shift >= 32 {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::InvalidData,
-                    "LEB128 value too large for u32"
-                ));
+                return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "LEB128 value too large for u32"));
             }
         }
-        
+
         Ok(result)
     }
 
@@ -260,29 +257,26 @@ impl<R: ReadBytesExt, E: ByteOrder> BinaryReader<R, E> {
         let mut result = 0i32;
         let mut shift = 0;
         let mut byte;
-        
+
         loop {
             byte = self.read_u8()?;
             result |= ((byte & 0x7F) as i32) << shift;
             shift += 7;
-            
+
             if byte & 0x80 == 0 {
                 break;
             }
-            
+
             if shift >= 32 {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::InvalidData,
-                    "LEB128 value too large for i32"
-                ));
+                return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "LEB128 value too large for i32"));
             }
         }
-        
+
         // 符号扩展
         if shift < 32 && (byte & 0x40) != 0 {
             result |= !0 << shift;
         }
-        
+
         Ok(result)
     }
 
@@ -294,29 +288,26 @@ impl<R: ReadBytesExt, E: ByteOrder> BinaryReader<R, E> {
         let mut result = 0i64;
         let mut shift = 0;
         let mut byte;
-        
+
         loop {
             byte = self.read_u8()?;
             result |= ((byte & 0x7F) as i64) << shift;
             shift += 7;
-            
+
             if byte & 0x80 == 0 {
                 break;
             }
-            
+
             if shift >= 64 {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::InvalidData,
-                    "LEB128 value too large for i64"
-                ));
+                return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "LEB128 value too large for i64"));
             }
         }
-        
+
         // 符号扩展
         if shift < 64 && (byte & 0x40) != 0 {
             result |= !0 << shift;
         }
-        
+
         Ok(result)
     }
 }

@@ -1,0 +1,43 @@
+[package]
+name = "wasi-assembler"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+description = "Modern assembler for WASM and WASI (wit-component) - strongly typed, object-oriented, zero-dependency core"
+categories = ["compilers"]
+keywords = ["wasm", "wasi", "assembler", "disassembler", "assembly"]
+homepage = "https://gaia-assembly.netlify.app/backends/wasi/"
+repository = "https://github.com/nyar-vm/project-gaia/tree/main/examples/wasi-assembler"
+documentation = "http://docs.rs/wasi-assembler"
+readme = "readme.md"
+exclude = ["package.json"]
+
+[dependencies]
+byteorder = { workspace = true }
+gaia-types = { workspace = true, features = ["serde_json"] }
+# LEB128 编码支持
+leb128 = { workspace = true }
+tracing = { workspace = true }
+oak-core = { workspace = true }
+oak-wat = { workspace = true, optional = true }
+
+[build-dependencies]
+
+[dev-dependencies]
+wat = { workspace = true }
+wasmparser = { workspace = true }
+tempfile = { workspace = true }
+serde_json = { workspace = true }
+serde = { workspace = true }
+walkdir = { workspace = true }
+wasmtime = { workspace = true }
+wasmtime-wasi = { workspace = true }
+
+
+[features]
+default = []
+wat = ["dep:oak-wat"]
+
+[package.metadata.docs.rs]
+all-features = true

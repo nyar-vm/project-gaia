@@ -3,13 +3,13 @@
 //! 本模块定义了导入和导出适配器的统一接口，以及相关的配置和管理结构。
 //! 这些接口旨在抽象不同平台之间的差异，提供一致的API。
 
-use crate::instruction::GaiaInstruction;
-use gaia_types::{helpers::CompilationTarget, GaiaError, Result};
+use crate::{config::GaiaSettings, instruction::GaiaInstruction, program::GaiaModule};
+use gaia_types::{
+    helpers::{AbiCompatible, ApiCompatible, Architecture, CompilationTarget},
+    GaiaError, Result,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use gaia_types::helpers::{AbiCompatible, ApiCompatible, Architecture};
-use crate::config::GaiaSettings;
-use crate::program::GaiaProgram;
 
 /// 适配器配置信息
 ///
@@ -78,11 +78,8 @@ impl FunctionMapper {
             host: AbiCompatible::JavaAssembly,
             target: ApiCompatible::JvmRuntime(8),
         };
-        let pe_target = CompilationTarget {
-            build: Architecture::X86_64,
-            host: AbiCompatible::PE,
-            target: ApiCompatible::MicrosoftVisualC,
-        };
+        let pe_target =
+            CompilationTarget { build: Architecture::X86_64, host: AbiCompatible::PE, target: ApiCompatible::MicrosoftVisualC };
         let wasi_target = CompilationTarget {
             build: Architecture::WASM32,
             host: AbiCompatible::WebAssemblyTextFormat,
@@ -177,7 +174,6 @@ impl Default for FunctionMapper {
     }
 }
 
-
 /// 统一的导出适配器接口
 ///
 /// 定义了将Gaia指令和程序导出到特定平台格式的标准接口
@@ -207,10 +203,11 @@ pub trait ExportAdapter: Send + Sync {
     ///
     /// # 参数
     /// * `program` - 要导出的Gaia程序
+    /// 导出程序
     ///
     /// # 返回值
     /// 导出成功返回平台特定的程序数据，失败返回错误信息
-    fn export_program(&self, program: &GaiaProgram) -> Result<Vec<u8>>;
+    fn export_program(&self, program: &GaiaModule) -> Result<Vec<u8>>;
 
     /// 验证指令是否支持
     ///
@@ -260,14 +257,14 @@ pub trait ImportAdapter: Send + Sync {
     /// 导入成功返回Gaia指令，失败返回错误信息
     fn import_instruction(&self, data: &[u8]) -> Result<GaiaInstruction>;
 
-    /// 导入完整程序
+    /// 导入程序
     ///
     /// # 参数
     /// * `data` - 平台特定的程序数据
     ///
     /// # 返回值
-    /// 导入成功返回Gaia程序，失败返回错误信息
-    fn import_program(&self, data: &[u8]) -> Result<GaiaProgram>;
+    /// 导入成功返回转换后的Gaia程序，失败返回错误信息
+    fn import_program(&self, data: &[u8]) -> Result<GaiaModule>;
 
     /// 验证数据格式
     ///

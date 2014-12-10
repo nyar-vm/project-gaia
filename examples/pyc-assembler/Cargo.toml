@@ -1,0 +1,33 @@
+[package]
+name = "python-assembler"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+description = "Parse and write Python .pyc bytecode"
+categories = ["compilers"]
+keywords = ["python", "pyc", "assembler", "disassembler", "assembly"]
+homepage = "https://gaia-assembly.netlify.app/backends/python/"
+repository = "https://github.com/nyar-vm/project-gaia/tree/main/examples/pyc-assembler"
+documentation = "http://docs.rs/python-assembler"
+readme = "readme.md"
+exclude = ["package.json"]
+
+[dependencies]
+byteorder = { workspace = true }
+gaia-types = { workspace = true }
+url = { workspace = true }
+serde = { workspace = true }
+
+[build-dependencies]
+
+[dev-dependencies]
+gaia-types = { workspace = true, features = ["serde_json"] }
+walkdir = { workspace = true }
+
+[features]
+default = []
+easy-test = []
+
+[package.metadata.docs.rs]
+all-features = true

@@ -67,10 +67,30 @@ pub enum AbiCompatible {
     ///
     /// 用于 WebAssembly 的人类可读文本表示，常用于：
     /// - 教学和学习 WebAssembly 指令集
-    /// - 调试和分析 WebAssembly 模块
+    /// - 调试 and 分析 WebAssembly 模块
     /// - 编译器开发中的中间表示
     /// - Web 开发中的手动优化
     WebAssemblyTextFormat,
+
+    /// SPIR-V 格式 (Standard Portable Intermediate Representation)
+    ///
+    /// 主要用于 GPU 编程，跨图形 API (Vulkan, OpenCL)
+    SPIRV,
+
+    /// PTX 格式 (Parallel Thread Execution)
+    ///
+    /// NVIDIA GPU 的低级虚拟机和指令集
+    PTX,
+
+    /// Metal Shading Language 格式
+    ///
+    /// Apple GPU 的着色器语言
+    MSL,
+
+    /// GCN/CDNA 机器码格式
+    ///
+    /// AMD GPU 的指令集
+    GCN,
 }
 
 impl Display for AbiCompatible {
@@ -82,6 +102,30 @@ impl Display for AbiCompatible {
             AbiCompatible::JavaAssembly => write!(f, "jasm"),
             AbiCompatible::MicrosoftIntermediateLanguage => write!(f, "msil"),
             AbiCompatible::WebAssemblyTextFormat => write!(f, "wat"),
+            AbiCompatible::SPIRV => write!(f, "spirv"),
+            AbiCompatible::PTX => write!(f, "ptx"),
+            AbiCompatible::MSL => write!(f, "msl"),
+            AbiCompatible::GCN => write!(f, "gcn"),
+        }
+    }
+}
+
+impl std::str::FromStr for AbiCompatible {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "unknown" => Ok(AbiCompatible::Unknown),
+            "elf" => Ok(AbiCompatible::ELF),
+            "pe" => Ok(AbiCompatible::PE),
+            "jasm" | "javaassembly" => Ok(AbiCompatible::JavaAssembly),
+            "msil" | "microsoftintermediatelanguage" => Ok(AbiCompatible::MicrosoftIntermediateLanguage),
+            "wat" | "webassemblytextformat" => Ok(AbiCompatible::WebAssemblyTextFormat),
+            "spirv" => Ok(AbiCompatible::SPIRV),
+            "ptx" => Ok(AbiCompatible::PTX),
+            "msl" => Ok(AbiCompatible::MSL),
+            "gcn" => Ok(AbiCompatible::GCN),
+            _ => Err(format!("Unknown AbiCompatible: {}", s)),
         }
     }
 }

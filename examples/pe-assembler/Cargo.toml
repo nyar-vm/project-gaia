@@ -1,0 +1,32 @@
+[package]
+name = "pe-assembler"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+description = "PE/COFF assembler for Windows instruction sets - strongly typed, object-oriented, zero-dependency core"
+categories = ["compilers"]
+keywords = ["pe", "coff", "windows", "assembler", "assembly"]
+homepage = "https://gaia-assembly.netlify.app/backends/pe/"
+repository = "https://github.com/nyar-vm/project-gaia/tree/main/examples/pe-assembler"
+documentation = "http://docs.rs/pe-assembler"
+readme = "readme.md"
+exclude = ["package.json"]
+
+[dependencies]
+byteorder = { workspace = true }
+gaia-types = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+tracing = { workspace = true }
+x86_64-assembler = { workspace = true }
+
+[dev-dependencies]
+walkdir = { workspace = true }
+serde_json = { workspace = true }
+gaia-types = { workspace = true, features = ["serde_json"] }
+
+[features]
+default = []
+
+[package.metadata.docs.rs]
+all-features = true

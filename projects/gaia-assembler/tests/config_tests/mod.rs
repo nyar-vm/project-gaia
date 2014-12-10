@@ -144,30 +144,18 @@ fn test_config_file_operations() {
     config_manager.set_global_setting("test_setting".to_string(), "test_value".to_string());
 
     // 测试保存配置
-    let save_result = config_manager.save_to_file(Some(test_config_path));
-    match save_result {
-        Ok(()) => {
-            println!("配置保存成功");
+    config_manager.save_to_file(test_config_path).expect("配置保存失败");
 
-            // 测试加载配置
-            let mut new_config_manager = ConfigManager::new();
-            let load_result = new_config_manager.load_from_file(test_config_path);
+    // 测试加载配置
+    let mut new_config_manager = ConfigManager::new();
+    new_config_manager.load_from_file(test_config_path).expect("配置加载失败");
 
-            match load_result {
-                Ok(()) => {
-                    // 验证加载的配置
-                    assert_eq!(new_config_manager.get_global_setting("test_setting"), Some("test_value"));
-                    println!("配置加载成功");
-                }
-                Err(e) => println!("配置加载失败: {:?}", e),
-            }
+    // 验证加载的配置
+    assert_eq!(new_config_manager.get_global_setting("test_setting"), Some("test_value"));
 
-            // 清理测试文件
-            if Path::new(test_config_path).exists() {
-                let _ = fs::remove_file(test_config_path);
-            }
-        }
-        Err(e) => println!("配置保存失败: {:?}", e),
+    // 清理测试文件
+    if Path::new(test_config_path).exists() {
+        fs::remove_file(test_config_path).expect("清理测试文件失败");
     }
 }
 
