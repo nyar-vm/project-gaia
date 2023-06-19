@@ -1,11 +1,11 @@
 [package]
-name = "wasi-dll"
-publish = false
-version = "0.0.0"
-authors = ["Aster <192607617@qq.com>"]
-description = "..."
-repository = "https://github.com/oovm/sub_projects"
-documentation = "https://docs.rs/sub_projects"
+name = "nyar-runtime"
+version = "0.0.3"
+categories = ["wasm"]
+keywords = ["webassembly", "wasm"]
+description = "nyar customized wasi runtime"
+repository = "https://github.com/oovm/vcc"
+documentation = "https://docs.rs/nyar-runtime"
 readme = "readme.md"
 license = "MPL-2.0"
 edition = "2021"
@@ -17,6 +17,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 anyhow = "1.0"
+wat = "1.201.0"
 
 [dependencies.wasmtime-wasi]
 version = "18.0.0"
@@ -26,11 +27,5 @@ features = []
 version = "18.0.0"
 features = ["component-model", "async"]
 
-
 [dev-dependencies]
-
-[features]
-default = []
-
-[package.metadata.docs.rs]
-all-features = true
+tokio = { version = "1.36.0", features = ["full"] }

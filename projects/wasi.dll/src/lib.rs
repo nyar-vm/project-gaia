@@ -4,6 +4,6 @@
 #![doc(html_logo_url = "https://raw.githubusercontent.com/oovm/shape-rs/dev/projects/images/Trapezohedron.svg")]
 #![doc(html_favicon_url = "https://raw.githubusercontent.com/oovm/shape-rs/dev/projects/images/Trapezohedron.svg")]
 
-mod errors;
+pub use crate::vm::NyarVM;
 
-pub use crate::errors::{Error, Result};
+mod vm;
