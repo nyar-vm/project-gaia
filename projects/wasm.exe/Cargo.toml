@@ -11,7 +11,10 @@ edition = "2021"
 exclude = ["package.json", "tests/**"]
 
 [dependencies]
-exe = "0.5.6"
+pelite = "0.10.0"
+dynasm = "2.0.0"
+dynasmrt = "2.0.0"
+#exe = "0.5.6"
 
 [dev-dependencies]
 

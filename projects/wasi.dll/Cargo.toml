@@ -24,7 +24,7 @@ features = []
 
 [dependencies.wasmtime]
 version = "18.0.0"
-features = ["component-model", "async"]
+features = ["component-model"]
 
 
 [dev-dependencies]

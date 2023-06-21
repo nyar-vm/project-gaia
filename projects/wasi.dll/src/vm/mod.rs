@@ -1,41 +1,34 @@
-use std::path::Path;
-
+use std::fmt::{Debug, Formatter};
 use wasmtime::{
     component::{Component, Instance, Linker, ResourceTable},
     Config, Engine, Store,
 };
-use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, WasiView};
+use wasmtime_wasi::preview2::{WasiCtx, WasiCtxBuilder, WasiView};
 
-use crate::{host::NyarExtension, Debugger};
 
-pub struct NyarVM {
+pub struct WasiRunner {
     store: Store<ContextView>,
     instance: Instance,
 }
 
-impl NyarVM {
-    pub async fn load_wast(wast: &str) -> anyhow::Result<Self> {
-        let engine = get_engine()?;
-        let binary = wat::parse_str(wast)?;
-        let component = Component::new(&engine, binary.as_slice())?;
-        get_component(engine, component).await
+impl Debug for WasiRunner {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("WasiRunner")
     }
-    pub async fn load_wasm(wasm: &[u8]) -> anyhow::Result<Self> {
+}
+
+impl WasiRunner {
+    pub fn run_wasm(wasm: &[u8]) -> anyhow::Result<Self> {
         let engine = get_engine()?;
         let component = Component::from_binary(&engine, wasm)?;
-        get_component(engine, component).await
-    }
-    pub async fn load_path<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
-        let engine = get_engine()?;
-        let component = Component::from_file(&engine, path)?;
-        get_component(engine, component).await
+        get_component(engine, component)
     }
 }
 
 fn get_engine() -> anyhow::Result<Engine> {
     let mut config = Config::new();
     {
-        config.async_support(true);
+        config.async_support(false);
         config.wasm_component_model(true);
     }
     {
@@ -43,7 +36,7 @@ fn get_engine() -> anyhow::Result<Engine> {
         config.wasm_backtrace(true);
     }
     {
-        config.wasm_gc(true);
+        // config.wasm_gc(true);
         config.wasm_function_references(true);
         config.wasm_reference_types(true);
         config.wasm_memory64(true);
@@ -51,7 +44,7 @@ fn get_engine() -> anyhow::Result<Engine> {
     Engine::new(&config)
 }
 
-async fn get_component(engine: Engine, input: Component) -> anyhow::Result<NyarVM> {
+fn get_component(engine: Engine, input: Component) -> anyhow::Result<WasiRunner> {
     let mut store = {
         let mut builder = WasiCtxBuilder::new();
         builder.inherit_stderr();
@@ -62,21 +55,20 @@ async fn get_component(engine: Engine, input: Component) -> anyhow::Result<NyarV
     let instance = {
         let mut linker = Linker::<ContextView>::new(&engine);
         linker.allow_shadowing(true);
-        wasmtime_wasi::command::add_to_linker(&mut linker)?;
-        linker.instantiate_async(&mut store, &input).await?
+        wasmtime_wasi::preview2::command::add_to_linker(&mut linker)?;
+        linker.instantiate(&mut store, &input)?
     };
-    Ok(NyarVM { store, instance })
+    Ok(WasiRunner { store, instance })
 }
 
 pub struct ContextView {
     wasi: WasiCtx,
     resources: ResourceTable,
-    extension: NyarExtension,
 }
 
 impl ContextView {
     fn new(table: ResourceTable, wasi: WasiCtx) -> Self {
-        Self { resources: table, wasi, extension: NyarExtension {} }
+        Self { resources: table, wasi }
     }
 }
 
