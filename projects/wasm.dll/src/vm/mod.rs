@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Formatter};
 use wasmtime::{Config, Engine, Instance, Module, Store};
 
-
+/// The wasm running environment
 #[allow(dead_code)]
 pub struct WasmRunner {
     store: Store<ContextView>,
@@ -15,15 +15,13 @@ impl Debug for WasmRunner {
 }
 
 impl WasmRunner {
-    pub fn run_wasm(wasm: &[u8]) -> anyhow::Result<Self> {
+    /// Run a wasm bytecodes
+    pub fn run_wasm(bytecode: &[u8]) -> anyhow::Result<Self> {
         let engine = get_engine()?;
-        let module = Module::new(&engine, wasm)?;
+        let module = Module::new(&engine, bytecode)?;
         let mut store = Store::new(&engine, ContextView {});
         let instance = Instance::new(&mut store, &module, &[])?;
-        Ok(Self {
-            store,
-            instance,
-        })
+        Ok(Self { store, instance })
     }
 }
 

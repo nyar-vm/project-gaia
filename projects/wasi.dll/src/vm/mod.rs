@@ -5,7 +5,7 @@ use wasmtime::{
 };
 use wasmtime_wasi::preview2::{WasiCtx, WasiCtxBuilder, WasiView};
 
-
+/// The wasi running environment
 #[allow(dead_code)]
 pub struct WasiRunner {
     store: Store<ContextView>,
@@ -19,9 +19,10 @@ impl Debug for WasiRunner {
 }
 
 impl WasiRunner {
-    pub fn run_wasm(wasm: &[u8]) -> anyhow::Result<Self> {
+    /// Run a wasm bytecodes
+    pub fn run_wasm(bytecode: &[u8]) -> anyhow::Result<Self> {
         let engine = get_engine()?;
-        let component = Component::from_binary(&engine, wasm)?;
+        let component = Component::from_binary(&engine, bytecode)?;
         get_component(engine, component)
     }
 }
