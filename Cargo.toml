@@ -2,6 +2,7 @@
 resolver = "2"
 members = ["projects/*"]
 default-members = [
+    "projects/wasm.dll",
     "projects/wasi.dll",
 ]
 exclude = [

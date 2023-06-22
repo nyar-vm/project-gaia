@@ -3,37 +3,29 @@ use std::io::Write;
 use dynasm::dynasm;
 use dynasmrt::{DynasmApi, DynasmLabelApi};
 
+
 fn main() {
+    // 创建动态汇编代码块
     let mut ops = dynasmrt::x64::Assembler::new().unwrap();
-    let string = "Hello World!";
-    ops.global_label("wasi");
-    ops.extend(string.as_bytes()
-    );
 
-    let hello = ops.offset();
+    // 生成动态汇编代码
     dynasm!(ops
-        ; .arch x64
-        ; lea rcx, [->wasi]
-        ; xor edx, edx
-        ; mov dl, BYTE string.len() as _
+        ; push rdi
+        ; push rsi
+        ; mov rdi, rbx
+        ; mov rsi, rcx
         ; mov rax, QWORD run_wasi as _
-        ; sub rsp, BYTE 0x28
         ; call rax
-        ; add rsp, BYTE 0x28
-        ; ret
+        ; pop rsi
+        ; pop rdi
     );
 
-    let buf = ops.finalize().unwrap();
+    // 将动态汇编代码块转换为函数指针
+    let code = ops.finalize().unwrap();
+    let func: extern "sysv64" fn(*const u8, u64) = unsafe { std::mem::transmute(code.ptr(code.start)) };
 
-    let hello_fn: extern "win64" fn() -> bool = unsafe { mem::transmute(buf.ptr(hello)) };
-    // 140695210460816
-    println!("PTR: {}", run_wasi as u64);
-
-    assert!(hello_fn());
-}
-
-pub extern "win64" fn run_wasi(buffer: *const u8, length: u64) -> bool {
-    io::stdout()
-        .write_all(unsafe { slice::from_raw_parts(buffer, length as usize) })
-        .is_ok()
+    // 调用函数
+    let buffer = b"Hello World";
+    let length = buffer.len() as u64;
+    func(buffer.as_ptr(), length);
 }

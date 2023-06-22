@@ -4,14 +4,25 @@ publish = false
 version = "0.0.0"
 authors = ["Aster <192607617@qq.com>"]
 description = "..."
-repository = "https://github.com/oovm/sub_projects"
-documentation = "https://docs.rs/sub_projects"
+repository = "https://github.com/oovm/wasm.exe"
+documentation = "https://docs.rs/wasm-dll"
 readme = "readme.md"
 license = "MPL-2.0"
 edition = "2021"
 exclude = ["package.json", "tests/**"]
 
+[lib]
+name = "wasm"
+crate-type = ["cdylib"]
+
 [dependencies]
+anyhow = "1.0"
+
+[dependencies.wasmtime]
+version = "18.0.0"
+features = ["runtime", "cranelift"]
+default-features = false
+
 
 [dev-dependencies]
 

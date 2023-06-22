@@ -15,7 +15,3 @@ pub extern "win64" fn run_wasi(buffer: *const u8, length: u64) {
     WasiRunner::run_wasm(bytes).unwrap();
 }
 
-#[test]
-fn ready() {
-    println!("it works!")
-}

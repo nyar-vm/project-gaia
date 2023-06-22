@@ -6,6 +6,7 @@ use wasmtime::{
 use wasmtime_wasi::preview2::{WasiCtx, WasiCtxBuilder, WasiView};
 
 
+#[allow(dead_code)]
 pub struct WasiRunner {
     store: Store<ContextView>,
     instance: Instance,
