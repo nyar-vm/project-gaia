@@ -870,3 +870,8 @@ pub struct WatCustomSection {
     /// 源代码位置信息
     pub location: SourceLocation,
 }
+
+#[derive(Copy, Debug, Clone)]
+pub struct WatTable {
+
+}

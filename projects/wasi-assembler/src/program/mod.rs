@@ -42,6 +42,11 @@ pub struct WasiProgram {
     pub symbol_table: HashMap<String, WasiSymbol>,
 }
 
+#[derive(Copy, Clone, Debug, Default)]
+pub struct WasmInfo {
+    pub magic_head: [u8; 4],
+}
+
 /// 程序类型枚举
 #[derive(Debug, Clone, PartialEq)]
 pub enum WasiProgramType {

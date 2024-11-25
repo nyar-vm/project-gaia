@@ -23,6 +23,7 @@ impl<W> WasmWriter<W> {
         self.writer.finish()
     }
 }
+
 impl<W: Write> WasmWriter<W> {
     /// 将 WasiProgram 写入为二进制 WASM 格式
     pub fn write(&mut self, program: WasiProgram) -> GaiaDiagnostics<Vec<u8>> {
@@ -445,6 +446,9 @@ impl<W: Write> WasmWriter<W> {
             WasmValueType::I64 => 0x7E,
             WasmValueType::F32 => 0x7D,
             WasmValueType::F64 => 0x7C,
+            WasmValueType::V128 => todo!("V128"),
+            WasmValueType::Funcref => 0x78,
+            WasmValueType::Externref => 0x79,
         }
     }
 

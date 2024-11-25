@@ -1,51 +1,66 @@
 #![doc = include_str!("readme.md")]
 
-use crate::formats::wasm::{
-    view::{
-        WasmView, WasmViewCode, WasmViewElement, WasmViewExport, WasmViewFunction, WasmViewFunctionType, WasmViewGlobal,
-        WasmViewImport, WasmViewInstruction, WasmViewMemory, WasmViewTable,
-    },
-    WasmReadConfig,
+use crate::{
+    formats::wasm::WasmReadConfig,
+    program::{WasiProgram, WasmInfo},
 };
-use byteorder::ReadBytesExt;
-use gaia_types::{GaiaDiagnostics, GaiaError};
+use byteorder::LittleEndian;
+use gaia_types::{BinaryReader, GaiaDiagnostics, GaiaError};
 use leb128;
-use std::io::{Cursor, Read, Seek, SeekFrom};
+use std::{
+    cell::{OnceCell, RefCell},
+    io::{Read, Seek},
+};
 
 /// wasm lazy reader
 #[derive(Debug)]
 pub struct WasmReader<'config, R> {
     config: &'config WasmReadConfig,
-    reader: R,
-    view: WasmView,
-    errors: Vec<GaiaError>,
+    reader: RefCell<BinaryReader<R, LittleEndian>>,
+    view: OnceCell<WasmInfo>,
+    program: OnceCell<WasiProgram>,
+}
+
+impl WasmReadConfig {
+    pub fn as_reader<R: Read + Seek>(&self, reader: R) -> WasmReader<R> {
+        WasmReader::new(reader, self)
+    }
 }
 
 impl<'config, R> WasmReader<'config, R> {
     pub fn new(reader: R, config: &'config WasmReadConfig) -> Self {
-        Self { reader, view: WasmView::default(), errors: vec![], config }
+        Self { reader: RefCell::new(BinaryReader::new(reader)), view: Default::default(), program: Default::default(), config }
     }
-
-    fn check_magic_head(&self) -> Result<(), GaiaError> {
-        if self.config.check_magic_head {
-            // \0asm
-            if self.view.magic_head != [0x00, 0x61, 0x73, 0x6D] {
-                Err(GaiaError::invalid_data("Invalid magic number".to_string()))?
+    pub fn finish(mut self) -> GaiaDiagnostics<WasiProgram>
+    where
+        R: Read + Seek,
+    {
+        match self.get_program() {
+            Ok(_) => {
+                let errors = self.reader.borrow_mut().take_errors();
+                GaiaDiagnostics { result: self.program.take().ok_or(GaiaError::unreachable()), diagnostics: errors }
+            }
+            Err(e) => {
+                let errors = self.reader.borrow_mut().take_errors();
+                GaiaDiagnostics { result: Err(e), diagnostics: errors }
             }
         }
-        Ok(())
     }
 }
 
 impl<'config, R: Read + Seek> WasmReader<'config, R> {
-    pub fn read(mut self) -> GaiaDiagnostics<WasmView> {
-        match self.read_to_end() {
-            Ok(_) => GaiaDiagnostics { result: Ok(self.view), diagnostics: self.errors },
-            Err(fatal) => GaiaDiagnostics { result: Err(fatal), diagnostics: self.errors },
-        }
+    pub fn get_program(&self) -> Result<&WasiProgram, GaiaError> {
+        self.program.get_or_try_init(|| self.read_program())
     }
-
-    fn read_to_end(&mut self) -> Result<(), GaiaError> {
+    fn read_program(&self) -> Result<WasiProgram, GaiaError> {
+        let reader = self.reader.borrow_mut();
+        todo!()
+    }
+    pub fn get_view(&self) -> Result<&WasmInfo, GaiaError> {
+        self.view.get_or_try_init(|| self.read_view())
+    }
+    fn read_view(&self) -> Result<WasmInfo, GaiaError> {
+        let reader = self.reader.borrow_mut();
         todo!()
     }
 }

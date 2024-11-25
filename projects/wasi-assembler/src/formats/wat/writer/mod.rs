@@ -2,38 +2,51 @@
 
 use crate::formats::wat::ast::*;
 use gaia_types::{writer::TextWriter, Result};
-use std::fmt::Write;
+use std::{
+    fmt::Write,
+    ops::{Deref, DerefMut},
+};
 
 /// WAT 文本写入器
 ///
 /// 该写入器用于生成 WebAssembly Text (WAT) 格式代码，
 /// 复用 gaia-types 的 TextWriter 提供缩进和换行管理。
 #[derive(Debug)]
-pub struct WatWriter<W: std::fmt::Write> {
+pub struct WatWriter<W> {
     writer: TextWriter<W>,
+}
+
+impl<W> Deref for WatWriter<W> {
+    type Target = TextWriter<W>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.writer
+    }
+}
+
+impl<W> DerefMut for WatWriter<W> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.writer
+    }
 }
 
 impl<W: Write> WatWriter<W> {
     /// 创建一个新的 WAT 写入器
-    pub fn new(writer: W) -> Self {
-        Self { writer: TextWriter::new(writer) }
+    pub fn new(writer: TextWriter<W>) -> Self {
+        Self { writer }
     }
+}
 
-    /// 写入一行文本并自动添加换行符
-    fn write_line(&mut self, line: &str) -> Result<()> {
-        write!(self.writer, "{}", line)?;
-        write!(self.writer, "\n")
-    }
-
+impl<W: Write> WatWriter<W> {
     /// 写入 WAT AST 到文本
     pub fn write_ast(&mut self, ast: &WatRoot) -> Result<()> {
         for item in &ast.items {
-            match item {
-                WatItem::CoreModule(module) => self.write_core_module(module)?,
-                WatItem::Component(component) => self.write_component(component)?,
-                WatItem::Module(module) => self.write_core_module(module)?,
-                WatItem::CustomSection(custom_section) => self.write_custom_section(custom_section)?,
-            }
+            // match item {
+            //     WatItem::CoreModule(module) => self.write_core_module(module)?,
+            //     WatItem::Component(component) => self.write_component(component)?,
+            //     WatItem::Module(module) => self.write_core_module(module)?,
+            //     WatItem::CustomSection(custom_section) => self.write_custom_section(custom_section)?,
+            // }
         }
         Ok(())
     }
@@ -41,17 +54,17 @@ impl<W: Write> WatWriter<W> {
     fn write_core_module(&mut self, module: &WatCoreModule) -> Result<()> {
         self.start_block(&format!("module {}", module.name.clone().unwrap_or_default()))?;
         for item in &module.items {
-            match item {
-                WatCoreModuleItem::Func(func) => self.write_core_func(func)?,
-                WatCoreModuleItem::Export(export) => self.write_core_export(export)?,
-                WatCoreModuleItem::Import(import) => self.write_core_import(import)?,
-                WatCoreModuleItem::Memory(memory) => self.write_memory(memory)?,
-                WatCoreModuleItem::Table(table) => self.write_table(table)?,
-                WatCoreModuleItem::Global(global) => self.write_global(global)?,
-                WatCoreModuleItem::Start(start) => self.emit_start(start)?,
-                WatCoreModuleItem::Data(data) => self.emit_data(data)?,
-                WatCoreModuleItem::Elem(elem) => self.write_elem(elem)?,
-            }
+            // match item {
+            //     WatCoreModuleItem::Func(func) => self.write_core_func(func)?,
+            //     WatCoreModuleItem::Export(export) => self.write_core_export(export)?,
+            //     WatCoreModuleItem::Import(import) => self.write_core_import(import)?,
+            //     WatCoreModuleItem::Memory(memory) => self.write_memory(memory)?,
+            //     WatCoreModuleItem::Table(table) => self.write_table(table)?,
+            //     WatCoreModuleItem::Global(global) => self.write_global(global)?,
+            //     WatCoreModuleItem::Start(start) => self.emit_start(start)?,
+            //     WatCoreModuleItem::Data(data) => self.emit_data(data)?,
+            //     WatCoreModuleItem::Elem(elem) => self.write_elem(elem)?,
+            // }
         }
         for custom_section in &module.custom_sections {
             self.write_custom_section(custom_section)?;
@@ -63,16 +76,16 @@ impl<W: Write> WatWriter<W> {
     fn write_component(&mut self, component: &WatComponent) -> Result<()> {
         self.start_block(&format!("component {}", component.name.clone().unwrap_or_default()))?;
         for item in &component.items {
-            match item {
-                WatComponentItem::Type(type_def) => self.write_type_definition(type_def)?,
-                WatComponentItem::CoreFunc(func) => self.write_core_func(func)?,
-                WatComponentItem::Export(export) => self.write_export(export)?,
-                WatComponentItem::Import(import) => self.write_import(import)?,
-                WatComponentItem::Memory(memory) => self.write_memory(memory)?,
-                WatComponentItem::Table(table) => self.write_table(table)?,
-                WatComponentItem::Global(global) => self.write_global(global)?,
-                WatComponentItem::CustomSection(custom_section) => self.write_custom_section(custom_section)?,
-            }
+            // match item {
+            //     WatComponentItem::Type(type_def) => self.write_type_definition(type_def)?,
+            //     WatComponentItem::CoreFunc(func) => self.write_core_func(func)?,
+            //     WatComponentItem::Export(export) => self.write_export(export)?,
+            //     WatComponentItem::Import(import) => self.write_import(import)?,
+            //     WatComponentItem::Memory(memory) => self.write_memory(memory)?,
+            //     WatComponentItem::Table(table) => self.write_table(table)?,
+            //     WatComponentItem::Global(global) => self.write_global(global)?,
+            //     WatComponentItem::CustomSection(custom_section) => self.write_custom_section(custom_section)?,
+            // }
         }
         self.end_block()?;
         Ok(())
@@ -91,10 +104,10 @@ impl<W: Write> WatWriter<W> {
     fn write_func_type(&mut self, func_type: &WatFuncType) -> Result<()> {
         self.start_block("func")?;
         for param in &func_type.params {
-            self.write_line(&format!("(param {})", param.param_type))?;
+            self.writer.write_line(&format!("(param {})", param.param_type))?;
         }
         for result in &func_type.results {
-            self.write_line(&format!("(result {})", result.result_type))?;
+            self.writer.write_line(&format!("(result {})", result.result_type))?;
         }
         self.end_block()?;
         Ok(())
@@ -178,30 +191,6 @@ impl<W: Write> WatWriter<W> {
         Ok(())
     }
 
-    fn write_memory(&mut self, memory: &WatMemory) -> Result<()> {
-        self.start_block(&format!("memory {}", memory.name.clone().unwrap_or_default()))?;
-        self.write_line(&format!("{}", memory.memory_type))?;
-        self.end_block()?;
-        Ok(())
-    }
-
-    fn write_table(&mut self, table: &WatTable) -> Result<()> {
-        self.start_block(&format!("table {}", table.name.clone().unwrap_or_default()))?;
-        self.write_line(&format!("{}", table.table_type))?;
-        self.end_block()?;
-        Ok(())
-    }
-
-    fn write_global(&mut self, global: &WatGlobal) -> Result<()> {
-        self.start_block(&format!("global {}", global.name.clone().unwrap_or_default()))?;
-        self.write_line(&format!("(mut {})", global.global_type.value_type))?;
-        if let Some(value) = &global.value {
-            self.write_instruction(value)?;
-        }
-        self.end_block()?;
-        Ok(())
-    }
-
     fn write_custom_section(&mut self, custom_section: &WatCustomSection) -> Result<()> {
         self.start_block(&format!("custom \"{}\"", custom_section.name))?;
         self.write_line(&format!("\"{}\"", String::from_utf8_lossy(&custom_section.data)))?;
@@ -250,14 +239,13 @@ impl<W: Write> WatWriter<W> {
     /// 开始一个通用的括号块，例如：`(module`、`(func $main ...)`
     pub fn start_block(&mut self, head: &str) -> Result<()> {
         self.writer.write_line(&format!("({}", head))?;
-        self.writer.indent();
+        self.writer.indent(")")?;
         Ok(())
     }
 
     /// 结束最近的块，写入右括号 `)`
     pub fn end_block(&mut self) -> Result<()> {
-        self.writer.dedent(")");
-        self.write_line(")")?;
+        self.writer.dedent(")")?;
         Ok(())
     }
 
