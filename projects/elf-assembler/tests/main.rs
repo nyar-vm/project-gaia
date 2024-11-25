@@ -7,29 +7,12 @@
 
 use std::{path::Path, process::Command};
 
-// 测试模块
-mod execution_tests;
-mod exit_code_tests;
-mod hello_world_tests;
-
 #[cfg(target_os = "linux")]
 mod linux;
 
-// ELF 文件分析函数
-fn analyze_elf_file(path: &Path) -> Result<(String, String), Box<dyn std::error::Error>> {
-    let output = Command::new("readelf").args(["-h", path.to_str().unwrap()]).output()?;
+mod runnable;
+mod test_tools;
 
-    let info = String::from_utf8_lossy(&output.stdout).to_string();
-    let program = format!("ELF file: {}", path.display());
-
-    Ok((info, program))
-}
-
-// 打印 ELF 文件摘要信息
-fn print_elf_summary(program: &str, info: &str) {
-    println!("=== {} ===", program);
-    println!("{}", info);
-}
 
 #[test]
 fn ready() {
