@@ -46,27 +46,3 @@ except Exception as e:
 
     Ok(())
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::utils::python_disassembler::python_dis;
-    use std::fs;
-    use tempfile::tempdir;
-
-    #[test]
-    fn test_from_pyc_file() {
-        let pyc_path = Path::new("e:/汇编器/project-gaia/projects/pyc-assembler/__pycache__/test.cpython-312.pyc");
-
-        let pyc_file = pyc_assembler::formats::pyc::reader::read_pyc_file(pyc_path).expect("Failed to read .pyc file");
-
-        let pyc_program = pyc_assembler::program::PycProgram::from_pyc_file(&pyc_file);
-
-        println!("Parsed PycProgram: {:#?}", pyc_program);
-
-        // Add assertions here to verify the parsed program
-        assert!(!pyc_program.code_object.co_code.is_empty());
-        assert!(!pyc_program.code_object.co_names.is_empty());
-        assert!(!pyc_program.code_object.co_consts.is_empty());
-    }
-}
