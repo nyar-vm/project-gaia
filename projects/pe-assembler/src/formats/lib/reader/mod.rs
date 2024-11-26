@@ -1,24 +1,94 @@
-use crate::types::coff::{ArchiveMember, ArchiveMemberHeader, CoffFileType, CoffInfo, StaticLibrary};
-use byteorder::{LittleEndian, ReadBytesExt};
-use gaia_types::{helpers::Architecture, reader::BinaryReader, GaiaError};
-use std::{
-    fs::File,
-    io::{Cursor, Read, Seek},
-    path::Path,
+use crate::{
+    helpers::CoffReader,
+    types::{
+        coff::{ArchiveMember, ArchiveMemberHeader, CoffFileType, CoffInfo, StaticLibrary},
+        CoffHeader, CoffObject, SectionHeader,
+    },
 };
+use byteorder::ReadBytesExt;
+use gaia_types::{
+    helpers::{Architecture, Url},
+    GaiaDiagnostics, GaiaError,
+};
+use std::io::{Read, Seek};
 
 /// LIB 结构，惰性读取器
 #[derive(Debug)]
 pub struct LibReader<R> {
-    viewer: BinaryReader<R, LittleEndian>,
+    reader: R,
+    url: Option<Url>,
     lazy_library: Option<StaticLibrary>,
     lazy_info: Option<CoffInfo>,
-    diagnostics: Vec<GaiaError>,
+    errors: Vec<GaiaError>,
 }
 
 impl<R> LibReader<R> {
     pub fn new(reader: R) -> Self {
-        Self { viewer: BinaryReader::new(reader), lazy_library: None, lazy_info: None, diagnostics: vec![] }
+        Self { reader, url: None, lazy_library: None, lazy_info: None, errors: vec![] }
+    }
+    pub fn with_url(mut self, url: Url) -> Self {
+        self.url = Some(url);
+        self
+    }
+    pub fn finish(mut self) -> GaiaDiagnostics<StaticLibrary>
+    where
+        R: Read + Seek,
+    {
+        if self.lazy_library.is_none() {
+            if let Err(e) = self.read_library() {
+                return GaiaDiagnostics { result: Err(e), diagnostics: self.errors };
+            }
+        }
+        match self.lazy_library {
+            Some(s) => GaiaDiagnostics { result: Ok(s), diagnostics: self.errors },
+            None => unreachable!(),
+        }
+    }
+}
+
+impl<R: Read + Seek> CoffReader<R> for LibReader<R> {
+    fn get_viewer(&mut self) -> &mut R {
+        &mut self.reader
+    }
+
+    fn add_diagnostics(&mut self, error: impl Into<GaiaError>) {
+        self.errors.push(error.into())
+    }
+
+    fn get_coff_header(&mut self) -> Result<&CoffHeader, GaiaError> {
+        Err(GaiaError::not_implemented("LibReader 不支持直接读取 COFF 头，请使用成员对象"))
+    }
+
+    fn set_coff_header(&mut self, _head: CoffHeader) -> Option<CoffHeader> {
+        None // LibReader 不支持设置 COFF 头
+    }
+
+    fn get_section_headers(&mut self) -> Result<&[SectionHeader], GaiaError> {
+        Err(GaiaError::not_implemented("LibReader 不支持直接读取节头，请使用成员对象"))
+    }
+
+    fn set_section_headers(&mut self, _headers: Vec<SectionHeader>) -> Vec<SectionHeader> {
+        Vec::new() // LibReader 不支持设置节头
+    }
+
+    fn get_coff_object(&mut self) -> Result<&CoffObject, GaiaError> {
+        Err(GaiaError::not_implemented("LibReader 不支持直接读取 COFF 对象，请使用成员对象"))
+    }
+
+    fn set_coff_object(&mut self, _object: CoffObject) -> Option<CoffObject> {
+        None // LibReader 不支持设置 COFF 对象
+    }
+
+    fn get_coff_info(&mut self) -> Result<&CoffInfo, GaiaError> {
+        if self.lazy_info.is_none() {
+            let info = self.create_lib_info()?;
+            self.lazy_info = Some(info);
+        }
+        Ok(self.lazy_info.as_ref().unwrap())
+    }
+
+    fn set_coff_info(&mut self, info: CoffInfo) -> Option<CoffInfo> {
+        self.lazy_info.replace(info)
     }
 }
 
@@ -26,8 +96,8 @@ impl<R: Read + Seek> LibReader<R> {
     /// 检测是否为有效的静态库文件
     pub fn is_valid_lib(&mut self) -> Result<bool, GaiaError> {
         let mut magic = [0u8; 8];
-        self.viewer.read_exact(&mut magic)?;
-        self.viewer.seek(std::io::SeekFrom::Start(0))?;
+        self.reader.read_exact(&mut magic)?;
+        self.reader.seek(std::io::SeekFrom::Start(0))?;
         Ok(&magic == b"!<arch>\n")
     }
 
@@ -61,7 +131,7 @@ impl<R: Read + Seek> LibReader<R> {
         }
 
         // 跳过文件头 "!<arch>\n" (8字节)
-        self.viewer.seek(std::io::SeekFrom::Start(8))?;
+        self.reader.seek(std::io::SeekFrom::Start(8))?;
 
         let mut members = Vec::new();
         let mut symbol_index = Vec::new();
@@ -71,8 +141,8 @@ impl<R: Read + Seek> LibReader<R> {
         println!("跳过文件头后，从位置8开始读取成员");
 
         // 读取所有成员
-        while self.viewer.get_position() < file_size {
-            let current_pos = self.viewer.get_position();
+        while self.get_position()? < file_size {
+            let current_pos = self.get_position()?;
             println!("当前位置: {}, 剩余: {} bytes", current_pos, file_size - current_pos);
 
             // 检查是否还有足够的数据读取成员头（60字节）
@@ -126,7 +196,7 @@ impl<R: Read + Seek> LibReader<R> {
                 Err(e) => {
                     // 如果读取失败，记录错误但继续
                     println!("读取成员失败: {:?}", e);
-                    self.add_diagnostic(e);
+                    self.add_diagnostics(e);
                     break;
                 }
             }
@@ -153,9 +223,9 @@ impl<R: Read + Seek> LibReader<R> {
 
     /// 获取文件大小
     pub fn get_file_size(&mut self) -> Result<u64, GaiaError> {
-        let current_pos = self.viewer.get_position();
-        let size = self.viewer.seek(std::io::SeekFrom::End(0))?;
-        self.viewer.set_position(current_pos)?;
+        let current_pos = self.get_position()?;
+        let size = self.reader.seek(std::io::SeekFrom::End(0))?;
+        self.set_position(current_pos)?;
         Ok(size)
     }
 
@@ -163,11 +233,11 @@ impl<R: Read + Seek> LibReader<R> {
     fn read_member(&mut self) -> Result<ArchiveMember, GaiaError> {
         let header = self.read_member_header()?;
         let mut data = vec![0u8; header.size as usize];
-        self.viewer.read_exact(&mut data)?;
+        self.reader.read_exact(&mut data)?;
 
         // 对齐到偶数边界
         if header.size % 2 == 1 {
-            self.viewer.read_u8()?;
+            self.reader.read_u8()?;
         }
 
         // 尝试解析 COFF 对象（如果数据是有效的 COFF 格式）
@@ -232,25 +302,25 @@ impl<R: Read + Seek> LibReader<R> {
     /// 读取成员头
     fn read_member_header(&mut self) -> Result<ArchiveMemberHeader, GaiaError> {
         let mut name = [0u8; 16];
-        self.viewer.read_exact(&mut name)?;
+        self.reader.read_exact(&mut name)?;
 
         let mut date = [0u8; 12];
-        self.viewer.read_exact(&mut date)?;
+        self.reader.read_exact(&mut date)?;
 
         let mut uid = [0u8; 6];
-        self.viewer.read_exact(&mut uid)?;
+        self.reader.read_exact(&mut uid)?;
 
         let mut gid = [0u8; 6];
-        self.viewer.read_exact(&mut gid)?;
+        self.reader.read_exact(&mut gid)?;
 
         let mut mode = [0u8; 8];
-        self.viewer.read_exact(&mut mode)?;
+        self.reader.read_exact(&mut mode)?;
 
         let mut size = [0u8; 10];
-        self.viewer.read_exact(&mut size)?;
+        self.reader.read_exact(&mut size)?;
 
         let mut end_chars = [0u8; 2];
-        self.viewer.read_exact(&mut end_chars)?;
+        self.reader.read_exact(&mut end_chars)?;
 
         println!("成员头结束符: {:02X} {:02X} (期望: 60 0A)", end_chars[0], end_chars[1]);
 
@@ -279,71 +349,4 @@ impl<R: Read + Seek> LibReader<R> {
         let size = size_str.trim_end_matches(' ').parse::<u32>().unwrap_or(0);
         Ok(ArchiveMemberHeader { name, timestamp, user_id, group_id, mode, size })
     }
-}
-
-// 诊断信息相关的实现
-impl<R: ReadBytesExt> LibReader<R> {
-    pub fn get_diagnostics(&self) -> &[GaiaError] {
-        &self.diagnostics
-    }
-
-    pub fn add_diagnostic(&mut self, diagnostic: GaiaError) {
-        self.diagnostics.push(diagnostic);
-    }
-}
-
-// 静态方法和便利函数
-impl LibReader<File> {
-    /// 从文件创建 LibReader
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, GaiaError> {
-        let file = File::open(path.as_ref()).map_err(|e| GaiaError::invalid_data(&format!("无法打开文件: {}", e)))?;
-        Ok(Self::new(file))
-    }
-
-    /// 检测文件类型
-    pub fn detect_file_type<P: AsRef<Path>>(path: P) -> Result<CoffFileType, GaiaError> {
-        let mut file = File::open(path.as_ref()).map_err(|e| GaiaError::invalid_data(&format!("无法打开文件: {}", e)))?;
-
-        let mut magic = [0u8; 8];
-        file.read_exact(&mut magic).map_err(|e| GaiaError::invalid_data(&format!("读取文件头失败: {}", e)))?;
-
-        // 检查是否为静态库文件
-        if &magic == b"!<arch>\n" {
-            return Ok(CoffFileType::StaticLibrary);
-        }
-
-        // 检查是否为 PE 文件
-        if magic[0] == 0x4D && magic[1] == 0x5A {
-            // DOS 头签名 "MZ"
-            return Ok(CoffFileType::Executable);
-        }
-
-        // 默认为对象文件
-        Ok(CoffFileType::Object)
-    }
-
-    /// 获取文件信息
-    pub fn get_file_info<P: AsRef<Path>>(path: P) -> Result<CoffInfo, GaiaError> {
-        let file_type = Self::detect_file_type(&path)?;
-        let _metadata = std::fs::metadata(&path).map_err(|e| GaiaError::invalid_data(&format!("获取文件元数据失败: {}", e)))?;
-
-        match file_type {
-            CoffFileType::StaticLibrary => {
-                let mut reader = Self::from_file(&path)?;
-                reader.view()
-            }
-            _ => Err(GaiaError::invalid_data("不支持的文件类型")),
-        }
-    }
-}
-
-// 便利函数，保持向后兼容
-pub fn read_lib_from_bytes(data: &[u8]) -> Result<StaticLibrary, GaiaError> {
-    let mut reader = LibReader::new(Cursor::new(data));
-    reader.read_library().map(|lib| lib.clone())
-}
-
-pub fn read_lib_from_file<P: AsRef<Path>>(path: P) -> Result<StaticLibrary, GaiaError> {
-    let mut reader = LibReader::from_file(path)?;
-    reader.read_library().map(|lib| lib.clone())
 }

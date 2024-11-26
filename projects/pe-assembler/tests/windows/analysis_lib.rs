@@ -3,6 +3,7 @@ use gaia_types::{helpers::save_json, GaiaError};
 use pe_assembler::formats::lib::reader::LibReader;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+use gaia_types::helpers::open_file;
 
 /// Windows 静态库分析结果
 #[derive(Debug, Serialize, Deserialize)]
@@ -84,7 +85,8 @@ fn test_parse_system_lib_files() -> Result<(), GaiaError> {
 }
 
 pub fn analyze_lib_file(path: &Path) -> Result<WindowsLibAnalysis, GaiaError> {
-    let mut reader = LibReader::from_file(path)?;
+    let (file, url) = open_file(path)?;
+    let mut reader = LibReader::new(file).with_url(url);
 
     // 验证是否为有效的静态库文件
     if !reader.is_valid_lib()? {
@@ -101,10 +103,8 @@ pub fn analyze_lib_file(path: &Path) -> Result<WindowsLibAnalysis, GaiaError> {
         });
     }
 
-    // 读取库信息
-    let library_result = reader.read_library();
-
-    match library_result {
+    // 使用 lazy reader 模式：先检查是否已读取，如果没有则强制读取
+    match reader.read_library() {
         Ok(library) => {
             // 获取成员信息
             let member_count = library.members.len();

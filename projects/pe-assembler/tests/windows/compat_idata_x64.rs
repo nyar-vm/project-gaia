@@ -3,7 +3,7 @@
 use gaia_types::{helpers::Architecture, GaiaError};
 use pe_assembler::{
     formats::exe::reader::ExeReader,
-    helpers::PeAssemblerBuilder,
+    helpers::{PeAssemblerBuilder, PeReader},
     types::{PeSection, SubsystemType},
 };
 use std::io::Cursor;
@@ -29,26 +29,18 @@ fn test_x64_idata_compat_iat_points_to_hint_name() -> Result<(), GaiaError> {
         .generate()?;
 
     // 2) 解析程序结构，读取 IAT 目录范围
-    let diag = ExeReader::new(Cursor::new(pe_data.clone())).read_program();
-    let program = match diag.result {
+    let mut reader = ExeReader::new(Cursor::new(pe_data.clone()));
+    let program = match reader.get_program() {
         Ok(p) => p,
         Err(e) => return Err(e),
     };
 
-    let iat_dir = program
-        .header
-        .optional_header
-        .data_directories
-        .get(12)
-        .expect("IAT data directory missing");
+    let iat_dir = program.header.optional_header.data_directories.get(12).expect("IAT data directory missing");
     assert!(iat_dir.virtual_address != 0 && iat_dir.size >= 8, "IAT 目录必须有效且至少包含一个条目");
 
     // 3) 将 IAT 起始 RVA 映射到文件偏移，读取首个 IAT 条目（x64：8 字节）
-    let iat_offset = rva_to_file_offset(iat_dir.virtual_address, &program.sections)
-        .expect("无法将 IAT RVA 映射到文件偏移");
-    let entry_bytes: [u8; 8] = pe_data[iat_offset as usize..iat_offset as usize + 8]
-        .try_into()
-        .expect("IAT 首项读取失败");
+    let iat_offset = rva_to_file_offset(iat_dir.virtual_address, &program.sections).expect("无法将 IAT RVA 映射到文件偏移");
+    let entry_bytes: [u8; 8] = pe_data[iat_offset as usize..iat_offset as usize + 8].try_into().expect("IAT 首项读取失败");
     let iat_entry_qword = u64::from_le_bytes(entry_bytes);
 
     // 断言：IAT 首项非零，且为指向 IMAGE_IMPORT_BY_NAME（Hint+Name）的 RVA
@@ -56,22 +48,16 @@ fn test_x64_idata_compat_iat_points_to_hint_name() -> Result<(), GaiaError> {
     let hint_name_rva = iat_entry_qword as u32;
 
     // IAT 首项目标应位于 .idata 节范围内
-    let idata = program
-        .sections
-        .iter()
-        .find(|s| s.name == ".idata")
-        .expect("缺少 .idata 节");
+    let idata = program.sections.iter().find(|s| s.name == ".idata").expect("缺少 .idata 节");
     assert!(
         hint_name_rva >= idata.virtual_address && hint_name_rva < idata.virtual_address + idata.virtual_size,
         "IAT 指向的 RVA 应落在 .idata 节内"
     );
 
     // 4) 读取 IMAGE_IMPORT_BY_NAME：校验 2 字节 Hint 与以 0 结尾的名称字符串
-    let hint_name_offset = rva_to_file_offset(hint_name_rva, &program.sections)
-        .expect("无法将 Hint/Name RVA 映射到文件偏移");
-    let hint_bytes: [u8; 2] = pe_data[hint_name_offset as usize..hint_name_offset as usize + 2]
-        .try_into()
-        .expect("Hint 读取失败");
+    let hint_name_offset = rva_to_file_offset(hint_name_rva, &program.sections).expect("无法将 Hint/Name RVA 映射到文件偏移");
+    let hint_bytes: [u8; 2] =
+        pe_data[hint_name_offset as usize..hint_name_offset as usize + 2].try_into().expect("Hint 读取失败");
     let hint = u16::from_le_bytes(hint_bytes);
     assert_eq!(hint, 0, "预期 Hint 为 0");
 

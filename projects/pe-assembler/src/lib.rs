@@ -30,13 +30,16 @@ pub mod types;
 ///
 /// # 示例
 ///
-/// ```rust
+/// ```rust,no_run
 /// use pe_assembler::exe_write_path;
 /// use std::path::Path;
 ///
-/// let pe_program = /* 创建 PE 程序 */;
-/// let output_path = Path::new("output.exe");
-/// let url = exe_write_path(&pe_program, output_path)?;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// // let pe_program = /* 创建 PE 程序 */;
+/// // let output_path = Path::new("output.exe");
+/// // let url = exe_write_path(&pe_program, output_path)?;
+/// # Ok(())
+/// # }
 /// ```
 pub fn exe_write_path(pe: &PeProgram, path: &Path) -> Result<Url> {
     let (file, url) = create_file(path)?;

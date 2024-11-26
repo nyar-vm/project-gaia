@@ -2,117 +2,39 @@ use crate::types::{
     CoffHeader, DosHeader, ExportTable, ImportTable, NtHeader, OptionalHeader, PeHeader, PeInfo, PeProgram, PeSection,
     SectionHeader,
 };
-use byteorder::LittleEndian;
-use gaia_types::{helpers::Architecture, BinaryReader, GaiaError};
-use std::io::{Read, Seek};
+use byteorder::{LittleEndian, ReadBytesExt};
+use gaia_types::{helpers::Architecture, GaiaError};
+use std::io::{Read, Seek, SeekFrom};
 
 /// PE 文件读取器的通用 trait
 pub trait PeReader<R: Read + Seek> {
     /// 获取二进制读取器的可变引用
-    fn get_viewer(&mut self) -> &mut BinaryReader<R, LittleEndian>;
+    fn get_viewer(&mut self) -> &mut R;
 
     /// 获取诊断信息的可变引用
     fn add_diagnostics(&mut self, error: impl Into<GaiaError>);
 
-    /// 获取缓存的节头信息
-    fn get_cached_section_headers(&self) -> Option<&Vec<SectionHeader>>;
+    fn get_position(&mut self) -> Result<u64, GaiaError>
+    where
+        R: Seek,
+    {
+        let position = self.get_viewer().stream_position()?;
+        Ok(position)
+    }
 
-    /// 设置缓存的节头信息
-    fn set_cached_section_headers(&mut self, headers: Vec<SectionHeader>);
+    fn set_position(&mut self, offset: u64) -> Result<u64, GaiaError>
+    where
+        R: Seek,
+    {
+        let position = self.get_viewer().seek(SeekFrom::Start(offset))?;
+        Ok(position)
+    }
+
+    /// 获取缓存的节头信息
+    fn get_section_headers(&mut self) -> Result<&[SectionHeader], GaiaError>;
 
     /// 读取 PE 头部信息（通用实现）
-    fn read_header_once(&mut self) -> Result<&PeHeader, GaiaError>;
-
-    /// 解析 PE 头部（通用实现）
-    fn read_header_force(&mut self) -> Result<PeHeader, GaiaError> {
-        // 保存当前位置
-        let original_pos = self.get_viewer().get_position();
-
-        // 重置到文件开头
-        self.get_viewer().set_position(0)?;
-
-        // 读取 DOS 头
-        let dos_header = DosHeader::read(self.get_viewer())?;
-
-        // 验证 DOS 签名 (MZ)
-        if dos_header.e_magic != 0x5A4D {
-            let error = GaiaError::invalid_data("无效的 DOS 签名 (MZ)");
-            self.add_diagnostics(error);
-        }
-
-        // 跳转到 NT 头位置
-        self.get_viewer().set_position(dos_header.e_lfanew as u64)?;
-
-        // 读取 NT 头
-        let nt_header = NtHeader::read(self.get_viewer())?;
-
-        // 验证 PE 签名 (PE\0\0)
-        if nt_header.signature != 0x00004550 {
-            let error = GaiaError::invalid_data("无效的 PE 签名 (PE)");
-            self.add_diagnostics(error);
-        }
-
-        // 读取 COFF 头
-        let coff_header = CoffHeader::read(self.get_viewer())?;
-
-        // 验证 COFF 头中的节数量
-        if coff_header.number_of_sections == 0 {
-            let error = GaiaError::invalid_data("PE 文件必须至少有一个节");
-            self.add_diagnostics(error);
-        }
-
-        // 读取可选头
-        let optional_header = OptionalHeader::read(self.get_viewer())?;
-
-        // 验证可选头的魔数
-        match optional_header.magic {
-            0x10b => {} // PE32
-            0x20b => {} // PE32+
-            _ => {
-                let error = GaiaError::invalid_data("无效的可选头魔数");
-                self.add_diagnostics(error);
-                return Err(GaiaError::invalid_data("无效的可选头魔数"));
-            }
-        }
-
-        // 恢复原始位置
-        self.get_viewer().set_position(original_pos)?;
-
-        Ok(PeHeader { dos_header, nt_header, coff_header, optional_header })
-    }
-
-    /// 读取节头信息（通用实现）
-    fn read_section_headers(&mut self) -> Result<Vec<SectionHeader>, GaiaError> {
-        if let Some(sections) = self.get_cached_section_headers() {
-            return Ok(sections.clone());
-        }
-
-        // 先读取主头部
-        let header = self.read_header_once()?.clone();
-        let original_pos = self.get_viewer().get_position();
-
-        // 读取节头部
-        let mut section_headers = Vec::with_capacity(header.coff_header.number_of_sections as usize);
-
-        // 定位到节头部位置
-        let section_header_offset = header.dos_header.e_lfanew as u64
-            + 4 // PE signature
-            + std::mem::size_of::<CoffHeader>() as u64
-            + header.coff_header.size_of_optional_header as u64;
-
-        self.get_viewer().set_position(section_header_offset)?;
-
-        for _ in 0..header.coff_header.number_of_sections {
-            let section_header = SectionHeader::read(self.get_viewer())?;
-            section_headers.push(section_header);
-        }
-
-        // 恢复原始位置
-        self.get_viewer().set_position(original_pos)?;
-
-        self.set_cached_section_headers(section_headers.clone());
-        Ok(section_headers)
-    }
+    fn get_pe_header(&mut self) -> Result<&PeHeader, GaiaError>;
 
     /// 将 RVA 转换为文件偏移（通用实现）
     fn rva_to_file_offset(&self, rva: u32, sections: &[PeSection]) -> Result<u32, GaiaError> {
@@ -123,35 +45,6 @@ pub trait PeReader<R: Read + Seek> {
             }
         }
         Err(GaiaError::invalid_data(&format!("无法将 RVA 0x{:08X} 转换为文件偏移", rva)))
-    }
-
-    /// 从节头读取节数据（通用实现）
-    fn read_section_from_header(&mut self, header: &SectionHeader) -> Result<PeSection, GaiaError> {
-        let name = String::from_utf8_lossy(&header.name).trim_end_matches('\0').to_string();
-        let viewer = self.get_viewer();
-
-        let mut data = Vec::new();
-        if header.size_of_raw_data > 0 && header.pointer_to_raw_data > 0 {
-            let original_pos = viewer.get_position();
-            viewer.set_position(header.pointer_to_raw_data as u64)?;
-            data.resize(header.size_of_raw_data as usize, 0);
-            viewer.read_exact(&mut data)?;
-            viewer.set_position(original_pos)?;
-        }
-
-        Ok(PeSection {
-            name,
-            virtual_size: header.virtual_size,
-            virtual_address: header.virtual_address,
-            size_of_raw_data: header.size_of_raw_data,
-            pointer_to_raw_data: header.pointer_to_raw_data,
-            pointer_to_relocations: header.pointer_to_relocations,
-            pointer_to_line_numbers: header.pointer_to_line_numbers,
-            number_of_relocations: header.number_of_relocations,
-            number_of_line_numbers: header.number_of_line_numbers,
-            characteristics: header.characteristics,
-            data,
-        })
     }
 
     /// 解析导入表（通用实现）
@@ -170,20 +63,20 @@ pub trait PeReader<R: Read + Seek> {
         let file_offset = self.rva_to_file_offset(import_dir.virtual_address, sections)?;
 
         // 保存当前位置
-        let current_pos = self.get_viewer().get_position();
+        let current_pos = self.get_position()?;
 
         // 定位到导入表
-        self.get_viewer().set_position(file_offset as u64)?;
+        self.set_position(file_offset as u64)?;
 
         let mut import_table = ImportTable::new();
 
         // 读取导入描述符
         loop {
-            let import_lookup_table = self.get_viewer().read_u32()?;
-            let time_date_stamp = self.get_viewer().read_u32()?;
-            let forwarder_chain = self.get_viewer().read_u32()?;
-            let name_rva = self.get_viewer().read_u32()?;
-            let import_address_table = self.get_viewer().read_u32()?;
+            let import_lookup_table = self.get_viewer().read_u32::<LittleEndian>()?;
+            let time_date_stamp = self.get_viewer().read_u32::<LittleEndian>()?;
+            let forwarder_chain = self.get_viewer().read_u32::<LittleEndian>()?;
+            let name_rva = self.get_viewer().read_u32::<LittleEndian>()?;
+            let import_address_table = self.get_viewer().read_u32::<LittleEndian>()?;
 
             // 如果所有字段都为0，表示导入表结束
             if import_lookup_table == 0
@@ -201,8 +94,8 @@ pub trait PeReader<R: Read + Seek> {
             // 读取 DLL 名称
             if name_rva != 0 {
                 let name_offset = self.rva_to_file_offset(name_rva, sections)?;
-                let saved_pos = self.get_viewer().get_position();
-                self.get_viewer().set_position(name_offset as u64)?;
+                let saved_pos = self.get_position()?;
+                self.set_position(name_offset as u64)?;
 
                 let mut name_bytes = Vec::new();
                 loop {
@@ -213,23 +106,23 @@ pub trait PeReader<R: Read + Seek> {
                     name_bytes.push(byte);
                 }
                 dll_name = String::from_utf8_lossy(&name_bytes).to_string();
-                self.get_viewer().set_position(saved_pos)?;
+                self.set_position(saved_pos)?;
             }
 
             // 读取函数名称（从导入查找表）
             if import_lookup_table != 0 {
                 let lookup_offset = self.rva_to_file_offset(import_lookup_table, sections)?;
-                let saved_pos = self.get_viewer().get_position();
-                self.get_viewer().set_position(lookup_offset as u64)?;
+                let saved_pos = self.get_position()?;
+                self.set_position(lookup_offset as u64)?;
 
                 loop {
                     let entry = if header.optional_header.magic == 0x20b {
                         // PE32+
-                        self.get_viewer().read_u64()?
+                        self.get_viewer().read_u64::<LittleEndian>()?
                     }
                     else {
                         // PE32
-                        self.get_viewer().read_u32()? as u64
+                        self.get_viewer().read_u32::<LittleEndian>()? as u64
                     };
 
                     if entry == 0 {
@@ -248,11 +141,11 @@ pub trait PeReader<R: Read + Seek> {
                         let hint_name_rva =
                             entry & if header.optional_header.magic == 0x20b { 0x7FFFFFFFFFFFFFFF } else { 0x7FFFFFFF };
                         let hint_name_offset = self.rva_to_file_offset(hint_name_rva as u32, sections)?;
-                        let func_pos = self.get_viewer().get_position();
-                        self.get_viewer().set_position(hint_name_offset as u64)?;
+                        let func_pos = self.get_position()?;
+                        self.set_position(hint_name_offset as u64)?;
 
                         // 跳过 hint（2字节）
-                        self.get_viewer().read_u16()?;
+                        self.get_viewer().read_u16::<LittleEndian>()?;
 
                         // 读取函数名
                         let mut func_name_bytes = Vec::new();
@@ -266,7 +159,7 @@ pub trait PeReader<R: Read + Seek> {
                         let func_name = String::from_utf8_lossy(&func_name_bytes).to_string();
                         functions.push(func_name);
 
-                        self.get_viewer().set_position(func_pos)?;
+                        self.set_position(func_pos)?;
                     }
                     else {
                         // 按序号导入
@@ -275,7 +168,7 @@ pub trait PeReader<R: Read + Seek> {
                     }
                 }
 
-                self.get_viewer().set_position(saved_pos)?;
+                self.set_position(saved_pos)?;
             }
 
             // 添加导入条目
@@ -287,7 +180,7 @@ pub trait PeReader<R: Read + Seek> {
         }
 
         // 恢复位置
-        self.get_viewer().set_position(current_pos)?;
+        self.set_position(current_pos)?;
 
         Ok(import_table)
     }
@@ -308,30 +201,30 @@ pub trait PeReader<R: Read + Seek> {
         let file_offset = self.rva_to_file_offset(export_dir.virtual_address, sections)?;
 
         // 保存当前位置
-        let current_pos = self.get_viewer().get_position();
+        let current_pos = self.get_position()?;
 
         // 定位到导出表
-        self.get_viewer().set_position(file_offset as u64)?;
+        self.set_position(file_offset as u64)?;
 
         // 读取导出目录表
-        let _export_flags = self.get_viewer().read_u32()?;
-        let _time_date_stamp = self.get_viewer().read_u32()?;
-        let _major_version = self.get_viewer().read_u16()?;
-        let _minor_version = self.get_viewer().read_u16()?;
-        let name_rva = self.get_viewer().read_u32()?;
-        let _ordinal_base = self.get_viewer().read_u32()?;
-        let _number_of_functions = self.get_viewer().read_u32()?;
-        let number_of_names = self.get_viewer().read_u32()?;
-        let _address_of_functions = self.get_viewer().read_u32()?;
-        let address_of_names = self.get_viewer().read_u32()?;
-        let _address_of_name_ordinals = self.get_viewer().read_u32()?;
+        let _export_flags = self.get_viewer().read_u32::<LittleEndian>()?;
+        let _time_date_stamp = self.get_viewer().read_u32::<LittleEndian>()?;
+        let _major_version = self.get_viewer().read_u16::<LittleEndian>()?;
+        let _minor_version = self.get_viewer().read_u16::<LittleEndian>()?;
+        let name_rva = self.get_viewer().read_u32::<LittleEndian>()?;
+        let _ordinal_base = self.get_viewer().read_u32::<LittleEndian>()?;
+        let _number_of_functions = self.get_viewer().read_u32::<LittleEndian>()?;
+        let number_of_names = self.get_viewer().read_u32::<LittleEndian>()?;
+        let _address_of_functions = self.get_viewer().read_u32::<LittleEndian>()?;
+        let address_of_names = self.get_viewer().read_u32::<LittleEndian>()?;
+        let _address_of_name_ordinals = self.get_viewer().read_u32::<LittleEndian>()?;
 
         // 读取模块名称
         let mut name = String::new();
         if name_rva != 0 {
             let name_offset = self.rva_to_file_offset(name_rva, sections)?;
-            let saved_pos = self.get_viewer().get_position();
-            self.get_viewer().set_position(name_offset as u64)?;
+            let saved_pos = self.get_position()?;
+            self.set_position(name_offset as u64)?;
 
             let mut name_bytes = Vec::new();
             loop {
@@ -342,22 +235,22 @@ pub trait PeReader<R: Read + Seek> {
                 name_bytes.push(byte);
             }
             name = String::from_utf8_lossy(&name_bytes).to_string();
-            self.get_viewer().set_position(saved_pos)?;
+            self.set_position(saved_pos)?;
         }
 
         // 读取函数名称
         let mut functions = Vec::new();
         if address_of_names != 0 && number_of_names > 0 {
             let names_offset = self.rva_to_file_offset(address_of_names, sections)?;
-            let saved_pos = self.get_viewer().get_position();
-            self.get_viewer().set_position(names_offset as u64)?;
+            let saved_pos = self.get_position()?;
+            self.set_position(names_offset as u64)?;
 
             for _ in 0..number_of_names {
-                let name_rva = self.get_viewer().read_u32()?;
+                let name_rva = self.get_viewer().read_u32::<LittleEndian>()?;
                 if name_rva != 0 {
                     let func_name_offset = self.rva_to_file_offset(name_rva, sections)?;
-                    let func_pos = self.get_viewer().get_position();
-                    self.get_viewer().set_position(func_name_offset as u64)?;
+                    let func_pos = self.get_position()?;
+                    self.set_position(func_name_offset as u64)?;
 
                     let mut func_name_bytes = Vec::new();
                     loop {
@@ -370,23 +263,22 @@ pub trait PeReader<R: Read + Seek> {
                     let func_name = String::from_utf8_lossy(&func_name_bytes).to_string();
                     functions.push(func_name);
 
-                    self.get_viewer().set_position(func_pos)?;
+                    self.set_position(func_pos)?;
                 }
             }
 
-            self.get_viewer().set_position(saved_pos)?;
+            self.set_position(saved_pos)?;
         }
 
         // 恢复位置
-        self.get_viewer().set_position(current_pos)?;
+        self.set_position(current_pos)?;
 
         Ok(ExportTable { name, functions })
     }
 
     /// 创建 PE 信息视图（通用实现）
     fn create_pe_info(&mut self) -> Result<PeInfo, GaiaError> {
-        let header = self.read_header_once()?.clone();
-        let viewer = self.get_viewer();
+        let header = self.get_pe_header()?.clone();
 
         // 根据机器类型确定架构
         let target_arch = match header.coff_header.machine {
@@ -401,10 +293,10 @@ pub trait PeReader<R: Read + Seek> {
         };
 
         // 获取当前文件大小
-        let current_pos = viewer.get_position();
-        viewer.seek(std::io::SeekFrom::End(0))?;
-        let file_size = viewer.get_position();
-        viewer.set_position(current_pos)?;
+        let current_pos = self.get_position()?;
+        self.get_viewer().seek(std::io::SeekFrom::End(0))?;
+        let file_size = self.get_position()?;
+        self.set_position(current_pos)?;
 
         Ok(PeInfo {
             target_arch,
@@ -416,26 +308,141 @@ pub trait PeReader<R: Read + Seek> {
         })
     }
     /// 强制读取完整的 [PeProgram]，并缓存结果
-    fn read_program_once(&mut self) -> Result<&PeProgram, GaiaError>;
+    fn get_program(&mut self) -> Result<&PeProgram, GaiaError>;
+}
 
-    fn read_program_force(&mut self) -> Result<PeProgram, GaiaError> {
-        let header = self.read_header_once()?.clone();
-        let section_headers = self.read_section_headers()?;
+/// 解析 PE 头部（通用实现）
+pub fn read_pe_head<R: Read + Seek>(reader: &mut impl PeReader<R>) -> Result<PeHeader, GaiaError> {
+    // 保存当前位置
+    let original_pos = reader.get_position()?;
 
-        // 读取节数据
-        let mut sections = Vec::new();
-        for section_header in section_headers {
-            let section = self.read_section_from_header(&section_header)?;
-            sections.push(section);
-        }
+    // 重置到文件开头
+    reader.set_position(0)?;
 
-        // 解析导入表
-        let imports = self.parse_import_table(&header, &sections)?;
+    // 读取 DOS 头
+    let dos_header = DosHeader::read(reader.get_viewer())?;
 
-        // 解析导出表（EXE 文件通常没有导出表）
-        let exports = self.parse_export_table(&header, &sections)?;
-
-        let program = PeProgram { header: header, sections, imports, exports };
-        Ok(program)
+    // 验证 DOS 签名 (MZ)
+    if dos_header.e_magic != 0x5A4D {
+        let error = GaiaError::invalid_data("无效的 DOS 签名 (MZ)");
+        reader.add_diagnostics(error);
     }
+
+    // 跳转到 NT 头位置
+    reader.set_position(dos_header.e_lfanew as u64)?;
+
+    // 读取 NT 头
+    let nt_header = NtHeader::read(reader.get_viewer())?;
+
+    // 验证 PE 签名 (PE\0\0)
+    if nt_header.signature != 0x00004550 {
+        let error = GaiaError::invalid_data("无效的 PE 签名 (PE)");
+        reader.add_diagnostics(error);
+    }
+
+    // 读取 COFF 头
+    let coff_header = CoffHeader::read(reader.get_viewer())?;
+
+    // 验证 COFF 头中的节数量
+    if coff_header.number_of_sections == 0 {
+        let error = GaiaError::invalid_data("PE 文件必须至少有一个节");
+        reader.add_diagnostics(error);
+    }
+
+    // 读取可选头
+    let optional_header = OptionalHeader::read(reader.get_viewer())?;
+
+    // 验证可选头的魔数
+    match optional_header.magic {
+        0x10b => {} // PE32
+        0x20b => {} // PE32+
+        _ => {
+            let error = GaiaError::invalid_data("无效的可选头魔数");
+            reader.add_diagnostics(error);
+            return Err(GaiaError::invalid_data("无效的可选头魔数"));
+        }
+    }
+
+    // 恢复原始位置
+    reader.set_position(original_pos)?;
+
+    Ok(PeHeader { dos_header, nt_header, coff_header, optional_header })
+}
+
+/// 读取节头信息（通用实现）
+pub fn read_pe_section_headers<R: Read + Seek>(reader: &mut impl PeReader<R>) -> Result<Vec<SectionHeader>, GaiaError> {
+    // 先读取主头部
+    let header = reader.get_pe_header()?.clone();
+    let original_pos = reader.get_position()?;
+
+    // 读取节头部
+    let mut section_headers = Vec::with_capacity(header.coff_header.number_of_sections as usize);
+
+    // 定位到节头部位置
+    let section_header_offset = header.dos_header.e_lfanew as u64
+        + 4 // PE signature
+        + std::mem::size_of::<CoffHeader>() as u64
+        + header.coff_header.size_of_optional_header as u64;
+
+    reader.set_position(section_header_offset)?;
+
+    for _ in 0..header.coff_header.number_of_sections {
+        let section_header = SectionHeader::read(reader.get_viewer())?;
+        section_headers.push(section_header);
+    }
+
+    // 恢复原始位置
+    reader.set_position(original_pos)?;
+
+    Ok(section_headers)
+}
+
+/// 从节头读取节数据（通用实现）
+pub fn read_section_from_header<R: Read + Seek>(
+    reader: &mut impl PeReader<R>,
+    header: &SectionHeader,
+) -> Result<PeSection, GaiaError> {
+    let name = String::from_utf8_lossy(&header.name).trim_end_matches('\0').to_string();
+
+    let mut data = Vec::new();
+    if header.size_of_raw_data > 0 && header.pointer_to_raw_data > 0 {
+        let original_pos = reader.get_position()?;
+        reader.set_position(header.pointer_to_raw_data as u64)?;
+        data.resize(header.size_of_raw_data as usize, 0);
+        reader.get_viewer().read_exact(&mut data)?;
+        reader.set_position(original_pos)?;
+    }
+
+    Ok(PeSection {
+        name,
+        virtual_size: header.virtual_size,
+        virtual_address: header.virtual_address,
+        size_of_raw_data: header.size_of_raw_data,
+        pointer_to_raw_data: header.pointer_to_raw_data,
+        pointer_to_relocations: header.pointer_to_relocations,
+        pointer_to_line_numbers: header.pointer_to_line_numbers,
+        number_of_relocations: header.number_of_relocations,
+        number_of_line_numbers: header.number_of_line_numbers,
+        characteristics: header.characteristics,
+        data,
+    })
+}
+
+pub fn read_pe_program<R: Read + Seek>(reader: &mut impl PeReader<R>) -> Result<PeProgram, GaiaError> {
+    let header = reader.get_pe_header()?.clone();
+    let section_headers = reader.get_section_headers()?.to_vec();
+
+    // 读取节数据
+    let mut sections = Vec::new();
+    for section_header in section_headers {
+        let section = read_section_from_header(reader, &section_header)?;
+        sections.push(section);
+    }
+
+    // 解析导入表
+    let imports = reader.parse_import_table(&header, &sections)?;
+
+    // 解析导出表（EXE 文件通常没有导出表）
+    let exports = reader.parse_export_table(&header, &sections)?;
+    Ok(PeProgram { header, sections, imports, exports })
 }

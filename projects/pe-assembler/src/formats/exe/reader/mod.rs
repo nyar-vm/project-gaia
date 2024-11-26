@@ -1,94 +1,84 @@
 use crate::{
-    helpers::PeReader,
+    helpers::{
+        pe_reader::{read_pe_head, read_pe_program, read_pe_section_headers},
+        PeReader,
+    },
     types::{PeHeader, PeInfo, PeProgram, SectionHeader},
 };
-use byteorder::LittleEndian;
-use gaia_types::{BinaryReader, GaiaDiagnostics, GaiaError};
-use std::io::{Read, Seek};
+use gaia_types::{GaiaDiagnostics, GaiaError};
+use std::io::{Read, Seek, SeekFrom};
 
 /// EXE 结构，惰性读取器
 #[derive(Debug)]
 pub struct ExeReader<R> {
-    /// 二进制读取器（已定位到 DOS 头起始位置）
-    viewer: BinaryReader<R, LittleEndian>,
-    lazy_header: Option<PeHeader>,
-    lazy_section_headers: Option<Vec<SectionHeader>>,
-    lazy_program: Option<PeProgram>,
-    lazy_info: Option<PeInfo>,
-    diagnostics: Vec<GaiaError>,
+    reader: R,
+    exe_header: Option<PeHeader>,
+    exe_info: Option<PeInfo>,
+    exe_section_headers: Option<Vec<SectionHeader>>,
+    exe_program: Option<PeProgram>,
+    errors: Vec<GaiaError>,
+}
+
+impl<R: Read> Read for ExeReader<R> {
+    fn read(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
+        self.reader.read(buffer)
+    }
+}
+
+impl<R: Seek> Seek for ExeReader<R> {
+    fn seek(&mut self, position: SeekFrom) -> std::io::Result<u64> {
+        self.reader.seek(position)
+    }
 }
 
 impl<R> ExeReader<R> {
     pub fn new(reader: R) -> Self {
-        Self {
-            viewer: BinaryReader::new(reader),
-            lazy_header: None,
-            lazy_section_headers: None,
-            lazy_program: None,
-            lazy_info: None,
-            diagnostics: vec![],
+        Self { reader, exe_header: None, exe_section_headers: None, exe_program: None, exe_info: None, errors: vec![] }
+    }
+
+    pub fn finish(mut self) -> GaiaDiagnostics<PeProgram>
+    where
+        R: Read + Seek,
+    {
+        if self.exe_program.is_none() {
+            if let Err(e) = read_pe_program(&mut self) {
+                return GaiaDiagnostics { result: Err(e), diagnostics: self.errors };
+            }
+        }
+        unsafe {
+            let exe = self.exe_program.unwrap_unchecked();
+            GaiaDiagnostics { result: Ok(exe), diagnostics: self.errors }
         }
     }
 }
 
-impl<W: Read + Seek> PeReader<W> for ExeReader<W> {
-    fn get_viewer(&mut self) -> &mut BinaryReader<W, LittleEndian> {
-        &mut self.viewer
+impl<R: Read + Seek> PeReader<R> for ExeReader<R> {
+    fn get_viewer(&mut self) -> &mut R {
+        &mut self.reader
     }
 
-    fn add_diagnostics(&mut self, _error: impl Into<GaiaError>) {
-        // 暂时不实现，避免编译错误
+    fn add_diagnostics(&mut self, error: impl Into<GaiaError>) {
+        self.errors.push(error.into());
     }
 
-    fn get_cached_section_headers(&self) -> Option<&Vec<SectionHeader>> {
-        self.lazy_section_headers.as_ref()
-    }
-
-    fn set_cached_section_headers(&mut self, headers: Vec<SectionHeader>) {
-        self.lazy_section_headers = Some(headers);
-    }
-
-    fn read_header_once(&mut self) -> Result<&PeHeader, GaiaError> {
-        if self.lazy_header.is_none() {
-            self.lazy_header = Some(self.read_header_force()?);
+    fn get_section_headers(&mut self) -> Result<&[SectionHeader], GaiaError> {
+        if self.exe_section_headers.is_none() {
+            self.exe_section_headers = Some(read_pe_section_headers(self)?);
         }
-        match self.lazy_header.as_ref() {
-            Some(s) => Ok(s),
-            None => unreachable!(),
-        }
+        unsafe { Ok(self.exe_section_headers.as_ref().unwrap_unchecked()) }
     }
 
-    fn read_program_once(&mut self) -> Result<&PeProgram, GaiaError> {
-        if self.lazy_program.is_none() {
-            self.lazy_program = Some(self.read_program_force()?);
+    fn get_pe_header(&mut self) -> Result<&PeHeader, GaiaError> {
+        if self.exe_header.is_none() {
+            self.exe_header = Some(read_pe_head(self)?)
         }
-        match self.lazy_program.as_ref() {
-            Some(s) => Ok(s),
-            None => unreachable!(),
-        }
-    }
-}
-
-impl<W: Read + Seek> ExeReader<W> {
-    /// 读取完整的 PE 程序（惰性读取，会缓存结果）
-    pub fn read_program(mut self) -> GaiaDiagnostics<PeProgram> {
-        match self.read_program_once() {
-            Ok(_) => match self.lazy_program {
-                Some(program) => GaiaDiagnostics { result: Ok(program), diagnostics: self.diagnostics },
-                None => unreachable!(),
-            },
-            Err(error) => GaiaDiagnostics { result: Err(error), diagnostics: self.diagnostics },
-        }
+        unsafe { Ok(self.exe_header.as_ref().unwrap_unchecked()) }
     }
 
-    /// 查看 EXE 文件信息
-    pub fn view(&mut self) -> Result<PeInfo, GaiaError> {
-        if let Some(ref info) = self.lazy_info {
-            return Ok(info.clone());
+    fn get_program(&mut self) -> Result<&PeProgram, GaiaError> {
+        if self.exe_program.is_none() {
+            self.exe_program = Some(read_pe_program(self)?);
         }
-
-        let info = self.create_pe_info()?;
-        self.lazy_info = Some(info.clone());
-        Ok(info)
+        unsafe { Ok(self.exe_program.as_ref().unwrap_unchecked()) }
     }
 }

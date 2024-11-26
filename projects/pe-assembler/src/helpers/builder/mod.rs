@@ -450,7 +450,7 @@ impl PeAssemblerBuilder {
                     code[i + 2..i + 6].copy_from_slice(&disp_bytes);
 
                     // 调试输出：CALL 修补信息（使用 RVA）
-                    println!(
+                    tracing::trace!(
                         "CALL 修补(RVA): i={}, rip_rva={:08X}, target_rva={:08X}, disp={:08X}, iat_rva_start={:08X}, call_index={}",
                         i, rip_rva as u32, target_rva_u64 as u32, disp_i32 as u32, iat_start_rva as u32, call_index
                     );

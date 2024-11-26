@@ -1,94 +1,83 @@
 use crate::{
-    helpers::PeReader,
+    helpers::{
+        pe_reader::{read_pe_head, read_pe_program, read_pe_section_headers},
+        PeReader,
+    },
     types::{PeHeader, PeInfo, PeProgram, SectionHeader},
 };
-use byteorder::LittleEndian;
-use gaia_types::{BinaryReader, GaiaError};
-use std::io::{Read, Seek};
+use gaia_types::{GaiaDiagnostics, GaiaError};
+use std::io::{Read, Seek, SeekFrom};
 
 /// DLL 结构，惰性读取器
 #[derive(Debug)]
 pub struct DllReader<R> {
-    /// 二进制读取器（已定位到 DOS 头起始位置）
-    viewer: BinaryReader<R, LittleEndian>,
-    lazy_header: Option<PeHeader>,
-    lazy_section_headers: Option<Vec<SectionHeader>>,
-    lazy_program: Option<PeProgram>,
-    lazy_info: Option<PeInfo>,
-    diagnostics: Vec<GaiaError>,
+    reader: R,
+    dll_header: Option<PeHeader>,
+    dll_info: Option<PeInfo>,
+    dll_section_headers: Option<Vec<SectionHeader>>,
+    dll_program: Option<PeProgram>,
+    errors: Vec<GaiaError>,
+}
+
+impl<R: Read> Read for DllReader<R> {
+    fn read(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
+        self.reader.read(buffer)
+    }
+}
+
+impl<R: Seek> Seek for DllReader<R> {
+    fn seek(&mut self, position: SeekFrom) -> std::io::Result<u64> {
+        self.reader.seek(position)
+    }
 }
 
 impl<R> DllReader<R> {
     pub fn new(reader: R) -> Self {
-        Self {
-            viewer: BinaryReader::new(reader),
-            lazy_header: None,
-            lazy_section_headers: None,
-            lazy_program: None,
-            lazy_info: None,
-            diagnostics: vec![],
+        Self { reader, dll_header: None, dll_section_headers: None, dll_program: None, dll_info: None, errors: vec![] }
+    }
+    pub fn finish(mut self) -> GaiaDiagnostics<PeProgram>
+    where
+        R: Read + Seek,
+    {
+        if self.dll_program.is_none() {
+            if let Err(e) = read_pe_program(&mut self) {
+                return GaiaDiagnostics { result: Err(e), diagnostics: self.errors };
+            }
+        }
+        unsafe {
+            let exe = self.dll_program.unwrap_unchecked();
+            GaiaDiagnostics { result: Ok(exe), diagnostics: self.errors }
         }
     }
 }
 
-impl<W: Read + Seek> PeReader<W> for DllReader<W> {
-    fn get_viewer(&mut self) -> &mut BinaryReader<W, LittleEndian> {
-        &mut self.viewer
+impl<R: Read + Seek> PeReader<R> for DllReader<R> {
+    fn get_viewer(&mut self) -> &mut R {
+        &mut self.reader
     }
 
     fn add_diagnostics(&mut self, error: impl Into<GaiaError>) {
-        self.diagnostics.push(error.into());
+        self.errors.push(error.into());
     }
 
-    fn get_cached_section_headers(&self) -> Option<&Vec<SectionHeader>> {
-        self.lazy_section_headers.as_ref()
+    fn get_section_headers(&mut self) -> Result<&[SectionHeader], GaiaError> {
+        if self.dll_section_headers.is_none() {
+            self.dll_section_headers = Some(read_pe_section_headers(self)?);
+        }
+        unsafe { Ok(self.dll_section_headers.as_ref().unwrap_unchecked()) }
     }
 
-    fn set_cached_section_headers(&mut self, headers: Vec<SectionHeader>) {
-        self.lazy_section_headers = Some(headers);
+    fn get_pe_header(&mut self) -> Result<&PeHeader, GaiaError> {
+        if self.dll_header.is_none() {
+            self.dll_header = Some(read_pe_head(self)?)
+        }
+        unsafe { Ok(self.dll_header.as_ref().unwrap_unchecked()) }
     }
 
-    fn read_header_once(&mut self) -> Result<&PeHeader, GaiaError> {
-        if self.lazy_header.is_none() {
-            self.lazy_header = Some(self.read_header_force()?);
+    fn get_program(&mut self) -> Result<&PeProgram, GaiaError> {
+        if self.dll_program.is_none() {
+            self.dll_program = Some(read_pe_program(self)?);
         }
-        match self.lazy_header.as_ref() {
-            Some(s) => Ok(s),
-            None => unreachable!(),
-        }
-    }
-
-    fn read_program_once(&mut self) -> Result<&PeProgram, GaiaError> {
-        if self.lazy_program.is_none() {
-            self.lazy_program = Some(self.read_program_force()?);
-        }
-        match self.lazy_program.as_ref() {
-            Some(s) => Ok(s),
-            None => unreachable!(),
-        }
-    }
-}
-
-impl<W: Read + Seek> DllReader<W> {
-    /// 读取完整的 PE 程序（惰性读取，会缓存结果）
-    pub fn read_program(mut self) -> gaia_types::GaiaDiagnostics<PeProgram> {
-        match self.read_program_once() {
-            Ok(_) => match self.lazy_program {
-                Some(program) => gaia_types::GaiaDiagnostics { result: Ok(program), diagnostics: self.diagnostics },
-                None => unreachable!(),
-            },
-            Err(error) => gaia_types::GaiaDiagnostics { result: Err(error), diagnostics: self.diagnostics },
-        }
-    }
-
-    /// 查看 DLL 文件信息
-    pub fn view(&mut self) -> Result<PeInfo, GaiaError> {
-        if let Some(ref info) = self.lazy_info {
-            return Ok(info.clone());
-        }
-
-        let info = self.create_pe_info()?;
-        self.lazy_info = Some(info.clone());
-        Ok(info)
+        unsafe { Ok(self.dll_program.as_ref().unwrap_unchecked()) }
     }
 }

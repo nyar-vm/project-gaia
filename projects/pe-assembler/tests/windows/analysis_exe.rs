@@ -9,6 +9,7 @@ use pe_assembler::{
 };
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+use pe_assembler::helpers::PeReader;
 
 /// Windows 可执行文件分析结果
 #[derive(Debug, Serialize, Deserialize)]
@@ -111,12 +112,10 @@ fn analyze_essential_windows_executables() -> Result<(), GaiaError> {
 pub fn analyze_exe_file(path: &Path) -> Result<WindowsExeAnalysis, GaiaError> {
     let (file, _url) = open_file(path)?;
     let file_size = file.metadata()?.len();
-    let reader = ExeReader::new(file);
+    let mut reader = ExeReader::new(file);
 
-    // 读取PE程序
-    let program_result = reader.read_program();
-
-    match program_result.result {
+    // 使用 lazy reader 模式：先检查是否已读取，如果没有则强制读取
+    match reader.get_program() {
         Ok(program) => {
             // 获取基本信息
             let basic_info = PeInfo {

@@ -115,6 +115,15 @@ pub struct SectionHeader {
     pub characteristics: u32,
 }
 
+impl SectionHeader {
+    pub fn get_name(&self) -> &str {
+        unsafe {
+            let name = str::from_utf8_unchecked(&self.name);
+            name.trim_end_matches('\0')
+        }
+    }
+}
+
 /// COFF 符号表项
 ///
 /// 表示 COFF 对象文件中的一个符号，包含符号名称、值、节号等信息。

@@ -6,6 +6,7 @@ use std::{
     path::Path,
     time::{SystemTime, UNIX_EPOCH},
 };
+use gaia_types::helpers::open_file;
 
 /// Windows OBJ 文件分析结果
 #[derive(Debug, Serialize, Deserialize)]
@@ -60,100 +61,51 @@ fn analyze_obj_file<P: AsRef<Path>>(path: P) -> WindowsObjAnalysis {
     };
 
     // 尝试读取 OBJ 文件
-    match ObjReader::from_file(&path_ref) {
-        Ok(mut reader) => {
-            match reader.view() {
-                Ok(coff_info) => {
-                    // 尝试读取完整对象以获取更多信息
-                    let obj_result = reader.read_object();
-                    let coff_object = obj_result.result.ok();
+    let (file, _url) = match open_file(&path_ref) {
+        Ok(result) => result,
+        Err(_) => return WindowsObjAnalysis {
+            analysis_success: false,
+            error_details: Some(GaiaError::invalid_data("无法打开文件")),
+            file_size,
+            machine_type: None,
+            number_of_sections: 0,
+            number_of_symbols: 0,
+            timestamp: UNIX_EPOCH,
+            characteristics: 0,
+            section_names: vec![],
+            symbol_names: vec![],
+        },
+    };
+    
+    match ObjReader::new(file).read_object().result {
+        Ok(coff_object) => {
+            // 收集节名称
+            let section_names: Vec<String> = coff_object
+                .sections
+                .iter()
+                .map(|section| {
+                    section.header.get_name().to_string()
+                })
+                .collect();
 
-                    // 收集节名称
-                    let section_names: Vec<String> = coff_object
-                        .as_ref()
-                        .map(|obj| {
-                            obj.sections
-                                .iter()
-                                .map(|section| {
-                                    // 修复编码问题：正确处理节名称
-                                    let name_bytes = &section.header.name;
-                                    let name_str = match std::str::from_utf8(name_bytes) {
-                                        Ok(s) => s,
-                                        Err(_) => &String::from_utf8_lossy(name_bytes),
-                                    };
-                                    name_str.trim_end_matches('\0').trim().to_string()
-                                })
-                                .filter(|name| !name.is_empty())
-                                .collect()
-                        })
-                        .unwrap_or_default();
+            // 收集符号名称
+            let symbol_names: Vec<String> = coff_object
+                .symbols
+                .iter()
+                .map(|symbol| symbol.name.clone())
+                .collect();
 
-                    // 收集符号名称（取前10个作为样本）- 修复编码问题
-                    let symbol_names: Vec<String> = coff_object
-                        .as_ref()
-                        .map(|obj| {
-                            obj.symbols
-                                .iter()
-                                .take(10)
-                                .filter_map(|symbol| {
-                                    if !symbol.name.is_empty() {
-                                        // 修复编码问题：确保符号名称是有效的UTF-8
-                                        let clean_name = symbol
-                                            .name
-                                            .chars()
-                                            .filter(|c| c.is_ascii_graphic() || c.is_ascii_whitespace())
-                                            .collect::<String>()
-                                            .trim()
-                                            .to_string();
-                                        if !clean_name.is_empty() {
-                                            Some(clean_name)
-                                        }
-                                        else {
-                                            Some(format!("<binary_symbol_{}>", symbol.name.len()))
-                                        }
-                                    }
-                                    else {
-                                        None
-                                    }
-                                })
-                                .collect()
-                        })
-                        .unwrap_or_default();
-
-                    // 将u32时间戳转换为SystemTime
-                    let timestamp = UNIX_EPOCH + std::time::Duration::from_secs(coff_info.timestamp as u64);
-
-                    WindowsObjAnalysis {
-                        analysis_success: true,
-                        error_details: None,
-                        file_size,
-                        machine_type: Some(match coff_info.target_arch {
-                            gaia_types::helpers::Architecture::X86 => 0x014c,
-                            gaia_types::helpers::Architecture::X86_64 => 0x8664,
-                            gaia_types::helpers::Architecture::ARM32 => 0x01c0,
-                            gaia_types::helpers::Architecture::ARM64 => 0xaa64,
-                            _ => 0,
-                        }),
-                        number_of_sections: coff_info.section_count as u32,
-                        number_of_symbols: coff_info.symbol_count as u32,
-                        timestamp,
-                        characteristics: 0, // CoffInfo doesn't have characteristics
-                        section_names,
-                        symbol_names,
-                    }
-                }
-                Err(e) => WindowsObjAnalysis {
-                    analysis_success: false,
-                    error_details: Some(e),
-                    file_size,
-                    machine_type: None,
-                    number_of_sections: 0,
-                    number_of_symbols: 0,
-                    timestamp: UNIX_EPOCH,
-                    characteristics: 0,
-                    section_names: vec![],
-                    symbol_names: vec![],
-                },
+            WindowsObjAnalysis {
+                analysis_success: true,
+                error_details: None,
+                file_size,
+                machine_type: Some(coff_object.header.machine),
+                number_of_sections: coff_object.header.number_of_sections as u32,
+                number_of_symbols: coff_object.header.number_of_symbols,
+                timestamp: UNIX_EPOCH + std::time::Duration::from_secs(coff_object.header.time_date_stamp as u64),
+                characteristics: coff_object.header.characteristics,
+                section_names,
+                symbol_names,
             }
         }
         Err(e) => WindowsObjAnalysis {

@@ -3,10 +3,7 @@ use gaia_types::{
     helpers::{open_file, save_json},
     GaiaError,
 };
-use pe_assembler::{
-    formats::dll::reader::DllReader,
-    types::{PeInfo, SubsystemType},
-};
+use pe_assembler::{formats::dll::reader::DllReader, helpers::PeReader, types::PeInfo};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -84,71 +81,31 @@ fn dump_common_windows_dlls() -> Result<(), GaiaError> {
 
 pub fn analyze_dll_file(path: &Path) -> Result<WindowsDllAnalysis, GaiaError> {
     let (file, _url) = open_file(path)?;
-    let file_size = file.metadata()?.len();
-    let reader = DllReader::new(file);
+    let mut reader = DllReader::new(file);
 
-    // 读取PE程序
-    let program_result = reader.read_program();
+    let basic_info = reader.create_pe_info()?;
+    let program = reader.get_program()?;
 
-    match program_result.result {
-        Ok(program) => {
-            // 获取基本信息
-            let basic_info = PeInfo {
-                target_arch: program.header.coff_header.get_architecture(),
-                subsystem: program.header.optional_header.subsystem,
-                entry_point: program.header.optional_header.address_of_entry_point,
-                image_base: program.header.optional_header.image_base,
-                section_count: program.header.coff_header.number_of_sections,
-                file_size, // 这里可以通过文件大小获取
-            };
-
-            // 获取导出函数
-            let export_count = program.exports.functions.len();
-            let sample_exports = program.exports.functions.iter().take(20).cloned().collect();
-
-            // 获取导入函数
-            let import_count = program.imports.entries.iter().map(|e| e.functions.len()).sum::<usize>();
-            let sample_imports: Vec<String> =
-                program.imports.entries.iter().flat_map(|e| e.functions.iter()).take(20).cloned().collect();
-
-            // 获取节信息
-            let section_count = program.sections.len();
-            let section_names = program.sections.iter().map(|s| s.name.clone()).collect();
-
-            Ok(WindowsDllAnalysis {
-                dll_name: path.file_stem().unwrap_or_default().to_string_lossy().to_string(),
-                basic_info,
-                export_count,
-                import_count,
-                section_count,
-                sample_exports,
-                sample_imports,
-                section_names,
-                analysis_success: true,
-                error_message: None,
-            })
-        }
-        Err(error) => {
-            // 分析失败，返回基本信息
-            Ok(WindowsDllAnalysis {
-                dll_name: path.file_stem().unwrap_or_default().to_string_lossy().to_string(),
-                basic_info: PeInfo {
-                    target_arch: gaia_types::helpers::Architecture::Unknown,
-                    subsystem: SubsystemType::Console,
-                    entry_point: 0,
-                    image_base: 0,
-                    section_count: 0,
-                    file_size: 0,
-                },
-                export_count: 0,
-                import_count: 0,
-                section_count: 0,
-                sample_exports: Vec::new(),
-                sample_imports: Vec::new(),
-                section_names: Vec::new(),
-                analysis_success: false,
-                error_message: Some(error),
-            })
-        }
-    }
+    // 获取导出函数
+    let export_count = program.exports.functions.len();
+    let sample_exports = program.exports.functions.iter().take(20).cloned().collect();
+    // 获取导入函数
+    let import_count = program.imports.entries.iter().map(|e| e.functions.len()).sum::<usize>();
+    let sample_imports: Vec<String> =
+        program.imports.entries.iter().flat_map(|e| e.functions.iter()).take(20).cloned().collect();
+    // 获取节信息
+    let section_count = program.sections.len();
+    let section_names = program.sections.iter().map(|s| s.name.clone()).collect();
+    Ok(WindowsDllAnalysis {
+        dll_name: path.file_stem().unwrap_or_default().to_string_lossy().to_string(),
+        basic_info,
+        export_count,
+        import_count,
+        section_count,
+        sample_exports,
+        sample_imports,
+        section_names,
+        analysis_success: true,
+        error_message: None,
+    })
 }

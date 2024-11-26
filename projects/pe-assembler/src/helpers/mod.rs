@@ -2,12 +2,9 @@
 
 mod builder;
 mod coff_reader;
-mod pe_reader;
+pub mod pe_reader;
 mod pe_writer;
 
-pub use self::{
-    coff_reader::{CoffReader, CoffViewer},
-    pe_reader::PeReader,
-    pe_writer::PeWriter,
-};
+pub(crate) use self::coff_reader::{CoffReader, read_coff_header, read_section_headers, read_coff_object};
+pub use self::{pe_reader::PeReader, pe_writer::PeWriter};
 pub use builder::*;
