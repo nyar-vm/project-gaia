@@ -3,7 +3,7 @@
 //! 测试从 MSIL 源代码到可执行 PE 文件的完整转换流程
 
 use clr_assembler::formats::{
-    dll::writer::DotNetWriter,
+    dll::writer::DllWriter,
     msil::{converter::MsilToClrConverter, lexer::MsilLexer, parser::MsilParser, MsilReadConfig},
 };
 use std::{fs, io::Cursor, process::Command};
@@ -75,7 +75,7 @@ fn test_hello_world_compilation() {
 
     // 4. PE 文件生成
     let mut output_buffer = Cursor::new(Vec::new());
-    let writer = DotNetWriter::new(&mut output_buffer);
+    let writer = DllWriter::new(&mut output_buffer);
     let write_result = writer.write(&clr_program);
 
     if let Err(ref e) = write_result.result {

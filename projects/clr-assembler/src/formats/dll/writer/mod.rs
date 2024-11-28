@@ -2,6 +2,7 @@ use crate::program::{ClrInstruction, ClrMethod, ClrOpcode, ClrProgram};
 use gaia_types::{helpers::Url, GaiaDiagnostics, GaiaError};
 use pe_assembler::{
     exe_write_path,
+    helpers::PeWriter,
     types::{
         tables::{ExportTable, ImportTable},
         CoffHeader, DosHeader, NtHeader, OptionalHeader, PeHeader, PeProgram, PeSection, SubsystemType,
@@ -13,17 +14,17 @@ use std::{
 };
 
 #[derive(Debug)]
-pub struct DotNetWriter<W> {
+pub struct DllWriter<W> {
     writer: W,
 }
 
-impl<W> DotNetWriter<W> {
+impl<W> DllWriter<W> {
     pub fn new(writer: W) -> Self {
         Self { writer }
     }
 }
 
-impl<W: Write + Seek> DotNetWriter<W> {
+impl<W: Write + Seek> DllWriter<W> {
     pub fn write(mut self, clr: &ClrProgram) -> GaiaDiagnostics<W> {
         match self.build_pe_program(clr) {
             Ok(pe_program) => match self.write_pe_program(&pe_program) {
@@ -42,7 +43,7 @@ impl<W: Write + Seek> DotNetWriter<W> {
 
     /// 静态方法构建 PE 程序
     fn build_pe_program_static(clr: &ClrProgram) -> Result<PeProgram, GaiaError> {
-        let instance = DotNetWriter::new(Cursor::new(Vec::new()));
+        let instance = DllWriter::new(Cursor::new(Vec::new()));
         instance.build_pe_program(clr)
     }
 
@@ -80,22 +81,9 @@ impl<W: Write + Seek> DotNetWriter<W> {
     }
 
     fn write_pe_program(&mut self, pe_program: &PeProgram) -> Result<(), GaiaError> {
-        // Write PE program directly using a simple binary writer
-        self.write_dos_header(&pe_program.header.dos_header)?;
-        self.write_nt_header(&pe_program.header.nt_header)?;
-        self.write_coff_header(&pe_program.header.coff_header)?;
-        self.write_optional_header(&pe_program.header.optional_header)?;
-
-        // Write section headers
-        for section in &pe_program.sections {
-            self.write_section_header(section)?;
-        }
-
-        // Write section data
-        for section in &pe_program.sections {
-            self.writer.write_all(&section.data)?;
-        }
-
+        use pe_assembler::formats::dll::writer::DllWriter;
+        let mut pe_writer = DllWriter::new(&mut self.writer);
+        pe_writer.write_program(pe_program)?;
         Ok(())
     }
 

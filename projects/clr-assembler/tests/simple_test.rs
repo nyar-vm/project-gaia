@@ -1,7 +1,7 @@
 //! 简单的 DotNetWriter 测试
 
 use clr_assembler::{
-    formats::dll::writer::DotNetWriter,
+    formats::dll::writer::DllWriter,
     program::{ClrInstruction, ClrMethod, ClrOpcode, ClrProgram, ClrTypeReference},
 };
 use std::io::Cursor;
@@ -33,7 +33,7 @@ fn test_dot_net_writer_basic() {
 
     // 使用 DotNetWriter 生成 PE 文件
     let buffer = Cursor::new(Vec::new());
-    let writer = DotNetWriter::new(buffer);
+    let writer = DllWriter::new(buffer);
     let result = writer.write(&program);
 
     // 验证结果
@@ -75,7 +75,7 @@ fn test_dot_net_writer_with_string() {
     program.global_methods.push(method);
 
     let buffer = Cursor::new(Vec::new());
-    let writer = DotNetWriter::new(buffer);
+    let writer = DllWriter::new(buffer);
     let result = writer.write(&program);
 
     assert!(result.result.is_ok(), "包含字符串的程序应该能够成功生成");

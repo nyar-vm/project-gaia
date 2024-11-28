@@ -2,6 +2,7 @@ use crate::program::{ClrInstruction, ClrMethod, ClrOpcode, ClrProgram};
 use gaia_types::{GaiaDiagnostics, GaiaError};
 use pe_assembler::{
     exe_write_path,
+    helpers::PeWriter,
     types::{tables::{ImportTable, ExportTable}, CoffHeader, DataDirectory, DosHeader, NtHeader, OptionalHeader, PeHeader, PeProgram, PeSection, SubsystemType},
 };
 use std::{io::{Cursor, Seek, Write}, path::Path};
@@ -30,14 +31,10 @@ impl<W: Write + Seek> DotNetWriter<W> {
 
     /// 写入 CLR 程序到指定路径
     pub fn write_to_path(clr: &ClrProgram, path: &Path) -> Result<gaia_types::helpers::Url, GaiaError> {
-        let pe_program = Self::build_pe_program_static(clr)?;
+        // 使用临时 Cursor 写入器来构建 PE 程序
+        let builder: DotNetWriter<std::io::Cursor<Vec<u8>>> = DotNetWriter::new(std::io::Cursor::new(Vec::new()));
+        let pe_program = builder.build_pe_program(clr)?;
         exe_write_path(&pe_program, path).map_err(|e| GaiaError::custom_error(format!("写入 PE 文件失败: {}", e)))
-    }
-
-    /// 静态方法构建 PE 程序
-    fn build_pe_program_static(clr: &ClrProgram) -> Result<PeProgram, GaiaError> {
-        let instance = Self::new(std::io::Cursor::new(Vec::new()));
-        instance.build_pe_program(clr)
     }
 
     fn build_pe_program(&self, clr: &ClrProgram) -> Result<PeProgram, GaiaError> {
@@ -87,10 +84,9 @@ impl<W: Write + Seek> DotNetWriter<W> {
         };
 
         let coff_header = CoffHeader::new(0x014C, 1) // IMAGE_FILE_MACHINE_I386
-            .with_time_date_stamp(0)
-            .with_pointer_to_symbol_table(0)
-            .with_number_of_symbols(0)
-            .with_size_of_optional_header(224) // PE32 可选头大小
+            .with_timestamp(0)
+            .with_symbol_table(0, 0)
+            .with_optional_header_size(224) // PE32 可选头大小
             .with_characteristics(0x0102);     // IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_32BIT_MACHINE
 
         let optional_header = OptionalHeader::new(

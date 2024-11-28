@@ -20,7 +20,7 @@ url = "2.5.7"
 serde = { version = "1.0.0", features = ["derive"] }
 
 [dependencies.pe-assembler]
-version = "0.0.0"
+version = "0.0.2"
 path = "../pe-assembler"
 
 [build-dependencies]

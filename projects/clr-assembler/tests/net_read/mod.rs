@@ -1,5 +1,5 @@
 use crate::test_tools::test_path;
-use clr_assembler::formats::dll::reader::{read_dotnet_assembly, DotNetReader, DotNetReaderOptions};
+use clr_assembler::formats::dll::{DllReadConfig, read_dotnet_assembly};
 use gaia_types::helpers::save_json;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -41,7 +41,7 @@ impl Default for NetDllAnalysis {
 /// 分析单个.NET DLL文件
 pub fn analyze_net_dll_file(
     dll_path: &str,
-    options: &DotNetReaderOptions,
+    options: &DllReadConfig,
 ) -> Result<NetDllAnalysis, Box<dyn std::error::Error>> {
     let mut analysis = NetDllAnalysis::default();
     analysis.dll_name = Path::new(dll_path).file_name().and_then(|n| n.to_str()).unwrap_or("unknown").to_string();
@@ -53,7 +53,7 @@ pub fn analyze_net_dll_file(
     }
 
     // 尝试读取.NET程序集
-    match read_dotnet_assembly(dll_path, options).result {
+    match read_dotnet_assembly(Path::new(dll_path), options) {
         Ok(clr_program) => {
             // 程序集名称与版本
             analysis.assembly_info = clr_program.name.clone();
@@ -110,7 +110,7 @@ fn test_analyze_common_net_dlls() {
     let fallback_names: Vec<String> =
         fallback_names_str.split(',').filter(|s| !s.trim().is_empty()).map(|s| s.trim().to_string()).collect();
 
-    let reader_options = DotNetReaderOptions { assembly_ref_fallback_names: fallback_names };
+    let reader_options = DllReadConfig { assembly_ref_fallback_names: fallback_names };
 
     for dll_name in common_dlls {
         // 尝试在多个可能的位置查找DLL
@@ -147,7 +147,7 @@ fn test_analyze_common_net_dlls() {
     }
 
     // 将结果保存到JSON文件
-    let output_path = test_path("pyc_read/net_dll_analysis.json");
+    let output_path = test_path("net_read/net_dll_analysis.json");
     save_json(&results, &output_path).expect("Failed to save analysis results");
     println!("分析结果已保存到: {:?}", output_path);
 
