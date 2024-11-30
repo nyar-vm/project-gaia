@@ -421,8 +421,7 @@ valgrind --tool=memcheck ./hello
 
 1. **[基础概念](./concepts.md)** - 深入理解 ELF 格式和核心概念
 2. **[文件结构](./file-structure.md)** - 学习 ELF 文件的详细结构
-3. **[代码生成](./code-generation.md)** - 掌握多架构机器码生成
-4. **[系统调用](./system-calls.md)** - 与 Linux 内核交互
+3. **[用户指南](../../user-guide/index.md)** - 了解 Gaia 框架的通用功能
 
 ## 参考资源
 
@@ -433,4 +432,4 @@ valgrind --tool=memcheck ./hello
 
 ---
 
-*如果您在使用过程中遇到问题，请查看 [故障排除](./troubleshooting.md) 或在 GitHub 上提交 Issue。*
+*如果您在使用过程中遇到问题，请查看 [维护指南](../../maintenance/troubleshooting.md) 或在 GitHub 上提交 Issue。*

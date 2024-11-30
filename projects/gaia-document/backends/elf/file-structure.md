@@ -598,10 +598,9 @@ assembler.enable_debug_compression(true);
 
 现在您已经了解了 ELF 文件的详细结构，可以继续学习：
 
-1. **[代码生成](./code-generation.md)** - 学习如何生成机器代码
-2. **[内存管理](./memory-management.md)** - 掌握虚拟内存和段管理
-3. **[符号和重定位](./symbols-relocations.md)** - 深入理解符号解析机制
-4. **[动态链接](./dynamic-linking.md)** - 学习共享库和动态加载
+1. **[入门指南](./getting-started.md)** - 学习如何开始使用 ELF 后端
+2. **[基本概念](./concepts.md)** - 复习 ELF 格式的核心概念
+3. **[用户指南](../../user-guide/index.md)** - 了解 Gaia 框架的通用功能
 
 ## 参考工具
 

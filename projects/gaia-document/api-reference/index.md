@@ -4,7 +4,7 @@
 
 ## 核心库
 
-### [gaia-assembler](./gaia-assembler/)
+### gaia-assembler
 
 核心汇编器库，提供主要的编译功能。
 
@@ -13,7 +13,7 @@
 - **Instruction**: 指令定义
 - **Module**: 模块管理
 
-### [gaia-types](./gaia-types/)
+### gaia-types
 
 共享类型定义库，包含所有核心数据结构。
 
@@ -22,7 +22,7 @@
 - **Symbol**: 符号表
 - **Error**: 错误类型
 
-### [gaia-frontend](./gaia-frontend/)
+### gaia-frontend
 
 前端解析器库，负责源码解析和 AST 生成。
 
@@ -33,7 +33,7 @@
 
 ## 后端库
 
-### [pe-assembler](./backends/pe-assembler/)
+### [PE 后端](../backends/pe/)
 
 Windows PE 格式后端。
 
@@ -42,7 +42,7 @@ Windows PE 格式后端。
 - **Section**: 节区管理
 - **Import**: 导入表
 
-### [clr-assembler](./backends/clr-assembler/)
+### [CLR 后端](../backends/clr/)
 
 .NET CLR 后端。
 
@@ -51,7 +51,7 @@ Windows PE 格式后端。
 - **Method**: 方法定义
 - **Metadata**: 元数据
 
-### [jvm-assembler](./backends/jvm-assembler/)
+### [JVM 后端](../backends/jvm/)
 
 Java JVM 后端。
 
@@ -60,7 +60,7 @@ Java JVM 后端。
 - **ConstantPool**: 常量池
 - **Bytecode**: 字节码
 
-### [wasi-assembler](./backends/wasi-assembler/)
+### [WASM 后端](../backends/wasm/)
 
 WebAssembly WASI 后端。
 
@@ -71,7 +71,7 @@ WebAssembly WASI 后端。
 
 ## 工具库
 
-### [gaia-lsp](./gaia-lsp/)
+### gaia-lsp
 
 语言服务器协议实现。
 
@@ -80,7 +80,7 @@ WebAssembly WASI 后端。
 - **Completion**: 代码补全
 - **Hover**: 悬停信息
 
-### [gaia-cli](./gaia-cli/)
+### gaia-cli
 
 命令行工具。
 
@@ -177,5 +177,5 @@ gaia-types = "0.3"
 
 - [用户指南](/user-guide/) - 使用说明和示例
 - [开发者指南](/developer-guide/) - 扩展和定制
-- [内部实现](/internals/) - 实现细节
+- [架构文档](/developer-guide/architecture.md) - 项目架构和实现细节
 - [GitHub 仓库](https://github.com/nyar-vm/project-gaia)

@@ -45,25 +45,22 @@ std::fs::write("hello", elf_data) ?;
 ### 🏗️ 核心功能
 
 - **[ELF 文件结构](./file-structure.md)** - ELF 头、程序头、节区详解
-- **[代码生成](./code-generation.md)** - 多架构机器码生成和指令集
-- **[内存管理](./memory-management.md)** - 虚拟地址空间和内存布局
+- **[基础概念](./concepts.md)** - ELF 格式核心概念和原理
 
 ### 🔗 系统集成
 
-- **[符号和重定位](./symbols-relocations.md)** - 符号表、重定位和链接机制
-- **[动态链接](./dynamic-linking.md)** - 共享库、PLT/GOT 和动态加载
-- **[系统调用](./system-calls.md)** - Linux 系统调用和 POSIX API
+- **[入门指南](./getting-started.md)** - 环境配置和基础使用
+- **[用户指南](../../user-guide/index.md)** - Gaia 框架通用功能
 
 ### ⚡ 高级特性
 
-- **[性能优化](./optimization.md)** - 代码优化和链接时优化
-- **[安全特性](./security.md)** - ASLR、栈保护、FORTIFY_SOURCE
-- **[调试支持](./debugging.md)** - DWARF 调试信息和 GDB 集成
+- **[用户指南](../../user-guide/index.md)** - 性能优化和调试支持
+- **[维护指南](../../maintenance/index.md)** - 安全性和工具集成
 
 ### 🛠️ 开发工具
 
-- **[工具集成](./tools.md)** - 分析工具、调试器、部署工具
-- **[故障排除](./troubleshooting.md)** - 常见问题和解决方案
+- **[维护指南](../../maintenance/troubleshooting.md)** - 常见问题和解决方案
+- **[开发者指南](../../developer-guide/index.md)** - 开发工具和集成
 
 ## 核心特性
 
@@ -139,14 +136,14 @@ std::fs::write("hello", elf_data) ?;
 - **GitHub 仓库**: [project-gaia](https://github.com/nyar-vm/project-gaia)
 - **问题反馈**: [Issues](https://github.com/nyar-vm/project-gaia/issues)
 - **讨论社区**: [Discussions](https://github.com/nyar-vm/project-gaia/discussions)
-- **文档贡献**: [Contributing Guide](../../contributing.md)
+- **文档贡献**: [开发者指南](../../developer-guide/index.md)
 
 ## 下一步
 
 1. 从 **[入门指南](./getting-started.md)** 开始学习 ELF 后端的基础使用
 2. 了解 **[基础概念](./concepts.md)** 掌握 ELF 格式的核心知识
 3. 深入 **[文件结构](./file-structure.md)** 学习 ELF 文件的内部组织
-4. 探索 **[系统调用](./system-calls.md)** 与 Linux 内核交互
+4. 探索 **[用户指南](../../user-guide/index.md)** 了解 Gaia 框架功能
 
 ## 性能基准
 

@@ -788,10 +788,10 @@ pub fn profile_module_loading(module_bytes: &[u8]) -> LoadingProfile {
 
 现在您已经深入了解了 WASM 模块结构，可以继续学习：
 
-1. 🔧 [**指令集**](./instruction-set.md) - 掌握完整的 WASM 指令
-2. 🧠 [**类型系统**](./type-system.md) - 深入理解类型检查
-3. 💾 [**内存管理**](./memory-management.md) - 学习内存操作技巧
-4. ⚡ [**性能优化**](./optimization.md) - 优化模块性能
+1. 📖 [**基础概念**](./concepts.md) - 掌握 WASM 核心概念
+2. 🚀 [**入门指南**](./getting-started.md) - 深入理解实际应用
+3. 📚 [**用户指南**](../../user-guide/index.md) - 学习框架功能技巧
+4. 🔧 [**维护指南**](../../maintenance/index.md) - 优化模块性能
 
 ## 参考资料
 
@@ -801,4 +801,4 @@ pub fn profile_module_loading(module_bytes: &[u8]) -> LoadingProfile {
 
 ---
 
-*理解模块结构是优化 WASM 应用的关键。如需更多帮助，请查看 [调试指南](./debugging.md)。*
+*理解模块结构是优化 WASM 应用的关键。如需更多帮助，请查看 [维护指南](../../maintenance/troubleshooting.md)。*

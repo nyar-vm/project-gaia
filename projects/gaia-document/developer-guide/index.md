@@ -292,8 +292,8 @@ Gaia 支持通过插件扩展功能：
 - [讨论区](https://github.com/nyar-vm/project-gaia/discussions)
 - [问题跟踪](https://github.com/nyar-vm/project-gaia/issues)
 
-## 更多信息
+### 相关资源
 
-- [内部实现](/internals/) - 深入了解实现细节
-- [API 参考](/api-reference/) - 编程接口文档
-- [维护指南](/maintenance/) - 项目维护信息
+- [开发者指南](./frontend-development.md) - 开发和贡献指南
+- [内部实现](../api-reference/index.md) - 深入的技术实现
+- [API 参考](../api-reference/index.md) - 详细的 API 文档

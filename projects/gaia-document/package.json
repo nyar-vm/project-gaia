@@ -5,12 +5,6 @@
     "description": "Nyar Language Documentation - Comprehensive documentation for the Nyar programming language and compiler framework",
     "type": "module",
     "main": "index.js",
-    "scripts": {
-        "dev": "vitepress dev",
-        "build": "vitepress build",
-        "preview": "vitepress preview",
-        "test": "echo \"Error: no test specified\" && exit 1"
-    },
     "keywords": [
         "nyar",
         "documentation",
@@ -25,6 +19,12 @@
         "type": "git",
         "url": "https://github.com/nyar-framework/nyar-vm.git",
         "directory": "projects/nyar-document"
+    },
+    "scripts": {
+        "dev": "vitepress dev",
+        "build": "vitepress build",
+        "preview": "vitepress preview",
+        "test": "echo \"Error: no test specified\" && exit 1"
     },
     "devDependencies": {
         "@shikijs/vitepress-twoslash": "^3.12.2",

@@ -389,8 +389,8 @@ fn benchmark_pe_generation() {
 
 1. **[基础概念](./concepts.md)** - 深入了解 PE 格式的核心概念
 2. **[文件结构](./file-structure.md)** - 学习 PE 文件的详细结构
-3. **[代码生成](./code-generation.md)** - 掌握机器码生成技术
-4. **[导入导出](./import-export.md)** - 学习 DLL 导入导出机制
+3. **[用户指南](../../user-guide/index.md)** - Gaia 框架通用功能
+4. **[维护指南](../../maintenance/index.md)** - 高级配置和故障排除
 
 ## 示例代码仓库
 

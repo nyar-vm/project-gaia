@@ -389,4 +389,4 @@ division_by_zero:
 - [后端文档](/backends/) - 特定平台的详细信息
 - [开发者指南](/developer-guide/) - 扩展和定制
 - [API 参考](/api-reference/) - 编程接口文档
-- [内部实现](/internals/) - 深入了解实现细节
+- [内部实现](/api-reference/) - 深入了解实现细节

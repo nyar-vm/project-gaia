@@ -13,7 +13,7 @@ exclude = ["package.json", "tests/**"]
 [dependencies]
 gaia-types = { path = "../gaia-types" }
 clr-assembler = { path = "../clr-assembler" }
-jvm-assembler = { path = "../jvm-assembler" }
+jasm-assembler = { path = "../jvm-assembler" }
 pe-assembler = { path = "../pe-assembler" }
 wasi-assembler = { path = "../wasi-assembler" }
 serde = { version = "1.0", features = ["derive"] }

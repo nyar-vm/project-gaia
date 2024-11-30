@@ -87,6 +87,9 @@ impl Display for GaiaErrorKind {
             GaiaErrorKind::UnsupportedFeature { feature, location } => {
                 write!(f, "不支持的功能 '{}' 在位置 {:?}", feature, location)?;
             }
+            GaiaErrorKind::UnreachableError { location } => {
+                write!(f, "不可达错误: {}", location)?;
+            }
         }
         Ok(())
     }

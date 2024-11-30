@@ -510,9 +510,9 @@ assembler.use_gnu_hash(true);
 现在您已经了解了 ELF 的基础概念，可以继续学习：
 
 1. **[文件结构](./file-structure.md)** - 深入了解 ELF 文件的详细结构
-2. **[代码生成](./code-generation.md)** - 学习如何生成机器代码
-3. **[内存管理](./memory-management.md)** - 掌握虚拟内存和段管理
-4. **[符号和重定位](./symbols-relocations.md)** - 理解符号解析和重定位机制
+2. **[入门指南](./getting-started.md)** - 学习如何开始使用 ELF 后端
+3. **[ELF 官方规范](https://refspecs.linuxfoundation.org/elf/elf.pdf)** - 查看 ELF 格式的官方规范
+4. **[System V ABI](https://refspecs.linuxfoundation.org/elf/x86_64-abi-0.99.pdf)** - 了解 System V 应用程序二进制接口
 
 ## 参考资源
 

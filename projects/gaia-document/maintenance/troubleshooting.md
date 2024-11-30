@@ -488,7 +488,7 @@ echo "All tests passed!"
 
 - [用户指南](../user-guide/index.md)
 - [API 参考](../api-reference/index.md)
-- [内部实现](../internals/index.md)
+- [内部实现](../api-reference/index.md)
 
 ### 2. 社区支持
 

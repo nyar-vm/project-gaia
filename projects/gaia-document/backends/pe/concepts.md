@@ -448,9 +448,9 @@ text_section.set_function_alignment(16); // 16字节对齐
 现在您已经了解了 PE 格式的基础概念，可以继续学习：
 
 1. **[文件结构](./file-structure.md)** - PE 文件的详细结构分析
-2. **[代码生成](./code-generation.md)** - 机器码生成和指令集
-3. **[内存管理](./memory-management.md)** - 虚拟内存和地址空间管理
-4. **[导入导出](./import-export.md)** - 深入了解 DLL 机制
+2. **[入门指南](./getting-started.md)** - PE 后端基础使用
+3. **[用户指南](../../user-guide/index.md)** - Gaia 框架通用功能
+4. **[维护指南](../../maintenance/index.md)** - 高级配置和故障排除
 
 ## 参考资源
 

@@ -165,7 +165,11 @@ pub enum GaiaErrorKind {
         /// 错误消息
         message: String,
     },
-
+    /// 不可达错误，当程序执行到不可达的位置时使用
+    UnreachableError {
+        /// 不可达位置的源代码位置信息
+        location: Location<'static>,
+    },
     /// 保存错误，当保存文件失败时使用
     ///
     /// 包含保存格式和错误消息
@@ -492,7 +496,12 @@ impl GaiaError {
     /// # 返回值
     ///
     /// 返回一个包含自定义错误信息的GaiaError实例。
-    pub fn custom_error(message: String) -> GaiaError {
-        GaiaErrorKind::CustomError { message }.into()
+    pub fn custom_error(message: impl ToString) -> GaiaError {
+        GaiaErrorKind::CustomError { message: message.to_string() }.into()
+    }
+    #[track_caller]
+    pub fn unreachable() -> Self {
+        let location = Location::caller();
+        GaiaErrorKind::UnreachableError { location: *location }.into()
     }
 }

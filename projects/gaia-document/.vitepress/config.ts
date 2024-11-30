@@ -2,6 +2,7 @@ import {defineConfig} from 'vitepress'
 import {withMermaid} from 'vitepress-plugin-mermaid'
 import msilGrammar from './msil.tmLanguage.json' with {type: 'json'}
 import jasmGrammar from './jasm.tmLanguage.json' with {type: 'json'}
+import valkyrieGrammar from './valkyrie.tmLanguage.json' with {type: 'json'}
 
 const config = defineConfig({
     title: 'Gaia Assembler',
@@ -16,16 +17,23 @@ const config = defineConfig({
             shiki.loadLanguageSync({
                 name: 'msil',
                 scopeName: 'source.msil',
-                fileTypes: ['msil', 'msil'],
+                fileTypes: ['msil'],
                 patterns: msilGrammar.patterns,
                 repository: msilGrammar.repository
             })
             shiki.loadLanguageSync({
                 name: 'jasm',
                 scopeName: 'source.jasm',
-                fileTypes: ['jasm', 'j'],
+                fileTypes: ['jasm'],
                 patterns: jasmGrammar.patterns,
                 repository: jasmGrammar.repository
+            })
+            shiki.loadLanguageSync({
+                name: 'gaia',
+                scopeName: 'source.valkyrie',
+                fileTypes: ['gaia'],
+                patterns: valkyrieGrammar.patterns,
+                repository: valkyrieGrammar.repository
             })
         }
     },

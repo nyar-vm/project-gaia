@@ -627,10 +627,10 @@ fn optimize_file_size(builder: &mut PeBuilder) {
 
 现在您已经了解了 PE 文件的详细结构，可以继续学习：
 
-1. **[代码生成](./code-generation.md)** - x86/x64 机器码生成技术
-2. **[内存管理](./memory-management.md)** - 虚拟内存和地址空间管理
-3. **[导入导出](./import-export.md)** - DLL 导入导出机制详解
-4. **[重定位处理](./relocations.md)** - 基址重定位和地址修正
+1. **[基础概念](./concepts.md)** - PE 格式核心概念
+2. **[入门指南](./getting-started.md)** - PE 后端基础使用
+3. **[用户指南](../../user-guide/index.md)** - Gaia 框架通用功能
+4. **[维护指南](../../maintenance/index.md)** - 高级配置和故障排除
 
 ## 参考工具
 

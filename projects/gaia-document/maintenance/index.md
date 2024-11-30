@@ -29,7 +29,7 @@
 ### 相关资源
 
 - [开发者指南](/developer-guide/) - 开发和贡献指南
-- [内部实现](/internals/) - 深入的技术实现
+- [内部实现](/api-reference/) - 深入的技术实现
 - [API 参考](/api-reference/) - 详细的 API 文档
 
 ## 发布管理

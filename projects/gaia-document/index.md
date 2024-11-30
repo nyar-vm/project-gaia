@@ -82,7 +82,7 @@ cargo run --example hello_world
 
 - [开发者指南](/developer-guide/) - 扩展和定制指南
 - [API 参考](/api-reference/) - 详细的 API 文档
-- [内部实现](/internals/) - 深入的实现细节
+- [内部实现](/api-reference/) - 深入的实现细节
 
 ### 维护文档
 

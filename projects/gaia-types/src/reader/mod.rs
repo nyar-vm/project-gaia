@@ -1,7 +1,7 @@
 #![doc = include_str!("readme.md")]
 
 pub use self::{token::Token, token_stream::TokenStream};
-use crate::GaiaError;
+use crate::{GaiaDiagnostics, GaiaError};
 use byteorder::{ByteOrder, ReadBytesExt};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -22,6 +22,7 @@ pub struct BinaryReader<R, E> {
     reader: R,
     position: u64,
     endian: PhantomData<E>,
+    errors: Vec<GaiaError>,
 }
 
 impl<R: Read, E> Read for BinaryReader<R, E> {
@@ -49,7 +50,7 @@ impl<R, E> BinaryReader<R, E> {
     /// # Returns
     /// 返回新的 BinaryReader 实例
     pub fn new(reader: R) -> Self {
-        Self { reader, position: 0, endian: Default::default() }
+        Self { reader, position: 0, endian: Default::default(), errors: vec![] }
     }
 
     /// 获取当前读取位置
@@ -78,8 +79,12 @@ impl<R, E> BinaryReader<R, E> {
         Ok(position)
     }
     /// 完成读取器并返回结果。
-    pub fn finish(self) -> R {
-        self.reader
+    pub fn finish(self) -> GaiaDiagnostics<R> {
+        GaiaDiagnostics { result: Ok(self.reader), diagnostics: self.errors }
+    }
+
+    pub fn take_errors(&mut self) -> Vec<GaiaError> {
+        std::mem::take(&mut self.errors)
     }
 }
 

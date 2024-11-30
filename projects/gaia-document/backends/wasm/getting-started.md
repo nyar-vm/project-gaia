@@ -512,17 +512,17 @@ async function performanceTest() {
 
 1. 📖 阅读 [**基础概念**](./concepts.md) 了解 WASM 核心概念
 2. 🏗️ 学习 [**模块结构**](./module-structure.md) 深入理解 WASM 格式
-3. 🔧 探索 [**内存管理**](./memory-management.md) 处理复杂数据
-4. 🌐 掌握 [**JavaScript 互操作**](./js-interop.md) 实现更复杂的交互
+3. 📚 查看 [**用户指南**](../../user-guide/index.md) 了解 Gaia 框架功能
+4. 🔧 参考 [**维护指南**](../../maintenance/index.md) 进行高级配置
 
 ## 示例代码仓库
 
 完整的示例代码可以在以下位置找到：
 
-- [基础计算器示例](./examples/calculator/)
-- [图像处理示例](./examples/image-processing/)
-- [游戏引擎示例](./examples/game-engine/)
+- [基础计算器示例](https://github.com/nyar-vm/project-gaia/tree/main/examples/wasm/calculator)
+- [图像处理示例](https://github.com/nyar-vm/project-gaia/tree/main/examples/wasm/image-processing)
+- [游戏引擎示例](https://github.com/nyar-vm/project-gaia/tree/main/examples/wasm/game-engine)
 
 ---
 
-*遇到问题？查看 [故障排除指南](./debugging.md) 或在 [GitHub Issues](https://github.com/nyar-vm/gaia/issues) 中提问。*
+*遇到问题？查看 [故障排除指南](../../maintenance/troubleshooting.md) 或在 [GitHub Issues](https://github.com/nyar-vm/gaia/issues) 中提问。*

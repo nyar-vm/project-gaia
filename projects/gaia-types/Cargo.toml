@@ -1,6 +1,6 @@
 [package]
 name = "gaia-types"
-version = "0.0.1"
+version = "0.0.2"
 authors = ["Aster <192607617@qq.com>"]
 description = "盖亚类型"
 categories = ["rust-patterns"]

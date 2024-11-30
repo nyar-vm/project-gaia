@@ -62,6 +62,17 @@
 *.rs linguist-detectable=false
 *.vrs linguist-language=Rust linguist-detectable=true
 
+# Python Language
+*.py linguist-detectable=false
+*.pyc linguist-detectable=false
+
+# JVM Language
+*.java linguist-detectable=false
+*.class linguist-detectable=false
+
+# CLR Language
+*.cs linguist-detectable=false
+
 # Assembly Headers
 *.inc linguist-language=Assembly linguist-detectable=true
 *.INC linguist-language=Assembly linguist-detectable=true
