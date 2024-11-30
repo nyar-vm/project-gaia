@@ -40,8 +40,7 @@ impl<W: Write> JasmWriter<W> {
             line.push_str(ver);
         }
         self.writer.write_line(&line)?;
-        self.writer.write_line("{")?;
-        self.writer.indent();
+        self.writer.indent("{")?;
         Ok(())
     }
 
@@ -55,8 +54,7 @@ impl<W: Write> JasmWriter<W> {
 
     /// 结束类体（减少缩进）
     pub fn end_class(&mut self) -> Result<()> {
-        self.writer.dedent("}");
-        self.writer.write_line("}")?;
+        self.writer.dedent("}")?;
         Ok(())
     }
 
@@ -99,16 +97,13 @@ impl<W: Write> JasmWriter<W> {
             }
             self.writer.write_line(&decl)?;
         }
-
-        self.writer.write_line("{")?;
-        self.writer.indent();
+        self.writer.indent("{")?;
         Ok(())
     }
 
     /// 结束方法体（恢复到类体缩进）
     pub fn end_method(&mut self) -> Result<()> {
-        self.writer.dedent("}");
-        self.writer.write_line("}")?;
+        self.writer.dedent("}")?;
         Ok(())
     }
 
