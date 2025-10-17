@@ -1,7 +1,7 @@
 [package]
 name = "macho-assembler"
 version = "0.0.0"
-edition = "2021"
+edition = "2024"
 description = "Mach-O assembler for x64 and ARM64"
 license = "MIT"
 authors = ["Gaia Project"]

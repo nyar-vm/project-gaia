@@ -33,72 +33,80 @@ API 接口。
 
 ```mermaid
 graph TB
-    subgraph "Gaia 统一汇编器系统"
-        A[前端接口] --> B[统一类型系统]
-        B --> C[平台适配器]
-        C --> D[代码生成器]
-        D --> E[输出文件]
+    subgraph "盖亚统一汇编框架"
+        A[统一 API 接口层<br/>指令解析 · 语义分析 · 代码生成]
         
-        subgraph "前端接口"
-            F[WIT 接口]
-            G[WebAssembly]
-            H[原生 API]
+        subgraph "平台适配层"
+            B[CLR 适配器<br/>依赖: PE, gaia-types]
+            C[JVM 适配器<br/>依赖: gaia-types]
+            D[WebAssembly 适配器<br/>依赖: gaia-types]
+            E[PE 文件适配器<br/>依赖: x86_64, gaia-types]
+            K[ELF 文件适配器<br/>依赖: x86_64, gaia-types]
+            L[Mach-O 适配器<br/>依赖: x86_64, gaia-types]
+            M[Lua 字节码适配器<br/>依赖: gaia-types]
+            N[Python 字节码适配器<br/>依赖: gaia-types]
+            O[x86_64 适配器<br/>依赖: gaia-types]
         end
         
-        subgraph "统一类型系统"
-            I[gaia-types]
-            J[错误处理]
-            K[数据结构]
+        subgraph "目标平台生成层"
+            F[.NET IL 文件<br/>基于 PE 格式]
+            G[JVM Class 文件<br/>Java 字节码]
+            H[WebAssembly 模块<br/>WASM/WASI]
+            I[PE 可执行文件<br/>Windows 格式]
+            P[ELF 可执行文件<br/>Linux 格式]
+            Q[Mach-O 可执行文件<br/>macOS 格式]
+            R[Lua 字节码文件<br/>.luac 格式]
+            S[Python 字节码文件<br/>.pyc 格式]
+            T[x86/x64 机器码<br/>原生指令]
         end
         
-        subgraph "平台适配器"
-            L[CLR 适配器]
-            M[JVM 适配器]
-            N[WASI 适配器]
-            O[PE 适配器]
-            P1[ELF 适配器]
-            Q1[Mach-O 适配器]
-            R1[Lua 适配器]
-            S1[Python 适配器]
-            T1[x86_64 适配器]
+        subgraph "基础组件层"
+            U[gaia-types<br/>版本: 0.0.3<br/>统一类型系统]
+            V[gaia-assembler<br/>版本: 0.0.0<br/>核心引擎]
         end
         
-        subgraph "输出文件"
-            P[.NET IL]
-            Q[Java 字节码]
-            R[WebAssembly]
-            S[PE 文件]
-            T[ELF 文件]
-            U[Mach-O 文件]
-            V[Lua 字节码]
-            W[Python 字节码]
-            X[x86 机器码]
-        end
+        A --> B
+        A --> C
+        A --> D
+        A --> E
+        A --> K
+        A --> L
+        A --> M
+        A --> N
+        A --> O
+        A --> U
+        A --> V
         
-        A --> F
-        A --> G
-        A --> H
-        B --> I
-        B --> J
-        B --> K
-        C --> L
-        C --> M
-        C --> N
-        C --> O
-        C --> P1
-        C --> Q1
-        C --> R1
-        C --> S1
-        C --> T1
-        D --> P
-        D --> Q
-        D --> R
-        D --> S
-        D --> T
-        D --> U
-        D --> V
-        D --> W
-        D --> X
+        B --> F
+        C --> G
+        D --> H
+        E --> I
+        K --> P
+        L --> Q
+        M --> R
+        N --> S
+        O --> T
+        
+        U --> B
+        U --> C
+        U --> D
+        U --> E
+        U --> K
+        U --> L
+        U --> M
+        U --> N
+        U --> O
+        U --> V
+        
+        V --> B
+        V --> C
+        V --> D
+        V --> E
+        V --> K
+        V --> L
+        V --> M
+        V --> N
+        V --> O
     end
 ```
 
