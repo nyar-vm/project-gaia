@@ -14,7 +14,12 @@ API 接口。
 - **.NET IL 汇编器** - 生成和分析 .NET 中间语言
 - **JVM 字节码汇编器** - 创建和操作 Java 虚拟机字节码
 - **WebAssembly (WASI)** - 构建支持 WASI 的 WebAssembly 模块
-- **PE 分析器** - 解析和分析 Windows 可移植可执行文件
+- **PE 分析器** - 解析和分析 Windows DLL 文件和可执行文件
+- **ELF 汇编器** - 生成和分析 Linux ELF 可执行文件
+- **Mach-O 汇编器** - 生成和分析 macOS Mach-O 可执行文件
+- **Lua 字节码汇编器** - 读取和写入 Lua 编译后的字节码文件
+- **Python 字节码汇编器** - 处理 Python 编译后的 .pyc 文件
+- **x86/x64 汇编器** - 底层 x86 和 x86-64 指令集汇编器
 
 ### 核心组件
 
@@ -36,6 +41,10 @@ graph TB
             C[JVM 字节码适配器]
             D[WebAssembly 适配器]
             E[PE 文件适配器]
+            K[ELF 文件适配器]
+            L[Mach-O 适配器]
+            M[Lua 字节码适配器]
+            N[Python 字节码适配器]
         end
         
         subgraph "目标平台生成层"
@@ -43,17 +52,29 @@ graph TB
             G[JVM Class 文件]
             H[WebAssembly 模块]
             I[PE 可执行文件]
+            O[ELF 可执行文件]
+            P[Mach-O 可执行文件]
+            Q[Lua 字节码文件]
+            R[Python 字节码文件]
         end
         
         A --> B
         A --> C
         A --> D
         A --> E
+        A --> K
+        A --> L
+        A --> M
+        A --> N
         
         B --> F
         C --> G
         D --> H
         E --> I
+        K --> O
+        L --> P
+        M --> Q
+        N --> R
     end
 ```
 
@@ -81,14 +102,41 @@ graph BT
     B --> D[jvm-assembler<br/>JVM 字节码]
     B --> E[wasi-assembler<br/>WebAssembly]
     B --> F[pe-assembler<br/>PE 文件分析]
+    B --> K[elf-assembler<br/>ELF 文件支持]
+    B --> L[macho-assembler<br/>Mach-O 文件支持]
+    B --> M[lua-assembler<br/>Lua 字节码支持]
+    B --> N[pyc-assembler<br/>Python 字节码支持]
     
     C --> G[.NET IL 文件]
     D --> H[JVM Class 文件]
     E --> I[WebAssembly 模块]
     F --> J[PE 可执行文件]
+    K --> O[ELF 可执行文件]
+    L --> P[Mach-O 可执行文件]
+    M --> Q[Lua 字节码文件]
+    N --> R[Python 字节码文件]
     
     style A fill:#fff3e0
     style B fill:#f3e5f5
+```
+
+### 数据处理流程图
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant API
+    participant Parser
+    participant Analyzer
+    participant Generator
+    participant Output
+    
+    User->>API: 提交汇编代码
+    API->>Parser: 调用语法解析
+    Parser->>Analyzer: 返回语法树
+    Analyzer->>Generator: 生成中间表示
+    Generator->>Output: 生成目标代码
+    Output->>User: 返回结果文件
 ```
 
 ### 数据处理流程图
@@ -121,7 +169,12 @@ project-gaia/
 │   ├── clr-assembler/     # .NET IL 特定实现
 │   ├── jvm-assembler/     # JVM 字节码特定实现
 │   ├── wasi-assembler/    # WebAssembly 特定实现
-│   └── pe-assembler/      # PE 分析工具
+│   ├── pe-assembler/      # PE 分析工具
+│   ├── elf-assembler/     # ELF 文件汇编器
+│   ├── macho-assembler/   # Mach-O 文件汇编器
+│   ├── lua-assembler/     # Lua 字节码汇编器
+│   ├── pyc-assembler/     # Python 字节码汇编器
+│   └── x86_64-assembler/  # x86/x64 汇编器
 ├── Cargo.toml            # 工作空间配置
 └── README.md             # 项目文档
 ```
@@ -136,6 +189,12 @@ project-gaia/
 | jvm-assembler  | ✅ 稳定版  | 0.0.0 | JVM 字节码汇编器功能完整  |
 | wasi-assembler | ✅ 稳定版  | 0.0.0 | WebAssembly 汇编器功能完整 |
 | pe-assembler   | ✅ 稳定版  | 0.0.0 | PE 文件分析器功能完整     |
+| elf-assembler  | ✅ 稳定版  | 0.0.0 | ELF 文件汇编器功能完整    |
+| macho-assembler| ✅ 稳定版  | 0.0.0 | Mach-O 文件汇编器功能完整 |
+| lua-assembler  | ✅ 稳定版  | 0.0.0 | Lua 字节码汇编器功能完整  |
+| pyc-assembler  | ✅ 稳定版  | 0.0.0 | Python 字节码汇编器功能完整 |
+| gaia-document  | ✅ 稳定版  | 0.0.0 | 文档系统功能完整        |
+| x86_64-assembler| ✅ 稳定版 | 0.0.0 | x86/x64 汇编器功能完整    |
 
 ## 核心优势
 
@@ -168,6 +227,12 @@ project-gaia/
 - **jvm-assembler**: ✅ JVM 字节码汇编器完成，支持类文件生成
 - **wasi-assembler**: ✅ WebAssembly (WASI) 汇编器实现，支持WASM模块生成
 - **pe-assembler**: ✅ PE 文件分析器功能完整，支持Windows可执行文件分析
+- **elf-assembler**: ✅ ELF 文件汇编器功能完整，支持Linux可执行文件生成
+- **macho-assembler**: ✅ Mach-O 文件汇编器功能完整，支持macOS可执行文件生成
+- **lua-assembler**: ✅ Lua 字节码汇编器功能完整，支持Lua字节码处理
+- **pyc-assembler**: ✅ Python 字节码汇编器功能完整，支持Python字节码处理
+- **x86_64-assembler**: ✅ x86/x64 汇编器功能完整，支持底层汇编指令编码
+- **gaia-document**: ✅ 文档系统功能完整，提供现代化文档支持
 
 #### 技术特色实现
 - **统一中间表示**: 所有平台通过统一的IR进行转换，保证语义一致性

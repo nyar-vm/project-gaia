@@ -3,6 +3,57 @@
 一个用 Rust 编写的 ELF（可执行和链接格式）汇编器，可以生成 Linux 可执行文件。
 该工具提供简单易用的 API 来创建基本的 ELF 可执行文件。
 
+## 架构概览
+
+```mermaid
+graph TB
+    subgraph "ELF 汇编器架构"
+        A[ELF 生成请求] --> B[ELF 构建器]
+        B --> C[ELF 文件生成器]
+        C --> D[Linux 可执行文件]
+        
+        subgraph "核心组件"
+            E[generator 模块]
+            F[writer 模块]
+            G[types 模块]
+            H[helpers 模块]
+        end
+        
+        A --> E
+        E --> F
+        F --> G
+        E --> H
+        F --> H
+        
+        subgraph "支持的架构"
+            I[x86-64 架构]
+            J[未来扩展支持]
+        end
+        
+        G --> I
+        G --> J
+    end
+```
+
+### ELF 生成流程
+
+```mermaid
+sequenceDiagram
+    participant Developer
+    participant Generator
+    participant ElfBuilder
+    participant ElfWriter
+    participant LinuxSystem
+    
+    Developer->>Generator: 调用 easy_hello_world(X86_64)
+    Generator->>ElfBuilder: 创建 ELF 构建器
+    ElfBuilder->>ElfBuilder: 添加代码段
+    ElfBuilder->>ElfBuilder: 设置程序头
+    ElfBuilder->>ElfWriter: 构建 ELF 文件
+    ElfWriter->>LinuxSystem: 生成可执行文件
+    LinuxSystem->>Developer: 返回 hello_world 可执行文件
+```
+
 ## 特性
 
 - **ELF 文件生成**: 创建符合 ELF 标准的可执行文件

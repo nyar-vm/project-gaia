@@ -7,6 +7,59 @@
 该库提供了生成和操作 PE 文件的 Rust 实现，通过中间语言汇编接口实现。它设计用于通过 WIT（Wasm 接口类型）规范与 WebAssembly
 协同工作。
 
+## 架构概览
+
+```mermaid
+graph TB
+    subgraph "CLR 汇编器架构"
+        A[IL 代码输入] --> B[IL 解析器]
+        B --> C[PE 生成器]
+        C --> D[PE 文件输出]
+        
+        subgraph "核心组件"
+            E[assembler 模块]
+            F[writer 模块]
+            G[reader 模块]
+            H[helpers 模块]
+        end
+        
+        B --> E
+        C --> F
+        D --> G
+        E --> H
+        F --> H
+        
+        subgraph "输出格式"
+            I[.exe 可执行文件]
+            J[.dll 动态链接库]
+            K[PE/COFF 格式]
+        end
+        
+        F --> I
+        F --> J
+        F --> K
+    end
+```
+
+### 数据处理流程
+
+```mermaid
+sequenceDiagram
+    participant Developer
+    participant ILAssembler
+    participant PeGenerator
+    participant PeWriter
+    participant OutputFile
+    
+    Developer->>ILAssembler: 调用 easy_exit_code(42)
+    ILAssembler->>PeGenerator: 创建 PE 汇编器
+    PeGenerator->>PeGenerator: 配置导入表
+    PeGenerator->>PeGenerator: 添加代码段
+    PeGenerator->>PeWriter: 生成 PE 文件数据
+    PeWriter->>OutputFile: 写入 exit_example.exe
+    OutputFile->>Developer: 返回可执行文件
+```
+
 ## 特性
 
 - **PE 文件生成**: 程序化创建 PE 可执行文件和 DLL
