@@ -13,16 +13,6 @@
 - **控制台输出**: 生成可以输出文本到控制台的程序
 - **测试覆盖**: 完整的测试套件确保生成的 ELF 文件正确性
 
-## 使用方法
-
-在您的 `Cargo.toml` 中添加此库：
-
-```toml
-[dependencies]
-elf-assembler = { path = "../elf-assembler" }
-gaia-types = { path = "../gaia-types" }
-```
-
 ### 基本示例
 
 ```rust
