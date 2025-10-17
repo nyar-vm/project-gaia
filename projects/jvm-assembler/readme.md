@@ -2,6 +2,61 @@
 
 一个功能完整的 JVM 字节码操作库，支持汇编、反汇编和类文件操作。
 
+## 架构概览
+
+```mermaid
+graph TB
+    subgraph "JVM 汇编器架构"
+        A[Java 字节码输入] --> B[类文件构建器]
+        B --> C[字节码生成器]
+        C --> D[.class 文件输出]
+        
+        subgraph "核心组件"
+            E[assembler 模块]
+            F[writer 模块]
+            G[reader 模块]
+            H[helpers 模块]
+        end
+        
+        A --> E
+        E --> F
+        F --> G
+        E --> H
+        F --> H
+        
+        subgraph "支持的特性"
+            I[类文件结构]
+            J[方法字节码]
+            K[常量池管理]
+            L[异常处理]
+        end
+        
+        G --> I
+        G --> J
+        G --> K
+        G --> L
+    end
+```
+
+### JVM 类文件生成流程
+
+```mermaid
+sequenceDiagram
+    participant Developer
+    participant Assembler
+    participant ClassBuilder
+    participant ClassWriter
+    participant JVMRuntime
+    
+    Developer->>Assembler: 调用 easy_hello_world()
+    Assembler->>ClassBuilder: 创建类构建器
+    ClassBuilder->>ClassBuilder: 定义类和方法
+    ClassBuilder->>ClassBuilder: 添加字节码指令
+    ClassBuilder->>ClassWriter: 构建类文件
+    ClassWriter->>JVMRuntime: 生成 HelloWorld.class
+    JVMRuntime->>Developer: 返回类文件
+```
+
 ## 🚀 功能特性
 
 ### 核心功能

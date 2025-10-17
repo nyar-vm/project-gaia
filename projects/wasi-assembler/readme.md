@@ -2,6 +2,61 @@
 
 用于 WebAssembly (WASI) 的汇编器库，提供 WAT (WebAssembly Text) 到 WASM (WebAssembly Binary) 的编译功能。
 
+## 架构概览
+
+```mermaid
+graph TB
+    subgraph "WASI 汇编器架构"
+        A[WebAssembly 模块请求] --> B[WASM 模块构建器]
+        B --> C[WASI 接口生成器]
+        C --> D[.wasm 文件输出]
+        
+        subgraph "核心组件"
+            E[assembler 模块]
+            F[writer 模块]
+            G[types 模块]
+            H[helpers 模块]
+        end
+        
+        A --> E
+        E --> F
+        F --> G
+        E --> H
+        F --> H
+        
+        subgraph "WASI 接口"
+            I[文件系统接口]
+            J[环境变量接口]
+            K[时钟接口]
+            L[随机数接口]
+        end
+        
+        G --> I
+        G --> J
+        G --> K
+        G --> L
+    end
+```
+
+### WebAssembly 模块生成流程
+
+```mermaid
+sequenceDiagram
+    participant Developer
+    participant Assembler
+    participant WasmBuilder
+    participant WasmWriter
+    participant WASIRuntime
+    
+    Developer->>Assembler: 调用 easy_hello_world()
+    Assembler->>WasmBuilder: 创建 WASM 构建器
+    WasmBuilder->>WasmBuilder: 添加函数导出
+    WasmBuilder->>WasmBuilder: 配置 WASI 导入
+    WasmBuilder->>WasmWriter: 构建 WASM 模块
+    WasmWriter->>WASIRuntime: 生成 hello_world.wasm
+    WASIRuntime->>Developer: 返回 WASM 文件
+```
+
 ## 🎉 最新进展
 
 ### WASI 汇编器功能完整

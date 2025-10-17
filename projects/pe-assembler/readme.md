@@ -3,6 +3,63 @@
 一个用 Rust 编写的综合 PE（可移植可执行文件）分析器，可以分析 Windows DLL 文件和可执行文件。
 该工具提供有关 PE 文件结构、节区、导入、导出和调试信息的详细信息。
 
+## 架构概览
+
+```mermaid
+graph TB
+    subgraph "PE 分析器架构"
+        A[PE 文件请求] --> B[PE 文件构建器]
+        B --> C[PE 文件分析器]
+        C --> D[Windows 可执行文件]
+        
+        subgraph "核心组件"
+            E[assembler 模块]
+            F[reader 模块]
+            G[writer 模块]
+            H[helpers 模块]
+        end
+        
+        A --> E
+        E --> F
+        F --> G
+        E --> H
+        F --> H
+        
+        subgraph "PE 结构支持"
+            I[导入表分析]
+            J[导出表处理]
+            K[节表管理]
+            L[重定位表]
+        end
+        
+        G --> I
+        G --> J
+        G --> K
+        G --> L
+    end
+```
+
+### PE 文件处理流程
+
+```mermaid
+sequenceDiagram
+    participant Developer
+    participant Assembler
+    participant PeReader
+    participant PeAnalyzer
+    participant PeWriter
+    participant WindowsSystem
+    
+    Developer->>Assembler: 调用 analyze_pe_file("example.exe")
+    Assembler->>PeReader: 读取 PE 文件
+    PeReader->>PeAnalyzer: 分析 PE 结构
+    PeAnalyzer->>PeAnalyzer: 解析导入表
+    PeAnalyzer->>PeAnalyzer: 分析节信息
+    PeAnalyzer->>PeWriter: 生成分析报告
+    PeWriter->>WindowsSystem: 输出分析结果
+    WindowsSystem->>Developer: 返回 PE 文件信息
+```
+
 ## 特性
 
 - **PE 文件验证**: 验证 PE 文件结构，包括 DOS 头、NT 头和 COFF 头
