@@ -33,7 +33,7 @@ API 接口。
 
 ```mermaid
 graph TB
-    subgraph ""
+    subgraph "系统架构"
         A[统一 API 接口层<br/>指令解析 · 语义分析 · 代码生成]
         
         subgraph "平台适配层"
