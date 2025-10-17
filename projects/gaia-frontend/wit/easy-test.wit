@@ -1,9 +1,0 @@
-interface easy-test {
-    use types.{target-arch};
-    /// 生成退出代码
-    generate-exit-code: func(code: u32, target: target-arch) -> list<u8>;
-
-    /// 生成控制台日志代码
-    generate-console-log: func(message: string, target: target-arch) -> list<u8>;
-
-}

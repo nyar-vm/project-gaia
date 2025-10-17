@@ -36,7 +36,3 @@ macho_write_path(&program, "output.dylib")?;
 
 - **x86_64**: Intel/AMD 64位处理器
 - **ARM64**: Apple Silicon (M1/M2/M3) 处理器
-
-## 许可证
-
-本项目采用 MPL-2.0 许可证。详见 [LICENSE](../../LICENSE) 文件。
