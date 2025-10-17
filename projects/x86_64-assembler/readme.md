@@ -4,6 +4,58 @@
 
 用于 x86 和 x86-64 架构的高性能汇编器库，采用 Rust 的类型系统提供编译时安全保障，完全面向对象的设计理念让汇编编程变得直观且安全，现代化的 API 设计让底层编程变得优雅而高效。
 
+## 架构概览
+
+```mermaid
+graph TB
+    subgraph "x86_64 汇编器架构"
+        A[x86 汇编代码] --> B[指令编码器]
+        B --> C[机器码生成器]
+        C --> D[二进制输出]
+        
+        subgraph "核心组件"
+            E[assembler 模块]
+            F[encoder 模块]
+            G[types 模块]
+            H[helpers 模块]
+        end
+        
+        A --> E
+        E --> F
+        F --> G
+        E --> H
+        F --> H
+        
+        subgraph "支持的架构"
+            I[x86 32位]
+            J[x86-64 64位]
+            K[未来扩展支持]
+        end
+        
+        G --> I
+        G --> J
+        G --> K
+    end
+```
+
+### x86 指令编码流程
+
+```mermaid
+sequenceDiagram
+    participant Developer
+    participant Assembler
+    participant InstructionEncoder
+    participant MachineCodeGenerator
+    participant BinaryOutput
+    
+    Developer->>Assembler: 调用 easy_hello_world(X86_64)
+    Assembler->>InstructionEncoder: 创建指令编码器
+    InstructionEncoder->>InstructionEncoder: 编码汇编指令
+    InstructionEncoder->>MachineCodeGenerator: 生成机器码
+    MachineCodeGenerator->>BinaryOutput: 输出二进制数据
+    BinaryOutput->>Developer: 返回机器码
+```
+
 ## 🚀 快速开始
 
 ### 基本示例

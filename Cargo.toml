@@ -8,13 +8,11 @@ members = [
 default-members = [
     "projects/gaia-types",
     "projects/wasi-assembler",
-    "projects/gaia-assembler",
-    "projects/gaia-frontend"
+    "projects/gaia-assembler"
 ]
 exclude = [
     "projects/.DS_Store",
-    "projects/gaia-document",
-    "projects/gaia-frontend-wasm32",
+    "projects/gaia-document"
 ]
 
 [workspace.dependencies]

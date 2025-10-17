@@ -7,6 +7,60 @@
 
 Gaia Document 是Gaia项目的完整文档系统，为多语言统一接口框架提供全面的文档支持，包括用户指南、开发文档和维护手册。
 
+## 架构概览
+
+```mermaid
+graph TB
+    subgraph "Gaia 文档系统架构"
+        A[文档输入] --> B[文档处理器]
+        B --> C[文档生成器]
+        C --> D[HTML/MD 输出]
+        
+        subgraph "核心组件"
+            E[document 模块]
+            F[generator 模块]
+            G[parser 模块]
+            H[renderer 模块]
+        end
+        
+        A --> E
+        E --> F
+        F --> G
+        E --> H
+        F --> H
+        
+        subgraph "支持的格式"
+            I[Markdown]
+            J[HTML]
+            K[JSON]
+            L[其他格式]
+        end
+        
+        G --> I
+        G --> J
+        G --> K
+        G --> L
+    end
+```
+
+### 文档生成流程
+
+```mermaid
+sequenceDiagram
+    participant Developer
+    participant DocumentSystem
+    participant DocumentParser
+    participant DocumentRenderer
+    participant OutputGenerator
+    
+    Developer->>DocumentSystem: 调用文档生成
+    DocumentSystem->>DocumentParser: 解析输入文档
+    DocumentParser->>DocumentParser: 提取文档结构
+    DocumentParser->>DocumentRenderer: 渲染文档内容
+    DocumentRenderer->>OutputGenerator: 生成输出文件
+    OutputGenerator->>Developer: 返回生成的文档
+```
+
 ## 项目状态
 
 - **开发阶段**: 📚 完善可用

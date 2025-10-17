@@ -1,6 +1,63 @@
-# pyc-assembler
+# Python 字节码汇编器
 
-`pyc-assembler` 是一个用于读取和写入 Python `.pyc` 字节码文件的 Rust 实现。它旨在提供一个高效、可靠的工具，用于处理 Python 编译后的代码，支持字节码的无损读写，并为进一步的字节码分析、转换和生成奠定基础。
+一个用 Rust 编写的 Python 字节码汇编器，用于读取和写入 Python 编译后的字节码文件。
+该工具提供高性能的 Python 字节码处理能力，支持 .pyc 文件操作。
+
+## 架构概览
+
+```mermaid
+graph TB
+    subgraph "Python 字节码汇编器架构"
+        A[Python 字节码请求] --> B[Python 字节码读取器]
+        B --> C[Python 字节码写入器]
+        C --> D[.pyc 文件输出]
+        
+        subgraph "核心组件"
+            E[assembler 模块]
+            F[reader 模块]
+            G[writer 模块]
+            H[helpers 模块]
+        end
+        
+        A --> E
+        E --> F
+        F --> G
+        E --> H
+        F --> H
+        
+        subgraph "Python 版本支持"
+            I[Python 3.8+]
+            J[字节码验证]
+            K[无损回写]
+            L[命令行工具]
+        end
+        
+        G --> I
+        G --> J
+        G --> K
+        G --> L
+    end
+```
+
+### Python 字节码处理流程
+
+```mermaid
+sequenceDiagram
+    participant Developer
+    participant Assembler
+    participant PycReader
+    participant PycAnalyzer
+    participant PycWriter
+    participant PythonRuntime
+    
+    Developer->>Assembler: 调用 read_and_write("test.pyc")
+    Assembler->>PycReader: 读取 Python 字节码文件
+    PycReader->>PycAnalyzer: 分析字节码结构
+    PycAnalyzer->>PycAnalyzer: 验证文件完整性
+    PycAnalyzer->>PycWriter: 无损回写字节码
+    PycWriter->>PythonRuntime: 生成 test_copy.pyc
+    PythonRuntime->>Developer: 返回处理结果
+```
 
 ## 功能
 
