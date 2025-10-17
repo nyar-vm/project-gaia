@@ -800,7 +800,7 @@ impl<'input, T: TokenType> LexerState<'input, T> {
     /// ```rust
     /// # use gaia_types::lexer::{LexerState, TokenType};
     /// # #[derive(Clone, Copy, Debug, PartialEq)] enum TestToken { Keyword, Identifier, Eof }
-    /// # impl TokenType for TestToken { const EOF: Self = TestToken::Eof; }
+    /// # impl TokenType for TestToken { const END_OF_STREAM: Self = TestToken::Eof; }
     /// let input = "let x = 42";
     /// let mut state = LexerState::new(input, None);
     ///
