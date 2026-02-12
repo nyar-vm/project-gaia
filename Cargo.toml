@@ -38,63 +38,63 @@ homepage = "https://gaia-assembly.netlify.app/"
 
 [workspace.dependencies]
 serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.145"
+serde_json = "1.0.149"
 byteorder = "1.5.0"
-url = { version = "2.5.7", features = ["serde"] }
-tracing = "0.1.41"
+url = { version = "2.5.8", features = ["serde"] }
+tracing = "0.1.44"
 walkdir = "2.5.0"
-toml = "0.9"
+toml = "1.0"
 num = "0.4.3"
 ordered-float = "5.1.0"
 source-map = "0.15.0"
-tempfile = "3.17"
-bitflags = "2.9"
+tempfile = "3.25"
+bitflags = "2.10"
 pretty_assertions = "1.4"
 leb128 = "0.2.5"
-wat = "1.240.0"
-wasmparser = "0.240.0"
-wasmtime = "37.0.2"
-wasmtime-wasi = "37.0.2"
+wat = "1.245.0"
+wasmparser = "0.245.0"
+wasmtime = "41.0.3"
+wasmtime-wasi = "41.0.3"
 region = "3.0.2"
-windows-sys = { version = "0.52.0", features = ["Win32_System_Memory", "Win32_Foundation", "Win32_System_SystemInformation", "Win32_System_Diagnostics_Debug", "Win32_System_Threading"] }
+windows-sys = { version = "0.61.2", features = ["Win32_System_Memory", "Win32_Foundation", "Win32_System_SystemInformation", "Win32_System_Diagnostics_Debug", "Win32_System_Threading"] }
 libc = "0.2"
 
 # External projects for Local
-# oak-core = { version = "0.0.3", path = "../oaks/projects/oak-core" }
-# oak-pretty-print = { version = "0.0.3", path = "../oaks/projects/oak-pretty-print" }
-# oak-msil = { version = "0.0.3", path = "../oaks/examples/oak-msil" }
-# oak-lua = { version = "0.0.3", path = "../oaks/examples/oak-lua" }
-# oak-wat = { version = "0.0.3", path = "../oaks/examples/oak-wat" }
-# oak-jasm = { version = "0.0.3", path = "../oaks/examples/oak-jasm" }
-# oak-llvm-ir = { version = "0.0.3", path = "../oaks/examples/oak-llvm-ir" }
+oak-core = { path = "../oaks/projects/oak-core" }
+oak-pretty-print = { path = "../oaks/projects/oak-pretty-print" }
+oak-msil = { path = "../oaks/examples/oak-msil" }
+oak-lua = { path = "../oaks/examples/oak-lua" }
+oak-wat = { path = "../oaks/examples/oak-wat" }
+oak-jasm = { path = "../oaks/examples/oak-jasm" }
+oak-llvm-ir = { path = "../oaks/examples/oak-llvm-ir" }
 
 # External projects for CI
-oak-core = "0.0.3"
-oak-pretty-print = "0.0.3"
-oak-msil = "0.0.3"
-oak-lua = "0.0.3"
-oak-wat = "0.0.3"
-oak-jasm = "0.0.3"
-oak-llvm-ir = "0.0.3"
+# oak-core = "0.0.3"
+# oak-pretty-print = "0.0.3"
+# oak-msil = "0.0.3"
+# oak-lua = "0.0.3"
+# oak-wat = "0.0.3"
+# oak-jasm = "0.0.3"
+# oak-llvm-ir = "0.0.3"
 
 # Internal projects
-gaia-jit = { version = "0.0.5", path = "projects/gaia-jit" }
-gaia-types = { version = "0.0.5", path = "projects/gaia-types" }
-gaia-assembler = { version = "0.0.5", path = "projects/gaia-assembler" }
-x86_64-assembler = { version = "0.0.5", path = "examples/x86_64-assembler" }
-gcn-assembler = { version = "0.0.5", path = "examples/gcn-assembler" }
-msl-assembler = { version = "0.0.5", path = "examples/msl-assembler" }
-sass-assembler = { version = "0.0.5", path = "examples/sass-assembler" }
-spirv-assembler = { version = "0.0.5", path = "examples/spirv-assembler" }
-pe-assembler = { version = "0.0.5", path = "examples/pe-assembler" }
-clr-assembler = { version = "0.0.5", path = "examples/clr-assembler" }
-jvm-assembler = { version = "0.0.5", path = "examples/jvm-assembler", package = "jasm-assembler" }
-elf-assembler = { version = "0.0.5", path = "examples/elf-assembler" }
-macho-assembler = { version = "0.0.5", path = "examples/macho-assembler" }
-lua-assembler = { version = "0.0.5", path = "examples/lua-assembler" }
-llvm-assembler = { version = "0.0.5", path = "examples/llvm-assembler" }
-wasi-assembler = { version = "0.0.5", path = "examples/wasi-assembler" }
-python-assembler = { version = "0.0.5", path = "examples/pyc-assembler" }
+gaia-jit = { path = "projects/gaia-jit" }
+gaia-types = { path = "projects/gaia-types" }
+gaia-assembler = { path = "projects/gaia-assembler" }
+x86_64-assembler = { path = "examples/x86_64-assembler" }
+gcn-assembler = { path = "examples/gcn-assembler" }
+msl-assembler = { path = "examples/msl-assembler" }
+sass-assembler = { path = "examples/sass-assembler" }
+spirv-assembler = { path = "examples/spirv-assembler" }
+pe-assembler = { path = "examples/pe-assembler" }
+clr-assembler = { path = "examples/clr-assembler" }
+jvm-assembler = { path = "examples/jvm-assembler", package = "jasm-assembler" }
+elf-assembler = { path = "examples/elf-assembler" }
+macho-assembler = { path = "examples/macho-assembler" }
+lua-assembler = { path = "examples/lua-assembler" }
+llvm-assembler = { path = "examples/llvm-assembler" }
+wasi-assembler = { path = "examples/wasi-assembler" }
+python-assembler = { path = "examples/pyc-assembler" }
 
 
 [profile.release]
