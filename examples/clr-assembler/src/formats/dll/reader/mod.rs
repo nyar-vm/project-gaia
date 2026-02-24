@@ -17,19 +17,24 @@ use url::Url;
 #[derive(Debug)]
 pub struct DllReader<'config, R> {
     /// Configuration options
-    options: &'config DllReadConfig,
-    reader: pe_assembler::formats::dll::reader::DllReader<R>,
+    pub(crate) options: &'config DllReadConfig,
+    pub(crate) reader: pe_assembler::formats::dll::reader::DllReader<R>,
     /// Parsed CLR header information
-    clr_header: Option<ClrHeader>,
+    pub(crate) clr_header: Option<ClrHeader>,
     /// Parsed metadata header information
-    metadata_header: Option<MetadataHeader>,
+    pub(crate) metadata_header: Option<MetadataHeader>,
     /// Metadata stream header list (lazy loaded)
-    stream_headers: Option<Vec<StreamHeader>>,
+    pub(crate) stream_headers: Option<Vec<StreamHeader>>,
     /// Extracted basic assembly information (lazy loaded)
-    assembly_info: Option<DotNetAssemblyInfo>,
+    pub(crate) assembly_info: Option<DotNetAssemblyInfo>,
     /// Fully parsed CLR program (lazy loaded)
-    clr_program: Option<ClrProgram>,
+    pub(crate) clr_program: Option<ClrProgram>,
 }
+
+mod header;
+mod metadata;
+mod program;
+mod utils;
 
 impl<'config, R: Read + Seek> PeReader<R> for DllReader<'config, R> {
     fn get_viewer(&mut self) -> &mut R {
