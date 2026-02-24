@@ -8,9 +8,7 @@
 pub mod assembler;
 mod errors;
 pub mod helpers;
-pub mod lexer;
 pub mod neural;
-pub mod parser;
 pub mod reader;
 pub mod writer;
 

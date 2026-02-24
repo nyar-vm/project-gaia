@@ -905,9 +905,8 @@ impl WasiProgram {
 
             module_items.push(WatModuleField::Import(WatImport {
                 module: import.module.clone(),
-                field: import.field.clone(),
+                name: import.field.clone(),
                 kind: kind.to_string(),
-                index,
             }));
         }
 
@@ -1032,7 +1031,7 @@ impl WasiProgram {
                     WasiInstruction::BrIf { label_index } => format!("br_if {}", label_index),
                     _ => format!(";; unknown instruction {:?}", instr),
                 };
-                body.push(WatInstruction { name: instr_str });
+                body.push(WatInstruction::Other(instr_str, vec![]));
             }
 
             module_items.push(WatModuleField::Func(WatFunc { name: Some(format!("$f{}", i)), params, results, locals, body }));
@@ -1046,7 +1045,11 @@ impl WasiProgram {
                 WasmExportType::Memory { memory_index } => ("memory", memory_index),
                 WasmExportType::Global { global_index } => ("global", global_index),
             };
-            module_items.push(WatModuleField::Export(WatExport { name: export.name.clone(), kind: kind.to_string(), index }));
+            module_items.push(WatModuleField::Export(WatExport {
+                name: export.name.clone(),
+                kind: kind.to_string(),
+                id: index.to_string(),
+            }));
         }
 
         let mut items = Vec::new();
