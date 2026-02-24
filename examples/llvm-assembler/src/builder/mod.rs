@@ -8,9 +8,7 @@ pub struct LLvmProgramBuilder {
 
 impl LLvmProgramBuilder {
     pub fn new() -> Self {
-        Self {
-            program: LLvmProgram::new(),
-        }
+        Self { program: LLvmProgram::new() }
     }
 
     pub fn add_function<F>(mut self, name: impl Into<String>, return_type: impl Into<String>, f: F) -> Self
@@ -51,22 +49,11 @@ pub struct LLvmFunctionBuilder {
 
 impl LLvmFunctionBuilder {
     pub fn new(name: String, return_type: String) -> Self {
-        Self {
-            function: LLirFunction {
-                name,
-                return_type,
-                parameters: Vec::new(),
-                blocks: Vec::new(),
-                span: (0..0).into(),
-            },
-        }
+        Self { function: LLirFunction { name, return_type, parameters: Vec::new(), blocks: Vec::new(), span: (0..0).into() } }
     }
 
     pub fn add_parameter(mut self, name: impl Into<String>, ty: impl Into<String>) -> Self {
-        self.function.parameters.push(LLirParameter {
-            name: name.into(),
-            ty: ty.into(),
-        });
+        self.function.parameters.push(LLirParameter { name: name.into(), ty: ty.into() });
         self
     }
 
@@ -92,12 +79,7 @@ pub struct LLvmBlockBuilder {
 
 impl LLvmBlockBuilder {
     pub fn new(label: Option<String>) -> Self {
-        Self {
-            block: LLirBlock {
-                label,
-                instructions: Vec::new(),
-            },
-        }
+        Self { block: LLirBlock { label, instructions: Vec::new() } }
     }
 
     pub fn add_instruction(
@@ -121,39 +103,21 @@ impl LLvmBlockBuilder {
         self.add_instruction("ret", vec![format!("{} {}", ty, val)], None::<String>)
     }
 
-    pub fn add(
-        self,
-        result: impl Into<String>,
-        ty: impl Into<String>,
-        lhs: impl Into<String>,
-        rhs: impl Into<String>,
-    ) -> Self {
+    pub fn add(self, result: impl Into<String>, ty: impl Into<String>, lhs: impl Into<String>, rhs: impl Into<String>) -> Self {
         let ty = ty.into();
         let lhs = lhs.into();
         let rhs = rhs.into();
         self.add_instruction("add", vec![format!("{} {}, {}", ty, lhs, rhs)], Some(result))
     }
 
-    pub fn sub(
-        self,
-        result: impl Into<String>,
-        ty: impl Into<String>,
-        lhs: impl Into<String>,
-        rhs: impl Into<String>,
-    ) -> Self {
+    pub fn sub(self, result: impl Into<String>, ty: impl Into<String>, lhs: impl Into<String>, rhs: impl Into<String>) -> Self {
         let ty = ty.into();
         let lhs = lhs.into();
         let rhs = rhs.into();
         self.add_instruction("sub", vec![format!("{} {}, {}", ty, lhs, rhs)], Some(result))
     }
 
-    pub fn mul(
-        self,
-        result: impl Into<String>,
-        ty: impl Into<String>,
-        lhs: impl Into<String>,
-        rhs: impl Into<String>,
-    ) -> Self {
+    pub fn mul(self, result: impl Into<String>, ty: impl Into<String>, lhs: impl Into<String>, rhs: impl Into<String>) -> Self {
         let ty = ty.into();
         let lhs = lhs.into();
         let rhs = rhs.into();

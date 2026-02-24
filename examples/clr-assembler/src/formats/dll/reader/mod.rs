@@ -507,10 +507,12 @@ where
             }
         }
 
-        let tables_stream = tables_stream
-            .ok_or_else(|| GaiaError::syntax_error("Missing metadata table stream (#~/#-)".to_string(), SourceLocation::default()))?;
-        let strings_stream = strings_stream
-            .ok_or_else(|| GaiaError::syntax_error("Missing string stream (#Strings)".to_string(), SourceLocation::default()))?;
+        let tables_stream = tables_stream.ok_or_else(|| {
+            GaiaError::syntax_error("Missing metadata table stream (#~/#-)".to_string(), SourceLocation::default())
+        })?;
+        let strings_stream = strings_stream.ok_or_else(|| {
+            GaiaError::syntax_error("Missing string stream (#Strings)".to_string(), SourceLocation::default())
+        })?;
 
         // Convenience: treat file as a cursor
         let mut cur = self.reader.get_viewer();
@@ -1124,7 +1126,10 @@ where
 
         if base >= end {
             eprintln!("Index out of bounds - base {} >= end {}", base, end);
-            return Err(GaiaError::syntax_error(format!("String index {} exceeds heap range", index), SourceLocation::default()));
+            return Err(GaiaError::syntax_error(
+                format!("String index {} exceeds heap range", index),
+                SourceLocation::default(),
+            ));
         }
 
         // Seek to string position

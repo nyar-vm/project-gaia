@@ -8,10 +8,7 @@ fn test_llvm_builder() {
     let program = LLvmProgramBuilder::new()
         .add_global("version", "i32", "1", true)
         .add_function("main", "i32", |f| {
-            f.add_parameter("argc", "i32").add_block("entry", |b| {
-                b.add("1", "i32", "%argc", "1")
-                    .ret("i32", "%1")
-            })
+            f.add_parameter("argc", "i32").add_block("entry", |b| b.add("1", "i32", "%argc", "1").ret("i32", "%1"))
         })
         .build();
 
@@ -30,10 +27,7 @@ fn test_llvm_to_source() {
         items: vec![LLirItem::Function(LLirFunction {
             name: "main".to_string(),
             return_type: "i32".to_string(),
-            parameters: vec![LLirParameter {
-                name: "argc".to_string(),
-                ty: "i32".to_string(),
-            }],
+            parameters: vec![LLirParameter { name: "argc".to_string(), ty: "i32".to_string() }],
             blocks: vec![LLirBlock {
                 label: Some("entry".to_string()),
                 instructions: vec![
@@ -42,11 +36,7 @@ fn test_llvm_to_source() {
                         opcode: "add".to_string(),
                         operands: vec!["i32 %argc".to_string(), "1".to_string()],
                     },
-                    LLirInstruction {
-                        result: None,
-                        opcode: "ret".to_string(),
-                        operands: vec!["i32 %1".to_string()],
-                    },
+                    LLirInstruction { result: None, opcode: "ret".to_string(), operands: vec!["i32 %1".to_string()] },
                 ],
             }],
             span: (0..0).into(),
@@ -66,10 +56,7 @@ fn test_llvm_to_doc() {
         items: vec![LLirItem::Function(LLirFunction {
             name: "main".to_string(),
             return_type: "i32".to_string(),
-            parameters: vec![LLirParameter {
-                name: "argc".to_string(),
-                ty: "i32".to_string(),
-            }],
+            parameters: vec![LLirParameter { name: "argc".to_string(), ty: "i32".to_string() }],
             blocks: vec![LLirBlock {
                 label: Some("entry".to_string()),
                 instructions: vec![
@@ -78,11 +65,7 @@ fn test_llvm_to_doc() {
                         opcode: "add".to_string(),
                         operands: vec!["i32 %argc".to_string(), "1".to_string()],
                     },
-                    LLirInstruction {
-                        result: None,
-                        opcode: "ret".to_string(),
-                        operands: vec!["i32 %1".to_string()],
-                    },
+                    LLirInstruction { result: None, opcode: "ret".to_string(), operands: vec!["i32 %1".to_string()] },
                 ],
             }],
             span: (0..0).into(),
@@ -104,9 +87,9 @@ fn test_llvm_to_doc() {
 fn test_llvm_reader() {
     let source = "@version = constant i32 1\ndefine i32 @main(i32 %argc) {\nentry:\n  %1 = add i32 %argc, 1\n  ret i32 %1\n}\n";
     let program = LLvmProgram::from_source(source).unwrap();
-    
+
     assert_eq!(program.root.items.len(), 2);
-    
+
     match &program.root.items[0] {
         LLirItem::Global(g) => {
             assert_eq!(g.name, "version");
@@ -114,7 +97,7 @@ fn test_llvm_reader() {
         }
         _ => panic!("Expected global variable"),
     }
-    
+
     match &program.root.items[1] {
         LLirItem::Function(f) => {
             assert_eq!(f.name, "main");
@@ -131,30 +114,33 @@ fn test_llvm_reader() {
 
 #[test]
 fn test_llvm_roundtrip() {
-    let source = "@version = constant i32 1\n\ndefine i32 @main(i32 %argc) {\nentry:\n  %1 = add i32 %argc, 1\n  ret i32 %1\n}\n";
+    let source =
+        "@version = constant i32 1\n\ndefine i32 @main(i32 %argc) {\nentry:\n  %1 = add i32 %argc, 1\n  ret i32 %1\n}\n";
     let program1 = LLvmProgram::from_source(source).unwrap();
     let source1 = program1.root.to_source_string();
     let program2 = LLvmProgram::from_source(&source1).unwrap();
-    
+
     assert_eq!(program1.root.items.len(), program2.root.items.len());
-    
+
     // Compare global variable
     if let (LLirItem::Global(g1), LLirItem::Global(g2)) = (&program1.root.items[0], &program2.root.items[0]) {
         assert_eq!(g1.name, g2.name);
         assert_eq!(g1.ty, g2.ty);
         assert_eq!(g1.value, g2.value);
         assert_eq!(g1.is_constant, g2.is_constant);
-    } else {
+    }
+    else {
         panic!("Expected global variables");
     }
-    
+
     // Compare function
     if let (LLirItem::Function(f1), LLirItem::Function(f2)) = (&program1.root.items[1], &program2.root.items[1]) {
         assert_eq!(f1.name, f2.name);
         assert_eq!(f1.return_type, f2.return_type);
         assert_eq!(f1.parameters.len(), f2.parameters.len());
         assert_eq!(f1.blocks.len(), f2.blocks.len());
-    } else {
+    }
+    else {
         panic!("Expected functions");
     }
 }

@@ -13,13 +13,10 @@ fn test_hello_world_elf() {
 
     // 这里由于 x86_64-assembler 可能还不支持所有指令（如 syscall）
     // 我们主要测试 ELF 的封装逻辑
-    
+
     // mov rax, 1 (write syscall)
-    builder.add_instruction(Instruction::Mov { 
-        dst: Operand::reg(Register::RAX), 
-        src: Operand::imm(1, 64) 
-    });
-    
+    builder.add_instruction(Instruction::Mov { dst: Operand::reg(Register::RAX), src: Operand::imm(1, 64) });
+
     // 暂时用 Ret 结尾
     builder.add_instruction(Instruction::Ret);
 

@@ -12,15 +12,9 @@ fn test_exit_code_elf() {
     let mut builder = ProgramBuilder::new(Architecture::X86_64);
 
     // mov rax, 60 (exit syscall)
-    builder.add_instruction(Instruction::Mov { 
-        dst: Operand::reg(Register::RAX), 
-        src: Operand::imm(60, 64) 
-    });
+    builder.add_instruction(Instruction::Mov { dst: Operand::reg(Register::RAX), src: Operand::imm(60, 64) });
     // mov rdi, 42 (exit code)
-    builder.add_instruction(Instruction::Mov { 
-        dst: Operand::reg(Register::RDI), 
-        src: Operand::imm(42, 64) 
-    });
+    builder.add_instruction(Instruction::Mov { dst: Operand::reg(Register::RDI), src: Operand::imm(42, 64) });
     // 暂时用 Ret，因为 x86_64-assembler 尚未实现 Syscall
     builder.add_instruction(Instruction::Ret);
 
@@ -37,5 +31,5 @@ fn test_exit_code_elf() {
     // 验证 ELF 魔数
     assert_eq!(&binary[0..4], b"\x7fELF");
     // 验证是 64 位 ELF
-    assert_eq!(binary[4], 2); 
+    assert_eq!(binary[4], 2);
 }

@@ -50,11 +50,11 @@ impl Backend for X86Backend {
             for block in &function.blocks {
                 for inst in &block.instructions {
                     match inst {
-                        GaiaInstruction::Core(CoreInstruction::PushConstant(GaiaConstant::String(s))) |
-                        GaiaInstruction::Core(CoreInstruction::New(s)) |
-                        GaiaInstruction::Core(CoreInstruction::StoreField(_, s)) |
-                        GaiaInstruction::Core(CoreInstruction::LoadField(_, s)) |
-                        GaiaInstruction::Managed(ManagedInstruction::CallMethod { method: s, .. }) => {
+                        GaiaInstruction::Core(CoreInstruction::PushConstant(GaiaConstant::String(s)))
+                        | GaiaInstruction::Core(CoreInstruction::New(s))
+                        | GaiaInstruction::Core(CoreInstruction::StoreField(_, s))
+                        | GaiaInstruction::Core(CoreInstruction::LoadField(_, s))
+                        | GaiaInstruction::Managed(ManagedInstruction::CallMethod { method: s, .. }) => {
                             if !string_table.contains_key(s) {
                                 string_table.insert(s.clone(), next_string_offset);
                                 rdata_content.extend_from_slice(s.as_bytes());
@@ -139,14 +139,8 @@ impl Backend for X86Backend {
         let mut files = HashMap::new();
         files.insert("main.bin".to_string(), code.clone());
 
-        let pe_bytes = self.create_pe_exe(
-            &code,
-            program,
-            call_exit_pos,
-            &external_call_positions,
-            &rdata_content,
-            &string_patches,
-        )?;
+        let pe_bytes =
+            self.create_pe_exe(&code, program, call_exit_pos, &external_call_positions, &rdata_content, &string_patches)?;
         files.insert("main.exe".to_string(), pe_bytes);
 
         Ok(GeneratedFiles { files, diagnostics: vec![] })
@@ -185,7 +179,7 @@ impl X86Backend {
             .iter()
             .flat_map(|b| &b.instructions)
             .any(|i| matches!(i, GaiaInstruction::Managed(ManagedInstruction::CallMethod { .. })));
-        
+
         let locals_size = locals_count * 8;
         let shadow_space = if has_managed_calls { 64 } else { 32 };
         let total_stack_size = (locals_size + shadow_space + 15) & !15;
@@ -203,7 +197,7 @@ impl X86Backend {
 
         // Save arguments to shadow space for later use (e.g. by ManagedInstructions)
         // [rbp + 16] = rcx, [rbp + 24] = rdx, [rbp + 32] = r8, [rbp + 40] = r9
-        code.extend_from_slice(&[0x48, 0x89, 0x4D, 0x10]); 
+        code.extend_from_slice(&[0x48, 0x89, 0x4D, 0x10]);
         code.extend_from_slice(&[0x48, 0x89, 0x55, 0x18]);
         code.extend_from_slice(&[0x4C, 0x89, 0x45, 0x20]);
         code.extend_from_slice(&[0x4C, 0x89, 0x4D, 0x28]);
@@ -302,10 +296,12 @@ impl X86Backend {
                             code.push(0x58); // pop rax
                             match ty {
                                 GaiaType::Bool => {
-                                    code.extend_from_slice(&[0x48, 0x83, 0xF0, 0x01]); // xor rax, 1
+                                    code.extend_from_slice(&[0x48, 0x83, 0xF0, 0x01]);
+                                    // xor rax, 1
                                 }
                                 _ => {
-                                    code.extend_from_slice(&[0x48, 0xF7, 0xD0]); // not rax
+                                    code.extend_from_slice(&[0x48, 0xF7, 0xD0]);
+                                    // not rax
                                 }
                             }
                             code.push(0x50); // push rax
@@ -347,8 +343,8 @@ impl X86Backend {
                         }
                         CoreInstruction::LoadArg(idx, _ty) => {
                             match idx {
-                                0 => code.push(0x51), // push rcx
-                                1 => code.push(0x52), // push rdx
+                                0 => code.push(0x51),                       // push rcx
+                                1 => code.push(0x52),                       // push rdx
                                 2 => code.extend_from_slice(&[0x41, 0x50]), // push r8
                                 3 => code.extend_from_slice(&[0x41, 0x51]), // push r9
                                 _ => {
@@ -422,8 +418,8 @@ impl X86Backend {
                         }
                         CoreInstruction::LoadArg(idx, _ty) => {
                             match idx {
-                                0 => code.push(0x51), // push rcx
-                                1 => code.push(0x52), // push rdx
+                                0 => code.push(0x51),                       // push rcx
+                                1 => code.push(0x52),                       // push rdx
                                 2 => code.extend_from_slice(&[0x41, 0x50]), // push r8
                                 3 => code.extend_from_slice(&[0x41, 0x51]), // push r9
                                 _ => {
@@ -475,45 +471,46 @@ impl X86Backend {
                                 let pos = code.len();
                                 code.extend_from_slice(&[0xE8, 0x00, 0x00, 0x00, 0x00]);
                                 internal_call_positions.entry(name.clone()).or_default().push(pos);
-                            } else {
+                            }
+                            else {
                                 // call [rip + offset] (external)
                                 let pos = code.len();
                                 code.extend_from_slice(&[0xFF, 0x15, 0x00, 0x00, 0x00, 0x00]);
                                 external_call_positions.entry(name.clone()).or_default().push(pos);
                             }
-                            
+
                             code.push(0x50); // push rax
                         }
                         CoreInstruction::CallIndirect(argc) => {
-                             // Stack: [..., func_ptr, arg1, arg2, ...]
-                             // Pops: args in reverse, then func_ptr
-                             
-                             if *argc >= 4 {
-                                 code.extend_from_slice(&[0x41, 0x59]); // pop r9
-                             }
-                             if *argc >= 3 {
-                                 code.extend_from_slice(&[0x41, 0x58]); // pop r8
-                             }
-                             if *argc >= 2 {
-                                 code.push(0x5A); // pop rdx
-                             }
-                             if *argc >= 1 {
-                                 code.push(0x59); // pop rcx
-                             }
-                             
-                             // Pop func_ptr into R10
-                             code.extend_from_slice(&[0x41, 0x5A]); // pop r10
-                             
-                             // Shadow space
-                             code.extend_from_slice(&[0x48, 0x83, 0xEC, 0x20]); // sub rsp, 32
-                             
-                             // Call R10
-                             code.extend_from_slice(&[0x41, 0xFF, 0xD2]); // call r10
-                             
-                             // Restore stack
-                             code.extend_from_slice(&[0x48, 0x83, 0xC4, 0x20]); // add rsp, 32
-                             
-                             code.push(0x50); // push rax
+                            // Stack: [..., func_ptr, arg1, arg2, ...]
+                            // Pops: args in reverse, then func_ptr
+
+                            if *argc >= 4 {
+                                code.extend_from_slice(&[0x41, 0x59]); // pop r9
+                            }
+                            if *argc >= 3 {
+                                code.extend_from_slice(&[0x41, 0x58]); // pop r8
+                            }
+                            if *argc >= 2 {
+                                code.push(0x5A); // pop rdx
+                            }
+                            if *argc >= 1 {
+                                code.push(0x59); // pop rcx
+                            }
+
+                            // Pop func_ptr into R10
+                            code.extend_from_slice(&[0x41, 0x5A]); // pop r10
+
+                            // Shadow space
+                            code.extend_from_slice(&[0x48, 0x83, 0xEC, 0x20]); // sub rsp, 32
+
+                            // Call R10
+                            code.extend_from_slice(&[0x41, 0xFF, 0xD2]); // call r10
+
+                            // Restore stack
+                            code.extend_from_slice(&[0x48, 0x83, 0xC4, 0x20]); // add rsp, 32
+
+                            code.push(0x50); // push rax
                         }
                         CoreInstruction::New(ty_name) => {
                             // call nyar_new_object(type_name)
@@ -535,150 +532,152 @@ impl X86Backend {
                             code.push(0x50); // push rax (obj ptr)
                         }
                         CoreInstruction::StoreField(_ty, field) => {
-                             // Stack: [..., obj, value] (value is top)
-                             // Pops: value(r8), obj(rcx)
-                             // Arg2: field_name (rdx)
-                             
-                             code.extend_from_slice(&[0x41, 0x58]); // pop r8 (value)
-                             code.push(0x59); // pop rcx (obj)
-                             
-                             // Load field name string into RDX
-                             code.extend_from_slice(&[0x48, 0x8D, 0x15]); // lea rdx, [rip + offset]
-                             let str_offset = *string_table.get(field).unwrap();
-                             let pos = code.len();
-                             string_patches.push((pos, str_offset));
-                             code.extend_from_slice(&[0, 0, 0, 0]);
+                            // Stack: [..., obj, value] (value is top)
+                            // Pops: value(r8), obj(rcx)
+                            // Arg2: field_name (rdx)
 
-                             let symbol = "nyar_object_set".to_string();
-                             code.extend_from_slice(&[0x48, 0x83, 0xEC, 0x20]); 
-                             let pos = code.len();
-                             code.extend_from_slice(&[0xFF, 0x15, 0x00, 0x00, 0x00, 0x00]); 
-                             external_call_positions.entry(symbol).or_default().push(pos);
-                             code.extend_from_slice(&[0x48, 0x83, 0xC4, 0x20]); 
-                             
-                             // StoreField returns void, no push
+                            code.extend_from_slice(&[0x41, 0x58]); // pop r8 (value)
+                            code.push(0x59); // pop rcx (obj)
+
+                            // Load field name string into RDX
+                            code.extend_from_slice(&[0x48, 0x8D, 0x15]); // lea rdx, [rip + offset]
+                            let str_offset = *string_table.get(field).unwrap();
+                            let pos = code.len();
+                            string_patches.push((pos, str_offset));
+                            code.extend_from_slice(&[0, 0, 0, 0]);
+
+                            let symbol = "nyar_object_set".to_string();
+                            code.extend_from_slice(&[0x48, 0x83, 0xEC, 0x20]);
+                            let pos = code.len();
+                            code.extend_from_slice(&[0xFF, 0x15, 0x00, 0x00, 0x00, 0x00]);
+                            external_call_positions.entry(symbol).or_default().push(pos);
+                            code.extend_from_slice(&[0x48, 0x83, 0xC4, 0x20]);
+
+                            // StoreField returns void, no push
                         }
                         CoreInstruction::LoadField(_ty, field) => {
-                             // Stack: [..., obj]
-                             // Pops: obj(rcx)
-                             // Arg2: key(rdx)
-                             
-                             code.push(0x59); // pop rcx
-                             
-                             // Load field name string into RDX
-                             code.extend_from_slice(&[0x48, 0x8D, 0x15]); // lea rdx, [rip + offset]
-                             let str_offset = *string_table.get(field).unwrap();
-                             let pos = code.len();
-                             string_patches.push((pos, str_offset));
-                             code.extend_from_slice(&[0, 0, 0, 0]);
+                            // Stack: [..., obj]
+                            // Pops: obj(rcx)
+                            // Arg2: key(rdx)
 
-                             let symbol = "nyar_object_get".to_string();
-                             code.extend_from_slice(&[0x48, 0x83, 0xEC, 0x20]); 
-                             let pos = code.len();
-                             code.extend_from_slice(&[0xFF, 0x15, 0x00, 0x00, 0x00, 0x00]); 
-                             external_call_positions.entry(symbol).or_default().push(pos);
-                             code.extend_from_slice(&[0x48, 0x83, 0xC4, 0x20]); 
-                             
-                             code.push(0x50); // push rax
+                            code.push(0x59); // pop rcx
+
+                            // Load field name string into RDX
+                            code.extend_from_slice(&[0x48, 0x8D, 0x15]); // lea rdx, [rip + offset]
+                            let str_offset = *string_table.get(field).unwrap();
+                            let pos = code.len();
+                            string_patches.push((pos, str_offset));
+                            code.extend_from_slice(&[0, 0, 0, 0]);
+
+                            let symbol = "nyar_object_get".to_string();
+                            code.extend_from_slice(&[0x48, 0x83, 0xEC, 0x20]);
+                            let pos = code.len();
+                            code.extend_from_slice(&[0xFF, 0x15, 0x00, 0x00, 0x00, 0x00]);
+                            external_call_positions.entry(symbol).or_default().push(pos);
+                            code.extend_from_slice(&[0x48, 0x83, 0xC4, 0x20]);
+
+                            code.push(0x50); // push rax
                         }
                         CoreInstruction::NewArray(_, len_on_stack) => {
                             if *len_on_stack {
                                 code.push(0x59); // pop rcx (length)
-                            } else {
+                            }
+                            else {
                                 // Assume 0 length if not on stack? Or error?
                                 // For now, just zero out rcx
                                 code.extend_from_slice(&[0x48, 0x31, 0xC9]); // xor rcx, rcx
                             }
-                            
+
                             // call nyar_new_array(length)
                             // We need to implement this symbol in runtime or link it
                             let symbol = "nyar_new_array".to_string();
-                            
+
                             // Prepare call
                             code.extend_from_slice(&[0x48, 0x83, 0xEC, 0x20]); // sub rsp, 32
-                            
+
                             let pos = code.len();
                             code.extend_from_slice(&[0xFF, 0x15, 0x00, 0x00, 0x00, 0x00]); // call [rip+offset]
                             external_call_positions.entry(symbol).or_default().push(pos);
-                            
+
                             code.extend_from_slice(&[0x48, 0x83, 0xC4, 0x20]); // add rsp, 32
                             code.push(0x50); // push rax (array ptr)
                         }
                         CoreInstruction::StoreElement(_) => {
                             // Stack: [..., array, index, value]
                             // Pops: value(r8), index(rdx), array(rcx)
-                            
+
                             code.extend_from_slice(&[0x41, 0x58]); // pop r8 (value)
                             code.push(0x5A); // pop rdx (index)
                             code.push(0x59); // pop rcx (array)
-                            
+
                             let symbol = "nyar_array_set".to_string();
-                            
+
                             code.extend_from_slice(&[0x48, 0x83, 0xEC, 0x20]); // sub rsp, 32
-                            
+
                             let pos = code.len();
                             code.extend_from_slice(&[0xFF, 0x15, 0x00, 0x00, 0x00, 0x00]); // call [rip+offset]
                             external_call_positions.entry(symbol).or_default().push(pos);
-                            
+
                             code.extend_from_slice(&[0x48, 0x83, 0xC4, 0x20]); // add rsp, 32
                         }
                         CoreInstruction::LoadElement(_) => {
                             // Stack: [..., array, index]
                             // Pops: index(rdx), array(rcx)
-                            
+
                             code.push(0x5A); // pop rdx (index)
                             code.push(0x59); // pop rcx (array)
-                            
+
                             let symbol = "nyar_array_get".to_string();
-                            
+
                             code.extend_from_slice(&[0x48, 0x83, 0xEC, 0x20]); // sub rsp, 32
-                            
+
                             let pos = code.len();
                             code.extend_from_slice(&[0xFF, 0x15, 0x00, 0x00, 0x00, 0x00]); // call [rip+offset]
                             external_call_positions.entry(symbol).or_default().push(pos);
-                            
+
                             code.extend_from_slice(&[0x48, 0x83, 0xC4, 0x20]); // add rsp, 32
                             code.push(0x50); // push rax
                         }
                         CoreInstruction::ArrayLength => {
                             // Stack: [..., array]
                             // Pops: array(rcx)
-                            
+
                             code.push(0x59); // pop rcx
-                            
+
                             let symbol = "nyar_array_len".to_string();
-                            
+
                             code.extend_from_slice(&[0x48, 0x83, 0xEC, 0x20]); // sub rsp, 32
-                            
+
                             let pos = code.len();
                             code.extend_from_slice(&[0xFF, 0x15, 0x00, 0x00, 0x00, 0x00]); // call [rip+offset]
                             external_call_positions.entry(symbol).or_default().push(pos);
-                            
+
                             code.extend_from_slice(&[0x48, 0x83, 0xC4, 0x20]); // add rsp, 32
                             code.push(0x50); // push rax
                         }
                         CoreInstruction::ArrayPush => {
                             // Stack: [..., array, value]
                             // Pops: value(rdx), array(rcx)
-                            
+
                             code.push(0x5A); // pop rdx (value)
                             code.push(0x59); // pop rcx (array)
-                            
+
                             let symbol = "nyar_array_push".to_string();
-                            
+
                             code.extend_from_slice(&[0x48, 0x83, 0xEC, 0x20]); // sub rsp, 32
-                            
+
                             let pos = code.len();
                             code.extend_from_slice(&[0xFF, 0x15, 0x00, 0x00, 0x00, 0x00]); // call [rip+offset]
                             external_call_positions.entry(symbol).or_default().push(pos);
-                            
+
                             code.extend_from_slice(&[0x48, 0x83, 0xC4, 0x20]); // add rsp, 32
-                            
+
                             // Push result (void -> 0 or new length?)
                             // JS push returns new length.
                             // nyar_array_push returns void.
                             // For now, push 0 (undefined/void)
-                            code.push(0x31); code.push(0xC0); // xor eax, eax
+                            code.push(0x31);
+                            code.push(0xC0); // xor eax, eax
                             code.push(0x50); // push rax
                         }
                         _ => return Err(GaiaError::custom_error(format!("Unsupported core instruction: {:?}", core_inst))),
@@ -690,59 +689,62 @@ impl X86Backend {
                             // 0. Allocate space for the call (shadow space + 5th/6th args)
                             // 32 (shadow) + 8 (method_name) + 8 (argc) = 48.
                             // 48 is 16-byte aligned.
-                            code.extend_from_slice(&[0x48, 0x83, 0xEC, 0x30]); 
+                            code.extend_from_slice(&[0x48, 0x83, 0xEC, 0x30]);
 
                             // 1. Load vm (rcx) from [rbp + 16]
-                            code.extend_from_slice(&[0x48, 0x8B, 0x4D, 0x10]); 
-                            
+                            code.extend_from_slice(&[0x48, 0x8B, 0x4D, 0x10]);
+
                             // 2. Load ic (rdx) from [rbp + 24]
-                            code.extend_from_slice(&[0x48, 0x8B, 0x55, 0x18]); 
-                            
+                            code.extend_from_slice(&[0x48, 0x8B, 0x55, 0x18]);
+
                             // 3. Load call_site_id (r8)
-                            code.extend_from_slice(&[0x49, 0xC7, 0xC0]); 
+                            code.extend_from_slice(&[0x49, 0xC7, 0xC0]);
                             if let Some(id) = call_site_id {
                                 code.extend_from_slice(&id.to_le_bytes());
-                            } else {
+                            }
+                            else {
                                 code.extend_from_slice(&[0xFF, 0xFF, 0xFF, 0xFF]);
                             }
-                            
+
                             // 4. Load receiver (r9) from [rsp + 48 + argc * 8]
                             // Adjusting offset because stack was already sub 48.
                             // Arguments were pushed onto stack BEFORE this call.
                             let receiver_offset = 48 + argc * 8;
-                            code.extend_from_slice(&[0x4C, 0x8B, 0x8C, 0x24]); 
+                            code.extend_from_slice(&[0x4C, 0x8B, 0x8C, 0x24]);
                             code.extend_from_slice(&receiver_offset.to_le_bytes());
-                            
+
                             // 5. Load method_name pointer into [rsp + 32]
-                            code.extend_from_slice(&[0x48, 0x8D, 0x05]); 
+                            code.extend_from_slice(&[0x48, 0x8D, 0x05]);
                             let str_offset = *string_table.get(method).unwrap();
                             let pos = code.len();
                             string_patches.push((pos, str_offset));
                             code.extend_from_slice(&[0, 0, 0, 0]);
-                            code.extend_from_slice(&[0x48, 0x89, 0x44, 0x24, 0x20]); 
-                            
+                            code.extend_from_slice(&[0x48, 0x89, 0x44, 0x24, 0x20]);
+
                             // 6. Load argc into [rsp + 40]
-                            code.extend_from_slice(&[0x48, 0xC7, 0x44, 0x24, 0x28]); 
+                            code.extend_from_slice(&[0x48, 0xC7, 0x44, 0x24, 0x28]);
                             code.extend_from_slice(&argc.to_le_bytes());
-                            
+
                             // 7. Call nyar_managed_call_method
                             let symbol = "nyar_managed_call_method".to_string();
                             let pos = code.len();
-                            code.extend_from_slice(&[0xFF, 0x15, 0x00, 0x00, 0x00, 0x00]); 
+                            code.extend_from_slice(&[0xFF, 0x15, 0x00, 0x00, 0x00, 0x00]);
                             external_call_positions.entry(symbol).or_default().push(pos);
-                            
+
                             // 8. Clean up call space
                             code.extend_from_slice(&[0x48, 0x83, 0xC4, 0x30]);
 
                             // 9. Clean up stack (pop args and receiver)
                             let total_to_pop = (argc + 1) * 8;
-                            code.extend_from_slice(&[0x48, 0x81, 0xC4]); 
+                            code.extend_from_slice(&[0x48, 0x81, 0xC4]);
                             code.extend_from_slice(&total_to_pop.to_le_bytes());
-                            
+
                             // 10. Push result
-                            code.push(0x50); 
+                            code.push(0x50);
                         }
-                        _ => return Err(GaiaError::custom_error(format!("Unsupported managed instruction: {:?}", managed_inst))),
+                        _ => {
+                            return Err(GaiaError::custom_error(format!("Unsupported managed instruction: {:?}", managed_inst)))
+                        }
                     },
                     GaiaInstruction::Domain(domain_inst) => match domain_inst {
                         DomainInstruction::Neural(node) => {
@@ -819,10 +821,10 @@ impl X86Backend {
         // Add implicit imports from external calls
         for symbol in external_call_positions.keys() {
             if symbol.starts_with("nyar_") {
-                 let entry = lib_imports.entry("nyar_runtime.dll".to_string()).or_default();
-                 if !entry.contains(symbol) {
-                     entry.push(symbol.clone());
-                 }
+                let entry = lib_imports.entry("nyar_runtime.dll".to_string()).or_default();
+                if !entry.contains(symbol) {
+                    entry.push(symbol.clone());
+                }
             }
         }
 
@@ -853,36 +855,39 @@ impl X86Backend {
         let text_size_aligned = (pe_program.sections[0].data.len() as u32 + 0xFFF) & !0xFFF;
         let idata_size_aligned =
             if pe_program.sections.len() > 1 { (pe_program.sections[1].virtual_size + 0xFFF) & !0xFFF } else { 0 };
-        
+
         let rdata_rva = 0x1000 + text_size_aligned + idata_size_aligned;
 
         if !rdata_content.is_empty() {
-             pe_program.sections.push(pe_assembler::types::PeSection {
-                 name: ".rdata".to_string(),
-                 characteristics: 0x40000040, // IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ
-                 virtual_size: rdata_content.len() as u32,
-                 data: rdata_content.clone(),
-                 number_of_line_numbers: 0,
-                 number_of_relocations: 0,
-                 pointer_to_line_numbers: 0,
-                 pointer_to_relocations: 0,
-                 pointer_to_raw_data: 0,
-                 size_of_raw_data: 0,
-                 virtual_address: 0,
-             });
+            pe_program.sections.push(pe_assembler::types::PeSection {
+                name: ".rdata".to_string(),
+                characteristics: 0x40000040, // IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ
+                virtual_size: rdata_content.len() as u32,
+                data: rdata_content.clone(),
+                number_of_line_numbers: 0,
+                number_of_relocations: 0,
+                pointer_to_line_numbers: 0,
+                pointer_to_relocations: 0,
+                pointer_to_raw_data: 0,
+                size_of_raw_data: 0,
+                virtual_address: 0,
+            });
 
-             let code_data = &mut pe_program.sections[0].data;
-             for &(pos, str_offset) in string_patches {
-                 let next_rip_rva = 0x1000 + (pos as u32) + 4; // pos points to start of imm32
-                 let target_rva = rdata_rva + str_offset as u32;
-                 let rel_offset = target_rva as i32 - next_rip_rva as i32;
-                 code_data[pos..pos+4].copy_from_slice(&rel_offset.to_le_bytes());
-             }
+            let code_data = &mut pe_program.sections[0].data;
+            for &(pos, str_offset) in string_patches {
+                let next_rip_rva = 0x1000 + (pos as u32) + 4; // pos points to start of imm32
+                let target_rva = rdata_rva + str_offset as u32;
+                let rel_offset = target_rva as i32 - next_rip_rva as i32;
+                code_data[pos..pos + 4].copy_from_slice(&rel_offset.to_le_bytes());
+            }
         }
-        
+
         let rdata_size_aligned = if pe_program.sections.len() > (if idata_size_aligned > 0 { 2 } else { 1 }) {
             (pe_program.sections.last().unwrap().virtual_size + 0xFFF) & !0xFFF
-        } else { 0 };
+        }
+        else {
+            0
+        };
 
         pe_program.header.optional_header.size_of_image = 0x1000 + text_size_aligned + idata_size_aligned + rdata_size_aligned;
         pe_program.header.optional_header.size_of_headers = 0x200;

@@ -6,6 +6,5 @@ pub mod helpers;
 pub mod program;
 
 pub use builder::LLvmProgramBuilder;
-pub use formats::llvm::reader::LLvmReader;
-pub use formats::llvm::writer::LLvmWriter;
+pub use formats::llvm::{reader::LLvmReader, writer::LLvmWriter};
 pub use program::LLvmProgram;

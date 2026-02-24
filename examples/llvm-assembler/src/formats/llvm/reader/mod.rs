@@ -1,6 +1,6 @@
 use gaia_types::Result;
 use oak_core::{Builder, ParseSession};
-use oak_llvm_ir::{LLirBuilder, LLvmLanguage, LLirRoot};
+use oak_llvm_ir::{LLirBuilder, LLirRoot, LLvmLanguage};
 
 /// LLVM IR 读取器
 pub struct LLvmReader {
@@ -15,9 +15,7 @@ impl Default for LLvmReader {
 
 impl LLvmReader {
     pub fn new() -> Self {
-        Self {
-            language: LLvmLanguage::default(),
-        }
+        Self { language: LLvmLanguage::default() }
     }
 
     /// 从字符串解析 LLVM IR
