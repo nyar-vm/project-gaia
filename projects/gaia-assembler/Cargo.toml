@@ -12,7 +12,6 @@ readme = "readme.md"
 exclude = ["package.json"]
 
 [dependencies]
-wasi-assembler = { workspace = true }
 gaia-types = { workspace = true }
 serde = { workspace = true }
 toml = { workspace = true }
@@ -20,18 +19,44 @@ num = { workspace = true }
 byteorder = { workspace = true }
 ordered-float = { workspace = true }
 oak-core = { workspace = true }
-jvm-assembler = { workspace = true }
-pe-assembler = { workspace = true }
-gcn-assembler = { workspace = true }
-sass-assembler = { workspace = true }
+
+# Backends
+wasi-assembler = { workspace = true, optional = true }
+jvm-assembler = { workspace = true, optional = true }
+pe-assembler = { workspace = true, optional = true }
+gcn-assembler = { workspace = true, optional = true }
+sass-assembler = { workspace = true, optional = true }
 clr-assembler = { workspace = true, optional = true }
+x86_64-assembler = { workspace = true, optional = true }
+elf-assembler = { workspace = true, optional = true }
+macho-assembler = { workspace = true, optional = true }
+lua-assembler = { workspace = true, optional = true }
+llvm-assembler = { workspace = true, optional = true }
+msl-assembler = { workspace = true, optional = true }
+spirv-assembler = { workspace = true, optional = true }
+python-assembler = { workspace = true, optional = true }
 
 [dev-dependencies]
 
 [features]
-default = []
+default = ["wasi", "jvm", "x86_64"]
 easy-test = []
+
+# Backend features
+wasi = ["wasi-assembler"]
+jvm = ["jvm-assembler"]
 clr = ["clr-assembler"]
+x86_64 = ["x86_64-assembler"]
+pe = ["pe-assembler"]
+elf = ["elf-assembler"]
+macho = ["macho-assembler"]
+gcn = ["gcn-assembler"]
+sass = ["sass-assembler"]
+lua = ["lua-assembler"]
+llvm = ["llvm-assembler"]
+msl = ["msl-assembler"]
+spirv = ["spirv-assembler"]
+python = ["python-assembler"]
 
 [package.metadata.docs.rs]
 all-features = true

@@ -26,6 +26,11 @@ oak-jasm = { workspace = true, features = ["oak-pretty-print"] }
 
 [build-dependencies]
 
+[dev-dependencies]
+walkdir = { workspace = true }
+serde_json = { workspace = true }
+gaia-types = { workspace = true, features = ["serde_json"] }
+
 
 [features]
 default = []

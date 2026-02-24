@@ -9,11 +9,43 @@ pub mod pe;
 pub mod sass;
 pub mod wasi;
 pub mod x86;
+pub mod elf;
+pub mod macho;
+pub mod lua;
+pub mod llvm;
+pub mod msl;
+pub mod spirv;
+pub mod python;
 
 // Re-export backend structs
 #[cfg(feature = "clr")]
 pub use self::msil::ClrBackend;
-pub use self::{gcn::GcnBackend, jvm::JvmBackend, pe::PeBackend, sass::SassBackend, wasi::WasiBackend, x86::X86Backend};
+#[cfg(feature = "wasi")]
+pub use self::wasi::WasiBackend;
+#[cfg(feature = "jvm")]
+pub use self::jvm::JvmBackend;
+#[cfg(feature = "x86_64")]
+pub use self::x86::X86Backend;
+#[cfg(feature = "pe")]
+pub use self::pe::PeBackend;
+#[cfg(feature = "gcn")]
+pub use self::gcn::GcnBackend;
+#[cfg(feature = "sass")]
+pub use self::sass::SassBackend;
+#[cfg(feature = "elf")]
+pub use self::elf::ElfBackend;
+#[cfg(feature = "macho")]
+pub use self::macho::MachoBackend;
+#[cfg(feature = "lua")]
+pub use self::lua::LuaBackend;
+#[cfg(feature = "llvm")]
+pub use self::llvm::LlvmBackend;
+#[cfg(feature = "msl")]
+pub use self::msl::MslBackend;
+#[cfg(feature = "spirv")]
+pub use self::spirv::SpirvBackend;
+#[cfg(feature = "python")]
+pub use self::python::PythonBackend;
 
 use crate::{config::GaiaConfig, program::GaiaModule};
 use gaia_types::{helpers::CompilationTarget, Result};

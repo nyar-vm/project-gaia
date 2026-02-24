@@ -14,17 +14,36 @@ impl GaiaAssembler {
     /// 创建新的编译器实例，包含所有可用的后端
     pub fn new() -> Self {
         #[allow(unused_mut)]
-        let mut backends: Vec<Box<dyn Backend>> = vec![
-            Box::new(JvmBackend {}),
-            Box::new(PeBackend {}),
-            Box::new(WasiBackend {}),
-            Box::new(X86Backend {}),
-            Box::new(GcnBackend::new()),
-            Box::new(SassBackend::new()),
-        ];
+        let mut backends: Vec<Box<dyn Backend>> = vec![];
 
+        #[cfg(feature = "jvm")]
+        backends.push(Box::new(JvmBackend {}));
+        #[cfg(feature = "pe")]
+        backends.push(Box::new(PeBackend {}));
+        #[cfg(feature = "wasi")]
+        backends.push(Box::new(WasiBackend {}));
+        #[cfg(feature = "x86_64")]
+        backends.push(Box::new(X86Backend {}));
+        #[cfg(feature = "gcn")]
+        backends.push(Box::new(GcnBackend::new()));
+        #[cfg(feature = "sass")]
+        backends.push(Box::new(SassBackend::new()));
         #[cfg(feature = "clr")]
         backends.push(Box::new(ClrBackend {}));
+        #[cfg(feature = "elf")]
+        backends.push(Box::new(ElfBackend {}));
+        #[cfg(feature = "macho")]
+        backends.push(Box::new(MachoBackend {}));
+        #[cfg(feature = "lua")]
+        backends.push(Box::new(LuaBackend {}));
+        #[cfg(feature = "llvm")]
+        backends.push(Box::new(LlvmBackend {}));
+        #[cfg(feature = "msl")]
+        backends.push(Box::new(MslBackend {}));
+        #[cfg(feature = "spirv")]
+        backends.push(Box::new(SpirvBackend {}));
+        #[cfg(feature = "python")]
+        backends.push(Box::new(PythonBackend {}));
 
         Self { backends }
     }
