@@ -17,12 +17,12 @@ impl Backend for LlvmBackend {
     }
 
     fn primary_target(&self) -> CompilationTarget {
-        CompilationTarget { build: Architecture::Unknown, host: AbiCompatible::LLVM_IR, target: ApiCompatible::Unknown }
+        CompilationTarget { build: Architecture::Unknown, host: AbiCompatible::LlvmIr, target: ApiCompatible::Unknown }
     }
 
     fn match_score(&self, target: &CompilationTarget) -> f32 {
-        if target.host == AbiCompatible::LLVM_IR {
-            return 95.0;
+        if target.host == AbiCompatible::LlvmIr {
+            return 80.0;
         }
         0.0
     }

@@ -17,12 +17,12 @@ impl Backend for MslBackend {
     }
 
     fn primary_target(&self) -> CompilationTarget {
-        CompilationTarget { build: Architecture::Unknown, host: AbiCompatible::MSL, target: ApiCompatible::Unknown }
+        CompilationTarget { build: Architecture::Unknown, host: AbiCompatible::MSL, target: ApiCompatible::Metal }
     }
 
     fn match_score(&self, target: &CompilationTarget) -> f32 {
         if target.host == AbiCompatible::MSL {
-            return 90.0;
+            return 80.0;
         }
         0.0
     }
