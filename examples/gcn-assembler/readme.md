@@ -10,7 +10,7 @@ graph TB
         A[GCN Instructions] --> B[GCN Program Builder]
         B --> C[Instruction Formatter]
         C --> D[ELF Wrapper]
-        D --> E[GPU Binary (.bin / .elf)]
+        D --> E["GPU Binary (.bin / .elf)"]
         
         subgraph "Instruction Types"
             F[SOP - Scalar Ops]

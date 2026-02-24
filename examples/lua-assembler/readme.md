@@ -10,7 +10,7 @@ graph TB
         A[Lua Source / Bytecode] --> B[Lua Program Model]
         B --> C[Bytecode Reader/Writer]
         C --> D[Luac View / AST]
-        D --> E[Lua Binary (.luac)]
+        D --> E["Lua Binary (.luac)"]
         
         subgraph "Core Engines"
             F[Instruction Builder]

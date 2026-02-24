@@ -10,7 +10,7 @@ graph TB
         A[Wasm/WAT Source] --> B[WASI Program Model]
         B --> C[Section Builder]
         C --> D[Instruction Encoder]
-        D --> E[Wasm Binary (.wasm)]
+        D --> E["Wasm Binary (.wasm)"]
         
         subgraph "Section Types"
             F[Type / Import / Function]

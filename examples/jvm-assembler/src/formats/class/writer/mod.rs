@@ -3,8 +3,15 @@
 //!
 //! 这个模块实现了将 JVM 程序转换为 Class 文件字节码的功能。
 
+mod attributes;
+mod cp;
+mod instructions;
+mod pool;
+mod utils;
+
 use crate::program::*;
 use byteorder::BigEndian;
+use cp::CpEntry;
 use gaia_types::{BinaryWriter, GaiaDiagnostics, Result};
 use std::{collections::HashMap, io::Write};
 
@@ -18,111 +25,10 @@ pub struct ClassWriter<W> {
     cp_map: HashMap<CpEntry, u16>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-enum CpEntry {
-    Utf8(String),
-    Class(u16),
-    String(u16),
-    Fieldref(u16, u16),
-    Methodref(u16, u16),
-    InterfaceMethodref(u16, u16),
-    NameAndType(u16, u16),
-    Integer(i32),
-    Float(u32),
-    Long(i64),
-    Double(u64),
-}
-
 impl<W> ClassWriter<W> {
     /// 创建新的 Class 写入器
     pub fn new(writer: W) -> Self {
         Self { writer: BinaryWriter::new(writer), cp_entries: Vec::new(), cp_map: HashMap::new() }
-    }
-
-    /// 添加 Utf8 常量
-    fn add_utf8(&mut self, s: String) -> u16 {
-        self.add_cp_entry(CpEntry::Utf8(s))
-    }
-
-    /// 添加 Class 常量
-    fn add_class(&mut self, name: String) -> u16 {
-        let name_index = self.add_utf8(name);
-        self.add_cp_entry(CpEntry::Class(name_index))
-    }
-
-    /// 添加 String 常量
-    fn add_string(&mut self, value: String) -> u16 {
-        let utf8_index = self.add_utf8(value);
-        self.add_cp_entry(CpEntry::String(utf8_index))
-    }
-
-    /// 添加 NameAndType 常量
-    fn add_name_and_type(&mut self, name: String, descriptor: String) -> u16 {
-        let name_index = self.add_utf8(name);
-        let descriptor_index = self.add_utf8(descriptor);
-        self.add_cp_entry(CpEntry::NameAndType(name_index, descriptor_index))
-    }
-
-    /// 添加 Fieldref 常量
-    fn add_field_ref(&mut self, class_name: String, name: String, descriptor: String) -> u16 {
-        let class_index = self.add_class(class_name);
-        let name_and_type_index = self.add_name_and_type(name, descriptor);
-        self.add_cp_entry(CpEntry::Fieldref(class_index, name_and_type_index))
-    }
-
-    /// 添加 Methodref 常量
-    fn add_method_ref(&mut self, class_name: String, name: String, descriptor: String) -> u16 {
-        let class_index = self.add_class(class_name);
-        let name_and_type_index = self.add_name_and_type(name, descriptor);
-        self.add_cp_entry(CpEntry::Methodref(class_index, name_and_type_index))
-    }
-
-    /// 添加 InterfaceMethodref 常量
-    fn add_interface_method_ref(&mut self, class_name: String, name: String, descriptor: String) -> u16 {
-        let class_index = self.add_class(class_name);
-        let name_and_type_index = self.add_name_and_type(name, descriptor);
-        self.add_cp_entry(CpEntry::InterfaceMethodref(class_index, name_and_type_index))
-    }
-
-    /// 添加 Integer 常量
-    fn add_int(&mut self, val: i32) -> u16 {
-        self.add_cp_entry(CpEntry::Integer(val))
-    }
-
-    /// 添加 Float 常量
-    fn add_float(&mut self, val: f32) -> u16 {
-        self.add_cp_entry(CpEntry::Float(val.to_bits()))
-    }
-
-    /// 添加 Long 常量
-    fn add_long(&mut self, val: i64) -> u16 {
-        self.add_cp_entry(CpEntry::Long(val))
-    }
-
-    /// 添加 Double 常量
-    fn add_double(&mut self, val: f64) -> u16 {
-        self.add_cp_entry(CpEntry::Double(val.to_bits()))
-    }
-
-    fn add_cp_entry(&mut self, entry: CpEntry) -> u16 {
-        if let Some(&index) = self.cp_map.get(&entry) {
-            return index;
-        }
-
-        let index = (self.cp_entries.len() + 1) as u16;
-        self.cp_entries.push(entry.clone());
-        self.cp_map.insert(entry, index);
-
-        // Long 和 Double 占用两个常量池槽位
-        match self.cp_entries.last().unwrap() {
-            CpEntry::Long(_) | CpEntry::Double(_) => {
-                // 占位符，不实际写入，但增加长度
-                self.cp_entries.push(CpEntry::Utf8("Padding".to_string()));
-            }
-            _ => {}
-        }
-
-        index
     }
 
     /// 完成写入并返回底层写入器

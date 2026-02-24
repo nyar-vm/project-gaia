@@ -23,40 +23,34 @@ oak-core = { workspace = true }
 # Backends
 wasi-assembler = { workspace = true, optional = true }
 jvm-assembler = { workspace = true, optional = true }
-pe-assembler = { workspace = true, optional = true }
-gcn-assembler = { workspace = true, optional = true }
-sass-assembler = { workspace = true, optional = true }
 clr-assembler = { workspace = true, optional = true }
 x86_64-assembler = { workspace = true, optional = true }
+pe-assembler = { workspace = true, optional = true }
 elf-assembler = { workspace = true, optional = true }
 macho-assembler = { workspace = true, optional = true }
+gcn-assembler = { workspace = true, optional = true }
+sass-assembler = { workspace = true, optional = true }
 lua-assembler = { workspace = true, optional = true }
 llvm-assembler = { workspace = true, optional = true }
 msl-assembler = { workspace = true, optional = true }
 spirv-assembler = { workspace = true, optional = true }
 python-assembler = { workspace = true, optional = true }
 
-[dev-dependencies]
-
-[features]
-default = ["wasi", "jvm", "x86_64"]
-easy-test = []
-
 # Backend features
-wasi = ["wasi-assembler"]
-jvm = ["jvm-assembler"]
-clr = ["clr-assembler"]
-x86_64 = ["x86_64-assembler"]
-pe = ["pe-assembler"]
-elf = ["elf-assembler"]
-macho = ["macho-assembler"]
-gcn = ["gcn-assembler"]
-sass = ["sass-assembler"]
-lua = ["lua-assembler"]
-llvm = ["llvm-assembler"]
-msl = ["msl-assembler"]
-spirv = ["spirv-assembler"]
-python = ["python-assembler"]
+wasi = ["dep:wasi-assembler"]
+jvm = ["dep:jvm-assembler"]
+clr = ["dep:clr-assembler"]
+x86_64 = ["dep:x86_64-assembler"]
+pe = ["dep:pe-assembler"]
+elf = ["dep:elf-assembler"]
+macho = ["dep:macho-assembler"]
+gcn = ["dep:gcn-assembler"]
+sass = ["dep:sass-assembler"]
+lua = ["dep:lua-assembler"]
+llvm = ["dep:llvm-assembler"]
+msl = ["dep:msl-assembler"]
+spirv = ["dep:spirv-assembler"]
+python = ["dep:python-assembler"]
 
 [package.metadata.docs.rs]
 all-features = true

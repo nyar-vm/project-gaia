@@ -360,9 +360,9 @@ Valkyrie 的实现遵循一个核心原则：**将“Valkyrie 编译器”本身
 ```mermaid
 graph TD
     subgraph Tooling Layer (Clients)
-        A[CLI Binary (`nyar_cli`)]
-        B[LSP Server (`valkyrie-lsp`)]
-        C[Doc Generator, Formatter, etc.]
+        A["CLI Binary (nyar_cli)"]
+        B["LSP Server (valkyrie-lsp)"]
+        C["Doc Generator, Formatter, etc."]
     end
 
     subgraph Language Integration Library

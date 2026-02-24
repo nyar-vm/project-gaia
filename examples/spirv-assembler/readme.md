@@ -10,7 +10,7 @@ graph TB
         A[Gaia Module] --> B[SPIR-V Backend]
         B --> C[Instruction Mapper]
         C --> D[Word Stream Generator]
-        D --> E[SPIR-V Binary (.spv)]
+        D --> E["SPIR-V Binary (.spv)"]
         
         subgraph "Internal Structure"
             F[Logical Layout Manager]

@@ -10,7 +10,7 @@ graph TB
         A[PE Program Model] --> B[DOS/NT Header Builder]
         B --> C[Section Allocator]
         C --> D[Data Directory Resolver]
-        D --> E[PE Binary (.exe / .dll)]
+        D --> E["PE Binary (.exe / .dll)"]
         
         subgraph "Data Directories"
             F[Import Table .idata]

@@ -2,19 +2,33 @@
 //!
 //! Contains compiler implementations for various target platforms
 
+#[cfg(feature = "gcn")]
 pub mod gcn;
+#[cfg(feature = "jvm")]
 pub mod jvm;
+#[cfg(feature = "clr")]
 pub mod msil;
+#[cfg(feature = "pe")]
 pub mod pe;
+#[cfg(feature = "sass")]
 pub mod sass;
+#[cfg(feature = "wasi")]
 pub mod wasi;
+#[cfg(feature = "x86_64")]
 pub mod x86;
+#[cfg(feature = "elf")]
 pub mod elf;
+#[cfg(feature = "macho")]
 pub mod macho;
+#[cfg(feature = "lua")]
 pub mod lua;
+#[cfg(feature = "llvm")]
 pub mod llvm;
+#[cfg(feature = "msl")]
 pub mod msl;
+#[cfg(feature = "spirv")]
 pub mod spirv;
+#[cfg(feature = "python")]
 pub mod python;
 
 // Re-export backend structs

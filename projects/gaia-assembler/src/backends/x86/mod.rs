@@ -416,40 +416,6 @@ impl X86Backend {
                             code.extend_from_slice(&[0x48, 0x0F, 0xB6, 0xC0]); // movzx rax, al
                             code.push(0x50); // push rax
                         }
-                        CoreInstruction::LoadArg(idx, _ty) => {
-                            match idx {
-                                0 => code.push(0x51),                       // push rcx
-                                1 => code.push(0x52),                       // push rdx
-                                2 => code.extend_from_slice(&[0x41, 0x50]), // push r8
-                                3 => code.extend_from_slice(&[0x41, 0x51]), // push r9
-                                _ => {
-                                    // Load from stack [rbp + 16 + 32 + (idx-4)*8]
-                                    let offset = 48 + (idx - 4) * 8;
-                                    code.extend_from_slice(&[0x48, 0x8B, 0x45]);
-                                    code.push(offset as u8);
-                                    code.push(0x50); // push rax
-                                }
-                            }
-                        }
-                        CoreInstruction::StoreLocal(idx, _ty) => {
-                            // pop rax
-                            code.push(0x58);
-                            // mov [rbp - (idx+1)*8], rax
-                            let offset = (idx + 1) * 8;
-                            code.extend_from_slice(&[0x48, 0x89, 0x45]);
-                            code.push((-(offset as i32)) as u8);
-                        }
-                        CoreInstruction::LoadLocal(idx, _ty) => {
-                            // mov rax, [rbp - (idx+1)*8]
-                            let offset = (idx + 1) * 8;
-                            code.extend_from_slice(&[0x48, 0x8B, 0x45]);
-                            code.push((-(offset as i32)) as u8);
-                            // push rax
-                            code.push(0x50);
-                        }
-                        CoreInstruction::Alloca(_, _) => {
-                            // Handled in prologue, no-op here
-                        }
                         CoreInstruction::Call(name, argc) => {
                             // Win64 ABI: RCX, RDX, R8, R9
                             // Pop arguments in reverse order (last arg first)
@@ -498,19 +464,12 @@ impl X86Backend {
                                 code.push(0x59); // pop rcx
                             }
 
-                            // Pop func_ptr into R10
-                            code.extend_from_slice(&[0x41, 0x5A]); // pop r10
-
-                            // Shadow space
-                            code.extend_from_slice(&[0x48, 0x83, 0xEC, 0x20]); // sub rsp, 32
-
-                            // Call R10
-                            code.extend_from_slice(&[0x41, 0xFF, 0xD2]); // call r10
-
-                            // Restore stack
-                            code.extend_from_slice(&[0x48, 0x83, 0xC4, 0x20]); // add rsp, 32
-
-                            code.push(0x50); // push rax
+                            // pop rax (func_ptr)
+                            code.push(0x58);
+                            // call rax
+                            code.extend_from_slice(&[0xFF, 0xD0]);
+                            // push result
+                            code.push(0x50);
                         }
                         CoreInstruction::New(ty_name) => {
                             // call nyar_new_object(type_name)
@@ -758,7 +717,6 @@ impl X86Backend {
                         }
                         _ => return Err(GaiaError::custom_error(format!("Unsupported domain instruction: {:?}", domain_inst))),
                     },
-                    _ => return Err(GaiaError::custom_error(format!("Unsupported instruction tier for x86: {:?}", inst))),
                 }
             }
 

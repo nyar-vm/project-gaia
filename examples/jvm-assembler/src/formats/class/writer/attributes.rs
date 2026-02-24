@@ -82,8 +82,10 @@ impl<W: Write> ClassWriter<W> {
                 for attr in attributes {
                     self.collect_attribute_constants(attr);
                 }
-                for _handler in exception_table {
-                    // catch_type_index 已经在常量池中了，这里不需要额外操作
+                for handler in exception_table {
+                    if handler.catch_type_index > 0 {
+                        // catch_type_index 已经在常量池中了，这里不需要额外操作
+                    }
                 }
             }
             JvmAttribute::LineNumberTable { .. } => {
@@ -108,6 +110,7 @@ impl<W: Write> ClassWriter<W> {
         }
     }
 
+    /// 写入属性
     pub fn write_attribute(&mut self, attribute: &JvmAttribute) -> Result<()> {
         match attribute {
             JvmAttribute::SourceFile { filename } => {

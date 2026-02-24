@@ -13,5 +13,5 @@ exclude = ["package.json"]
 
 [dependencies]
 gaia-types = { workspace = true }
-gaia-assembler = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }

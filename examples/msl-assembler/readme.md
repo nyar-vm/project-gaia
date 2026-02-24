@@ -10,8 +10,8 @@ graph TB
         A[Gaia Module] --> B[MSL Backend Generator]
         B --> C[Instruction Mapper]
         C --> D[Source Code Emitter]
-        D --> E[Metal Source (.metal)]
-        D --> F[Metal Library (.metallib)]
+        D --> E["Metal Source (.metal)"]
+        D --> F["Metal Library (.metallib)"]
         
         subgraph "Metal Context"
             G[metal_stdlib]

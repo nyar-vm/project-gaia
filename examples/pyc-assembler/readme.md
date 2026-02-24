@@ -10,7 +10,7 @@ graph TB
         A[Python Source / Bytecode] --> B[Python Program Model]
         B --> C[Marshal Serializer/Deserializer]
         C --> D[PYC Header Generator]
-        D --> E[Python Binary (.pyc)]
+        D --> E["Python Binary (.pyc)"]
         
         subgraph "Internal Structure"
             F[Code Object Builder]
