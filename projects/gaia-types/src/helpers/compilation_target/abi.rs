@@ -91,6 +91,20 @@ pub enum AbiCompatible {
     ///
     /// AMD GPU 的指令集
     GCN,
+
+    /// Mach-O (Mach Object) 格式
+    ///
+    /// 用于 macOS, iOS, iPadOS, watchOS, tvOS 等 Apple 系统
+    MachO,
+
+    /// Lua 字节码格式
+    LuaBytecode,
+
+    /// Python 字节码格式 (.pyc)
+    PythonBytecode,
+
+    /// LLVM IR (Intermediate Representation) 格式
+    LlvmIr,
 }
 
 impl Display for AbiCompatible {
@@ -106,6 +120,10 @@ impl Display for AbiCompatible {
             AbiCompatible::PTX => write!(f, "ptx"),
             AbiCompatible::MSL => write!(f, "msl"),
             AbiCompatible::GCN => write!(f, "gcn"),
+            AbiCompatible::MachO => write!(f, "macho"),
+            AbiCompatible::LuaBytecode => write!(f, "lua"),
+            AbiCompatible::PythonBytecode => write!(f, "python"),
+            AbiCompatible::LlvmIr => write!(f, "llvm"),
         }
     }
 }
@@ -125,6 +143,10 @@ impl std::str::FromStr for AbiCompatible {
             "ptx" => Ok(AbiCompatible::PTX),
             "msl" => Ok(AbiCompatible::MSL),
             "gcn" => Ok(AbiCompatible::GCN),
+            "macho" => Ok(AbiCompatible::MachO),
+            "lua" => Ok(AbiCompatible::LuaBytecode),
+            "python" | "pyc" => Ok(AbiCompatible::PythonBytecode),
+            "llvm" | "ir" => Ok(AbiCompatible::LlvmIr),
             _ => Err(format!("Unknown AbiCompatible: {}", s)),
         }
     }

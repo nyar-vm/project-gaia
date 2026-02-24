@@ -117,6 +117,12 @@ pub enum ApiCompatible {
 
     /// WebGPU API
     WebGpu,
+
+    /// Apple 平台 API (macOS/iOS/etc.)
+    Apple,
+
+    /// 通用 Linux 平台 API
+    Linux,
 }
 
 impl Display for ApiCompatible {
@@ -134,6 +140,8 @@ impl Display for ApiCompatible {
             ApiCompatible::Vulkan => write!(f, "vulkan"),
             ApiCompatible::Metal => write!(f, "metal"),
             ApiCompatible::WebGpu => write!(f, "webgpu"),
+            ApiCompatible::Apple => write!(f, "apple"),
+            ApiCompatible::Linux => write!(f, "linux"),
         }
     }
 }
@@ -154,6 +162,8 @@ impl std::str::FromStr for ApiCompatible {
             "vulkan" => Ok(ApiCompatible::Vulkan),
             "metal" => Ok(ApiCompatible::Metal),
             "webgpu" => Ok(ApiCompatible::WebGpu),
+            "apple" => Ok(ApiCompatible::Apple),
+            "linux" => Ok(ApiCompatible::Linux),
             _ if s.starts_with("jvm") => {
                 let v = s[3..].parse::<u32>().map_err(|e| e.to_string())?;
                 Ok(ApiCompatible::JvmRuntime(v))

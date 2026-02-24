@@ -17,7 +17,7 @@ impl Backend for MachoBackend {
     }
 
     fn primary_target(&self) -> CompilationTarget {
-        CompilationTarget { build: Architecture::X86_64, host: AbiCompatible::MachO, target: ApiCompatible::Darwin }
+        CompilationTarget { build: Architecture::X86_64, host: AbiCompatible::MachO, target: ApiCompatible::Apple }
     }
 
     fn match_score(&self, target: &CompilationTarget) -> f32 {
