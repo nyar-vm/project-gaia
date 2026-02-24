@@ -22,7 +22,7 @@ impl Backend for PythonBackend {
 
     fn match_score(&self, target: &CompilationTarget) -> f32 {
         if target.host == AbiCompatible::PythonBytecode {
-            return 90.0;
+            return 80.0;
         }
         0.0
     }

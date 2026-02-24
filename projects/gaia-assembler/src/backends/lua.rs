@@ -17,12 +17,12 @@ impl Backend for LuaBackend {
     }
 
     fn primary_target(&self) -> CompilationTarget {
-        CompilationTarget { build: Architecture::Unknown, host: AbiCompatible::Lua, target: ApiCompatible::Unknown }
+        CompilationTarget { build: Architecture::Unknown, host: AbiCompatible::LuaBytecode, target: ApiCompatible::Unknown }
     }
 
     fn match_score(&self, target: &CompilationTarget) -> f32 {
-        if target.host == AbiCompatible::Lua {
-            return 90.0;
+        if target.host == AbiCompatible::LuaBytecode {
+            return 80.0;
         }
         0.0
     }
