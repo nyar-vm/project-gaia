@@ -81,6 +81,8 @@ pub enum CoreInstruction {
     Label(String),
     /// 调用函数 (函数名, 参数数量)
     Call(String, usize),
+    /// 间接调用 (参数数量). 栈: [..., func_ptr, arg1, arg2, ...]
+    CallIndirect(usize),
 
     // --- 对象与数组操作 ---
     /// 创建新对象 (类型名)
@@ -97,6 +99,8 @@ pub enum CoreInstruction {
     StoreElement(GaiaType),
     /// 获取数组长度
     ArrayLength,
+    /// 数组推入元素 (数组, 值)
+    ArrayPush,
 
     // --- WASM GC 扩展指令 ---
     /// 创建 GC 结构体 (类型名)
@@ -150,8 +154,14 @@ pub enum CastKind {
 /// Tier 1: 托管运行时指令 (类 JVM/CLR/Lua)
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ManagedInstruction {
-    /// 调用方法 (对象类型, 方法名, 签名)
-    CallMethod { target: String, method: String, signature: crate::types::GaiaSignature, is_virtual: bool },
+    /// 调用方法 (对象类型, 方法名, 签名, 是否虚调用, IC 调用点 ID)
+    CallMethod {
+        target: String,
+        method: String,
+        signature: crate::types::GaiaSignature,
+        is_virtual: bool,
+        call_site_id: Option<u32>,
+    },
     /// 调用静态方法
     CallStatic { target: String, method: String, signature: crate::types::GaiaSignature },
     /// 装箱
